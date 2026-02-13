@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Projects are readable if public or owner; writable only by owner.
+    match /projects/{projectId} {
+      allow read: if resource.data.is_public == true
+        || (signedIn() && resource.data.authorId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.authorId == request.auth.uid
+        && request.resource.data.authorId == resource.data.authorId;
+      allow delete: if signedIn() && resource.data.authorId == request.auth.uid;
+    }
+
+    // Time records are private to the owner.
+    match /users/{uid}/records/{recordId} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Public profile (for user pages), writable only by the owner.
+    match /artifacts/{appId}/users/{uid}/profile/{docId} {
+      allow read: if true;
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Default deny.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

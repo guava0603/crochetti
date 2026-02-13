@@ -1,0 +1,11 @@
+{
+  "appId": "com.crochetti.app",
+  "appName": "crochetti",
+  "webDir": "dist",
+  "plugins": {
+    "FirebaseAuthentication": {
+      "skipNativeAuth": false,
+      "providers": ["google.com", "apple.com"]
+    }
+  }
+}
