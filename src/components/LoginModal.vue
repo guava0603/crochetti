@@ -62,7 +62,7 @@
 import { ref } from 'vue'
 import { Capacitor } from '@capacitor/core'
 import { auth } from '../firebaseConfig'
-import { signInWithCredential, signInWithPopup, GoogleAuthProvider, OAuthProvider } from 'firebase/auth'
+import { signInWithCredential, GoogleAuthProvider, OAuthProvider } from 'firebase/auth'
 
 defineProps({
   show: {
@@ -103,6 +103,7 @@ const handleGoogleLogin = async () => {
       const credential = GoogleAuthProvider.credential(idToken ?? null, accessToken ?? null)
       result = await signInWithCredential(auth, credential)
     } else {
+      const { signInWithPopup } = await import('firebase/auth');
       const provider = new GoogleAuthProvider()
 
       // Suppress COOP warnings by setting provider custom parameters
@@ -149,6 +150,7 @@ const handleAppleLogin = async () => {
     provider.addScope('email')
     provider.addScope('name')
 
+    const { signInWithPopup } = await import('firebase/auth');
     const result = await signInWithPopup(auth, provider)
 
     // User successfully signed in
