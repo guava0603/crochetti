@@ -1,5 +1,27 @@
 <template>
   <div class="project-view">
+    <TopBanner
+      v-if="projectData"
+      fixed
+      :more-disabled="savingProject"
+      more-label="More"
+      :more-items="projectMoreItems"
+      @last-page="lastPage"
+    >
+      <template #title>
+        <span v-if="!isProjectEditing" class="top-banner__title-text">{{ projectData.name }}</span>
+        <input
+          v-else
+          v-model="draftProject.name"
+          class="project-name-input"
+          type="text"
+          autocomplete="off"
+          :placeholder="$t('project.namePlaceholder')"
+          @keydown.enter.prevent="confirmProjectEdit"
+        />
+      </template>
+    </TopBanner>
+
     <div v-if="noticeMessage" class="notice" role="status" aria-live="polite">
       {{ noticeMessage }}
     </div>
@@ -12,40 +34,37 @@
       {{ $t('project.noPermission') }}
     </div>
 
-    <div v-else-if="projectData">
-      <div class="header-section">
-        <LastPage />
-        <div class="header-actions">
-          <div
-            v-if="isProjectOwner"
-            class="mode-switch"
-            :title="isProjectEditing ? $t('project.editMode') : $t('project.viewMode')"
-          >
-            <span class="mode-switch__label">{{ isProjectEditing ? $t('project.editMode') : $t('project.viewMode') }}</span>
-            <label class="switch" aria-label="Toggle edit mode">
-              <input
-                type="checkbox"
-                :checked="isProjectEditing"
-                :disabled="savingProject"
-                @change="onModeToggle"
-              />
-              <span class="slider"></span>
-            </label>
-          </div>
+    <div v-else-if="projectData" class="page-content page-content--with-top-banner">
+      <div class="header-actions">
+        <div
+          v-if="isProjectOwner"
+          class="mode-switch"
+          :title="isProjectEditing ? $t('project.editMode') : $t('project.viewMode')"
+        >
+          <span class="mode-switch__label">{{ isProjectEditing ? $t('project.editMode') : $t('project.viewMode') }}</span>
+          <label class="switch" aria-label="Toggle edit mode">
+            <input
+              type="checkbox"
+              :checked="isProjectEditing"
+              :disabled="savingProject"
+              @change="onModeToggle"
+            />
+            <span class="slider"></span>
+          </label>
         </div>
       </div>
 
-      <div class="header-title">
-        <h1 v-if="!isProjectEditing">{{ projectData.name }}</h1>
-        <input
-          v-else
-          v-model="draftProject.name"
-          class="project-name-input"
-          type="text"
-          autocomplete="off"
-          :placeholder="$t('project.namePlaceholder')"
-          @keydown.enter.prevent="confirmProjectEdit"
+      <div class="project-description">
+        <textarea
+          v-if="isProjectEditing"
+          v-model="draftProject.description"
+          class="project-description-input"
+          rows="3"
+          :placeholder="$t('project.descriptionPlaceholder')"
         />
+        <p v-else-if="projectData?.description" class="project-description-text">
+          {{ projectData.description }}
+        </p>
       </div>
 
       <div
@@ -53,7 +72,10 @@
         class="visibility-switch"
         :title="$t('project.visibility')"
       >
-        <span class="visibility-switch__label">{{ $t('project.visibility') }}</span>
+        <!-- <span class="visibility-switch__label">{{ $t('project.visibility') }}</span> -->
+        <span class="visibility-switch__state">
+          {{ draftProject.is_public ? $t('project.public') : $t('project.private') }}
+        </span>
         <label class="switch" :aria-label="$t('project.visibility')">
           <input
             v-model="draftProject.is_public"
@@ -62,20 +84,19 @@
           />
           <span class="slider"></span>
         </label>
-        <span class="visibility-switch__state">
-          {{ draftProject.is_public ? $t('project.public') : $t('project.private') }}
-        </span>
       </div>
 
       <!-- Display each component -->
-      <ComponentCard
-        v-for="(component, cIndex) in activeProject.component_list"
-        :key="cIndex"
-        :component="component"
-        :is-editing="isProjectEditing"
-        @remove="removeComponent(cIndex)"
-      >
-      </ComponentCard>
+      <div class="design-cards">
+        <ComponentCard
+          v-for="(component, cIndex) in activeProject.component_list"
+          :key="cIndex"
+          :component="component"
+          :is-editing="isProjectEditing"
+          @remove="removeComponent(cIndex)"
+        >
+        </ComponentCard>
+      </div>
 
       <!-- Add Component Buttons (only show when in project edit mode) -->
       <div v-if="isProjectEditing" class="add-component-section">
@@ -99,12 +120,12 @@
       </div>
     </div>
 
-    <div v-if="projectData && !isProjectEditing" class="floating-play">
-      <PlayButton @click="handlePlayClick" />
+    <div v-if="!projectData">
+      <p>{{ $t('project.notFound') }}</p>
     </div>
 
-    <div v-else>
-      <p>{{ $t('project.notFound') }}</p>
+    <div v-else-if="!isProjectEditing" class="floating-play">
+      <PlayButton @click="handlePlayClick" />
     </div>
 
     <RecordSelectionModal
@@ -123,14 +144,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { auth } from '../firebaseConfig'
 import { onAuthStateChanged } from 'firebase/auth'
 import ComponentCard from '../components/cards/ComponentCard.vue'
-import LastPage from '../components/buttons/LastPage.vue'
 import PlayButton from '../components/buttons/PlayButton.vue'
+import TopBanner from '@/components/layout/TopBanner.vue'
 import RecordSelectionModal from '../components/modals/RecordSelectionModal.vue'
 import { v4 as uuidv4 } from '@lukeed/uuid'
+import { normalizeComponentListForRecord } from '@/utils/componentInstances'
 import { fetchProject, updateProject } from '@/services/firestore/projects'
 import { listUserRecordsByProjectId, setUserRecord } from '@/services/firestore/records'
 import { isCurrentUser } from '@/services/firestore/user'
 import { openConfirmation } from '@/services/ui/confirmation'
+import { openError } from '@/services/ui/notice'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -149,6 +172,29 @@ const noticeMessage = ref('')
 let noticeTimer = null
 const savingProject = ref(false)
 
+const projectMoreItems = computed(() => {
+  return [
+    {
+      key: 'download-design',
+      label: 'download design',
+      disabled: isProjectEditing.value || !projectData.value,
+      onSelect: downloadDesign
+    }
+  ]
+})
+
+const downloadDesign = () => {
+  if (isProjectEditing.value) {
+    showNotice('Please switch to view mode to download.')
+    return
+  }
+
+  router.push({
+    name: 'project-download-design',
+    params: { project_id: projectId.value }
+  })
+}
+
 const isProjectOwner = computed(() => {
   const authorId = projectData.value?.authorId
   return isCurrentUser(authorId)
@@ -163,11 +209,13 @@ const isProjectDirty = computed(() => {
   if (!draftProject.value || !projectData.value) return false
   const a = JSON.stringify({
     name: draftProject.value.name,
+    description: draftProject.value.description,
     is_public: Boolean(draftProject.value.is_public),
     component_list: draftProject.value.component_list
   })
   const b = JSON.stringify({
     name: projectData.value.name,
+    description: projectData.value.description,
     is_public: Boolean(projectData.value.is_public),
     component_list: projectData.value.component_list
   })
@@ -236,7 +284,10 @@ onMounted(async () => {
 // Project-level edit mode
 const startProjectEdit = () => {
   isProjectEditing.value = true
-  draftProject.value = projectData.value ? JSON.parse(JSON.stringify(projectData.value)) : { name: '', component_list: [] }
+  draftProject.value = projectData.value ? JSON.parse(JSON.stringify(projectData.value)) : { name: '', description: '', component_list: [] }
+  if (!Object.prototype.hasOwnProperty.call(draftProject.value, 'description')) {
+    draftProject.value.description = ''
+  }
 }
 
 const cancelProjectEdit = () => {
@@ -249,9 +300,50 @@ const confirmProjectEdit = async () => {
   const nextName = String(draftProject.value?.name || '').trim()
   if (!nextName) return
 
+  const normalizeStringList = (value) => {
+    if (Array.isArray(value)) return value.map((v) => String(v || '').trim())
+    const s = String(value || '').trim()
+    return s ? [s] : []
+  }
+
+  const uniqueNonEmpty = (list) => {
+    const seen = new Set()
+    const out = []
+    for (const raw of normalizeStringList(list)) {
+      const v = String(raw || '').trim()
+      if (!v) continue
+      if (seen.has(v)) continue
+      seen.add(v)
+      out.push(v)
+    }
+    return out
+  }
+
+  const normalizeProjectMaterialsInPlace = (componentList) => {
+    const list = Array.isArray(componentList) ? componentList : []
+    for (const component of list) {
+      const isPart = !component?.type || component?.type === 'component'
+      if (!isPart) continue
+
+      const legacyYarn = typeof component?.metadata?.yarn === 'string' ? component.metadata.yarn : ''
+      const legacyHook = typeof component?.metadata?.hook === 'string' ? component.metadata.hook : ''
+
+      const yarnValues = uniqueNonEmpty(component?.yarn?.length ? component.yarn : legacyYarn)
+      const hookValues = uniqueNonEmpty(component?.hook?.length ? component.hook : legacyHook)
+
+      component.yarn = yarnValues
+      component.hook = hookValues
+      if (!component.metadata || typeof component.metadata !== 'object') component.metadata = {}
+      component.metadata.yarn = yarnValues
+      component.metadata.hook = hookValues
+    }
+  }
+
   savingProject.value = true
   try {
     draftProject.value.name = nextName
+    draftProject.value.description = String(draftProject.value?.description || '').trim()
+    normalizeProjectMaterialsInPlace(draftProject.value.component_list)
     await updateProject(projectId.value, { ...draftProject.value })
     projectData.value = JSON.parse(JSON.stringify(draftProject.value))
     isProjectEditing.value = false
@@ -259,7 +351,11 @@ const confirmProjectEdit = async () => {
     showNotice(t('project.savedNotice'))
   } catch (error) {
     console.error('Error updating project:', error)
-    alert('Failed to update project')
+    openError({
+      title: t('common.error'),
+      message: 'Failed to update project',
+      confirmText: t('common.ok')
+    })
   } finally {
     savingProject.value = false
   }
@@ -295,6 +391,7 @@ function onModeToggle(e) {
 const createPart = () => ({
   type: 0,
   row_list: [],
+  row_groups: [],
   consume: 0,
   generate: 0
 })
@@ -302,12 +399,18 @@ const createPart = () => ({
 const createComponent = (index, type = 'component') => {
   const component = {
     name: `${(draftProject.value?.name || projectData.value?.name || 'Project')} ${index + 1}`,
-    type: type
+    type: type,
+    count: 1,
+    yarn: [''],
+    hook: [''],
+    metadata: {
+      yarn: [],
+      hook: []
+    }
   }
 
   if (type === 'component') {
     component.content = createPart()
-    component.decorations = []
     component.notes = []
   } else {
     component.content = { text: '' }
@@ -333,12 +436,10 @@ const removeComponent = async (cIndex) => {
   const component = draftProject.value.component_list?.[cIndex]
   const name = String(component?.name || '').trim()
 
+  const displayName = name || `#${cIndex + 1}`
+
   const ok = await openConfirmation({
-    title: t('project.removeComponentTitle'),
-    message: t('project.removeComponentMessage', { name: name || `#${cIndex + 1}` }),
-    confirmText: t('common.delete'),
-    cancelText: t('common.cancel'),
-    confirmClass: 'btn-confirm-delete'
+    type: { id: 'removeComponent', params: { name: displayName } }
   })
 
   if (!ok) return
@@ -351,7 +452,11 @@ const handlePlayClick = async () => {
   try {
     const user = auth.currentUser
     if (!user) {
-      alert('Please login to start recording')
+      openError({
+        title: t('common.error'),
+        message: t('auth.loginRequired'),
+        confirmText: t('common.ok')
+      })
       return
     }
 
@@ -360,7 +465,11 @@ const handlePlayClick = async () => {
     showRecordModal.value = true
   } catch (error) {
     console.error('Error checking records:', error)
-    alert('Failed to check existing records')
+    openError({
+      title: t('common.error'),
+      message: 'Failed to check existing records',
+      confirmText: t('common.ok')
+    })
   }
 }
 
@@ -368,7 +477,11 @@ const handleResumeRecord = (recordIndex) => {
   showRecordModal.value = false
   const selected = existingRecords.value?.[recordIndex]
   if (!selected?.id) {
-    alert('Record not found. Please try again.')
+    openError({
+      title: t('common.error'),
+      message: 'Record not found. Please try again.',
+      confirmText: t('common.ok')
+    })
     return
   }
   router.push(`/record/${selected.id}`)
@@ -378,37 +491,47 @@ const handleStartNewRecord = async () => {
   showRecordModal.value = false
   const user = auth.currentUser
   if (!user) {
-    alert('Please login to start recording')
+    openError({
+      title: t('common.error'),
+      message: t('auth.loginRequired'),
+      confirmText: t('common.ok')
+    })
     return
   }
 
-  const cList = projectData.value.component_list
-  cList.forEach(c => c.end_at = null);
+  const cList = normalizeComponentListForRecord(projectData.value.component_list)
   // Generate a new record_id
   const record_id = uuidv4()
   // Prepare new record data
   const newRecord = {
     project_id: projectId.value,
     project_name: projectData.value.name,
-    component_list: JSON.parse(JSON.stringify(cList)),
+    component_list: cList,
     time_slots: [],
     self_defined_status: []
   }
-  console.log('Starting new record with data:', newRecord)
   // Save to Firestore
   try {
     await setUserRecord(user.uid, record_id, newRecord)
     router.push(`/record/${record_id}`)
   } catch (error) {
     console.error('Error creating new record:', error)
-    alert('Failed to create new record. Please try again.')
+    openError({
+      title: t('common.error'),
+      message: 'Failed to create new record. Please try again.',
+      confirmText: t('common.ok')
+    })
   }
+}
+
+const lastPage = () => {
+  // user/:user_id
+  router.push({ name: 'user', params: { user_id: projectData.value?.authorId } })
 }
 </script>
 
 <style scoped>
 .project-view {
-  padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
   padding-bottom: calc(2rem + env(safe-area-inset-bottom));
@@ -451,22 +574,56 @@ const handleStartNewRecord = async () => {
 }
 
 .header-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  gap: 1rem;
+  display: none;
 }
 
 .header-title {
-  display: flex;
-  justify-content: center;
-  margin: -1rem 0 2rem;
+  display: none;
 }
 
-.header-title h1 {
+.project-title {
   margin: 0;
   text-align: center;
+}
+
+.page-content {
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+.design-cards {
+  display: block;
+}
+
+.project-description {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+
+.project-description-input {
+  width: min(680px, 100%);
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.project-description-input:focus {
+  outline: none;
+  border-color: rgba(66, 185, 131, 0.9);
+  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.18);
+}
+
+.project-description-text {
+  width: min(680px, 100%);
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
 }
 
 .project-name-input {

@@ -8,32 +8,207 @@
   "common": {
     "cancel": "取消",
     "confirm": "確認",
+    "ok": "確定",
+    "notice": "提示",
+    "error": "錯誤",
+    "copy": "複製",
     "delete": "刪除",
-    "deleteConfirmTitle": "刪除？",
-    "deleteConfirmMessage": "確定要刪除嗎？此操作不可復原。",
+    "rows": "行",
+    "notes": "備註",
+    "noteDescriptionPlaceholder": "備註內容…",
+    "noNotesAddedYet": "尚未新增備註。",
     "done": "完成",
     "edit": "編輯",
     "save": "儲存",
     "saving": "儲存中…",
-    "loading": "載入中..."
+    "loading": "載入中...",
+    "repeatDo": "此行重複做",
+    "rowUnit": "行",
+    "repeatRowGroupPrefix": "此{n}行重複做{m}",
+    "repeatRowGroupSuffix": "組",
+    "repeatRowGroup": "此{n}行重複做{m}組",
+    "timeUnitSecond": "秒",
+    "timeUnitMinute": "分",
+    "timeUnitHour": "時",
+    "timeUnitDay": "天"
+  },
+  "confirmation": {
+    "defaults": {
+      "title": "確認",
+      "confirmText": "確認",
+      "cancelText": "取消",
+      "loadingText": "處理中…"
+    },
+    "actions": {
+      "cancel": "取消",
+      "confirm": "確認",
+      "delete": "刪除",
+      "ok": "確定",
+      "submit": "提交"
+    },
+    "addProjectUnexpectedGenerate": {
+      "title": "仍要建立嗎？",
+      "message": "有些行數的 consume / generate 連續性不符合預期：{rows}\n\n仍要建立設計嗎？",
+      "confirmText": "仍要建立"
+    },
+    "deleteRow": {
+      "title": "刪除此行？",
+      "message": "確定要刪除第 {n} 行嗎？此操作不可復原。"
+    },
+    "deleteItem": {
+      "title": "刪除？",
+      "message": "確定要刪除嗎？此操作不可復原。",
+      "loadingText": "刪除中…"
+    },
+    "confirmUpdateTimeSlot": {
+      "title": "確認",
+      "message": "確定要更新這個時間區段嗎？",
+      "confirmText": "確認"
+    },
+    "deleteRecord": {
+      "title": "刪除紀錄？",
+      "message": "確定要刪除這筆紀錄嗎？此操作無法復原。",
+      "loadingText": "刪除中…"
+    },
+    "deleteTimeSlot": {
+      "title": "刪除時間區段？",
+      "message": "確定要刪除這個時間區段嗎？此操作無法復原。",
+      "loadingText": "刪除時間區段中…"
+    },
+    "removeComponent": {
+      "title": "刪除部位？",
+      "message": "確定要刪除 \"{name}\" 嗎？"
+    },
+    "logout": {
+      "title": "要登出嗎？",
+      "message": "確定要登出嗎？",
+      "confirmText": "登出",
+      "loadingText": "登出中…"
+    },
+    "deleteProject": {
+      "title": "刪除設計？",
+      "message": "確定要刪除 \"{name}\" 嗎？此操作無法復原。",
+      "loadingText": "刪除中…"
+    },
+    "deleteRows": {
+      "title": "刪除這些行？",
+      "message": "確定要刪除第 {start} 行到第 {end} 行的所有行嗎？此操作不可復原。"
+    },
+    "syncProject": {
+      "title": "更新設計？",
+      "message": "更新設計將會更改當前的織圖，如果更新位置在於記號針之前，可能會使紀錄的位置出現錯誤。\n\n確定要更新這筆紀錄嗎？此操作無法復原。",
+      "confirmText": "確認",
+      "loadingText": "同步中…"
+    },
+    "notice": {
+      "title": "提示"
+    },
+    "error": {
+      "title": "錯誤"
+    }
+  },
+  "toolbar": {
+    "addCrochet": {
+      "tabs": {
+        "addStitch": "新增針目",
+        "sameStitch": "在同一針目裡"
+      },
+      "custom": "自定義",
+      "adjust": {
+        "increase": "加針",
+        "decrease": "減針"
+      },
+      "bundleWizard": {
+        "title": "建立自定義束",
+        "chooseStitch": "選擇針法:",
+        "selectedStitches": "已選擇的針法:",
+        "emptyHint": "點擊上方針法添加",
+        "consumeLabel": "消耗針數 (consume):",
+        "generateLabel": "產生針數 (generate):"
+      }
+    },
+    "editRow": {
+      "rowCount": "行數",
+      "rowLabel": "第 {n} 行",
+      "selectMultipleRows": "選擇多行",
+      "copyRow": "複製至最新行",
+      "moveUp": "向上",
+      "moveDown": "向下",
+      "moveTop": "置頂",
+      "moveBottom": "置底",
+      "deleteRow": "刪除此行",
+      "countLockedInGroup": "此行數量不可更改",
+      "repeatTimes": "重複做 {n} 次",
+      "repeatTogether": "一起重複",
+      "groupSize": "包含行數",
+      "groupRepeat": "重複次數"
+    },
+    "editTabs": {
+      "row": "行",
+      "crochet": "針法"
+    },
+    "editGroupRow": {
+      "rangeLabel": "第 {start} 行 - 第 {end} 行",
+      "repeatCount": "組數",
+      "deleteRows": "刪除所選{n}行"
+    },
+    "setSelectionPosition": {
+      "title": "目前做到",
+      "noSelection": "尚未選取位置。",
+      "rowCount": "行數",
+      "rowLabel": "第 {n} 行",
+      "groupPrefix": "第",
+      "groupSuffix": "組",
+      "level": "第 {n} 層"
+    },
+    "editCrochet": {
+      "count": "數量",
+      "addStitch": "新增針法",
+      "changeStitch": "更換針法",
+      "tabs": {
+        "addToBundle": "加針"
+      }
+    }
   },
   "component": {
     "descriptionPlaceholder": "目前尚無簡介"
   },
   "project": {
     "project": "設計作品",
-    "loading": "正在載入專案資料...",
-    "noPermission": "沒有權限觀看此私人專案",
-    "notFound": "找不到此專案。",
-    "namePlaceholder": "專案名稱",
+    "loading": "正在載入設計資料...",
+    "noPermission": "沒有權限觀看此私人設計",
+    "rows": "行",
+    "notes": "備註",
+    "noteDescriptionPlaceholder": "備註內容…",
+    "noNotesAddedYet": "尚未新增備註。",
+    "notFound": "找不到此設計。",
+    "namePlaceholder": "設計名稱",
+    "descriptionPlaceholder": "設計簡介（選填）",
     "startRecording": "開始記錄",
     "resume": "繼續",
     "startNew": "開始新的記錄",
     "resumeOrStart": "要繼續既有記錄，或開始新的記錄？",
-    "copyProject": "複製專案",
+    "copyProject": "複製設計",
     "copying": "複製中…",
-    "copiedNotice": "已複製專案",
+    "copiedNotice": "已複製設計",
     "more": "更多",
+    "card": {
+      "fallbackTitle": "設計 {id}",
+      "noDescription": "尚未填寫簡介"
+    },
+    "castOnType": "起針類型",
+    "componentCount": "數量",
+    "componentCountMode": {
+      "single": "單個",
+      "multiple": "多個"
+    },
+    "componentMetadata": {
+      "title": "材料",
+      "yarn": "毛線",
+      "hook": "鉤針",
+      "yarnPlaceholder": "例：Zebra #6 1.5捲",
+      "hookPlaceholder": "例：3.5mm"
+    },
     "castOn": {
       "magicRing": "輪狀起針",
       "chainRing": "鎖針圈起",
@@ -41,13 +216,10 @@
       "oval": "橢圓起針"
     },
     "shareLink": "分享連結",
+    "copyLink": "複製連結",
     "linkCopiedNotice": "已複製連結",
     "copyLinkPrompt": "複製這個連結：",
-    "deleteTitle": "刪除專案？",
-    "deleteMessage": "確定要刪除 \"{name}\" 嗎？此操作無法復原。",
-    "deleting": "刪除中…",
-    "removeComponentTitle": "刪除元件？",
-    "removeComponentMessage": "確定要刪除 \"{name}\" 嗎？",
+    "removeComponentAction": "刪除部位",
     "confirmUpdate": "確認",
     "viewMode": "檢視",
     "editMode": "編輯",
@@ -62,16 +234,21 @@
   "record": {
     "record": "編織紀錄",
     "recording": "記錄中",
+    "result": "成果",
+    "viewReport": "看報表",
+    "moreDetails": "更多詳情",
+    "currently": "正在",
+    "pause": "暫停",
+    "pauseRecording": "暫停記錄",
+    "centeredPosition": "第{row}行，第{stitch}針",
     "syncProject": "同步專案",
     "syncing": "同步中…",
-    "syncConfirmTitle": "更新設計？",
-    "syncConfirmMessage1": "更新設計將會更改當前的織圖，如果更新位置在於記號針之前，可能會使紀錄的位置出現錯誤。",
-    "syncConfirmMessage2": "確定要更新這筆紀錄嗎？此操作無法復原。",
+    "syncSuccessNotice": "已同步設計。",
+    "syncFailedNotice": "同步設計失敗，請再試一次。",
+    "noProjectId": "此記錄找不到 project_id。",
     "goToDesign": "前往設計",
     "deleteRecord": "刪除紀錄",
-    "deleteTitle": "刪除紀錄？",
-    "deleteMessage": "確定要刪除這筆紀錄嗎？此操作無法復原。",
-    "deleting": "刪除中…",
+    "deleteSuccessNotice": "已刪除記錄。",
     "showTimeSlots": "顯示時間區段",
     "backToRecord": "返回紀錄",
     "timeSlotsTitle": "時間區段",
@@ -79,11 +256,12 @@
     "slotStart": "開始",
     "slotEnd": "結束",
     "slotStatus": "狀態",
+    "slotStartAtLabel": "開始位置",
+    "slotStartAt": "{n}/{total} 個部件",
     "slotNote": "備註",
     "singleTimeSlotTitle": "時間區段 #{n}",
     "timeSlotNotFound": "找不到這個時間區段",
     "editStatus": "編輯狀態",
-    "confirmUpdateTimeSlot": "確定要更新這個時間區段嗎？",
     "invalidTimeRange": "結束時間不能早於開始時間",
     "inProgress": "進行中",
     "unknownTime": "未知"
@@ -115,10 +293,94 @@
     "unknown": "未知"
   },
   "auth": {
-    "logout": "登出",
-    "logoutTitle": "要登出嗎？",
-    "logoutMessage": "確定要登出嗎？",
-    "loggingOut": "登出中…"
+    "loginRequired": "請先登入再繼續。",
+    "login": "登入",
+    "logout": "登出"
+  },
+  "user": {
+    "title": "個人頁面",
+    "fab": {
+      "addProject": "新增設計",
+      "addRecord": "新增紀錄"
+    },
+    "addRecord": {
+      "title": "開始一筆紀錄",
+      "message": "請選擇要如何開始新的編織紀錄。",
+      "actions": {
+        "selectProject": "選擇既有設計",
+        "addProject": "新增設計",
+        "quickAddProject": "快速新增設計（全為{stitch}）"
+      },
+      "selectProjectLabel": "設計",
+      "untitledProject": "未命名設計",
+      "noProjects": "目前尚無設計。",
+      "startRecord": "開始記錄",
+      "quick": {
+        "rowCount": "行數",
+        "crochetCount": "每行針數（{stitch}）",
+        "hint": "會建立 {rowCount} 行，每行 {crochetCount} 個{stitch}。",
+        "createAndStart": "建立設計並開始記錄",
+        "errors": {
+          "rowCount": "行數至少要 1。",
+          "crochetCount": "每行針數至少要 1。"
+        }
+      },
+      "errors": {
+        "projectMissingDesign": "此設計缺少織圖資料。",
+        "startRecordFailed": "開始記錄失敗，請再試一次。",
+        "quickAddFailed": "快速建立設計與開始記錄失敗，請再試一次。"
+      }
+    },
+    "settings": {
+      "label": "設定",
+      "editProfile": "更改個人設定",
+      "follow": "追蹤",
+      "followNotImplemented": "追蹤功能尚未開放。",
+      "profileSaved": "已儲存個人設定。",
+      "profileSaveFailed": "儲存失敗，請再試一次。"
+    },
+    "profile": {
+      "name": "名稱",
+      "avatarUrl": "頭像連結"
+    }
+  },
+  "addProject": {
+    "title": "新增設計",
+    "steps": {
+      "basicInfo": "基本資訊",
+      "design": "設計"
+    },
+    "common": {
+      "next": "下一步",
+      "back": "返回"
+    },
+    "errors": {
+      "loginRequired": "必須先登入才能新增設計",
+      "createFailed": "建立設計失敗：{message}"
+    },
+    "info": {
+      "projectNameLabel": "設計名稱",
+      "projectNamePlaceholder": "輸入設計名稱",
+      "descriptionLabel": "簡介",
+      "descriptionPlaceholder": "輸入設計簡介（選填）",
+      "errors": {
+        "projectNameRequired": "設計名稱為必填"
+      }
+    },
+    "design": {
+      "makePublic": "公開設計",
+      "componentsTitle": "部位",
+      "componentsAria": "部位",
+      "submitBarAria": "提交設計",
+      "addComponent": "+ 部位",
+      "addStitch": "+ 針法",
+      "creating": "建立中…",
+      "createProject": "建立設計",
+      "errors": {
+        "atLeastOneComponent": "至少需要一個部位",
+        "atLeastOneRow": "至少需要一行"
+      }
+    }
   },
   "status": {
     "idle": "沒做什麼",
@@ -131,23 +393,30 @@
     "spareTime": "碎片時間"
   },
   "crochet": {
+    "deleteSelectedPattern": "刪除此花型",
+    "deleteSelectedBundle": "刪除此針目",
+    "deleteSelectedStitch": "刪除此針",
     "stitches": {
       "slipStitch": "引拔",
       "chain": "鎖針",
       "turningChain": "起立",
       "skip": "跳過",
       "singleCrochet": "短針",
-      "singleCrochetIncrease": "短針加針",
-      "singleCrochetDecrease": "短針減針",
       "halfDoubleCrochet": "中長針",
-      "halfDoubleCrochetIncrease": "中長針加針",
-      "halfDoubleCrochetDecrease": "中長針減針",
       "doubleCrochet": "長針",
-      "doubleCrochetIncrease": "長針加針",
-      "doubleCrochetDecrease": "長針減針",
       "trebleCrochet": "長長針",
-      "trebleCrochetIncrease": "長長針加針",
-      "trebleCrochetDecrease": "長長針減針",
+      "increase": {
+        "singleCrochet": "短針加針",
+        "halfDoubleCrochet": "中長針加針",
+        "doubleCrochet": "長針加針",
+        "trebleCrochet": "長長針加針"
+      },
+      "decrease": {
+        "singleCrochet": "短針減針",
+        "halfDoubleCrochet": "中長針減針",
+        "doubleCrochet": "長針減針",
+        "trebleCrochet": "長長針減針"
+      },
       "frontPostDoubleCrochet": "外鉤長針",
       "frontPostHalfDoubleCrochet": "外鉤中長針"
     },

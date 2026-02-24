@@ -6,6 +6,9 @@
         :key="project.id"
         :project="project"
         :copying="copyingProjectId === project.id"
+        :show-copy="isMyPage"
+        :show-copy-link="!isMyPage"
+        :show-share="isMyPage"
         :show-delete="isMyPage"
         @open="(p) => emit('open', p)"
         @copy="(p) => emit('copy', p)"
@@ -14,15 +17,8 @@
       />
     </div>
 
-    <router-link v-if="isMyPage" to="/add-project" class="add-project-link">
-      + Add your project
-    </router-link>
-
     <div v-if="!projects || projects.length === 0" class="no-projects">
       <p>No projects yet</p>
-      <router-link v-if="isMyPage" to="/add-project" class="add-project-link">
-        + Add your first project
-      </router-link>
     </div>
   </div>
 </template>
@@ -50,6 +46,8 @@ const emit = defineEmits(['open', 'copy', 'share', 'delete'])
 
 <style scoped>
 .projects-section {
+  display: flex;
+  flex: 1;
   background: white;
   border-radius: 0;
   padding: 2rem;
@@ -58,10 +56,11 @@ const emit = defineEmits(['open', 'copy', 'share', 'delete'])
 }
 
 .projects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
   margin-bottom: 2rem;
+  width: 100%;
 }
 
 .no-projects {

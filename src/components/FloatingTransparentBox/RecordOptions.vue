@@ -6,25 +6,18 @@
           {{ centeredComponentName }}
         </div>
         <div class="centered-component-info">
-          第{{ centeredComponentEndAt.row_index }}行，第{{ centeredComponentEndAt.crochet_count }}針
+          {{ t('record.centeredPosition', { row: centeredComponentEndAt.row_index, stitch: centeredComponentEndAt.crochet_count }) }}
         </div>
       </div>
       <div class="top-overlay-content">
         <RecordPauseButton
           v-if="isRecording"
           class="record-toggle-btn"
-          :aria-label="'Pause recording'"
-          :title="'Pause'"
+          :aria-label="t('record.pauseRecording')"
+          :title="t('record.pause')"
           @click="pauseRecording"
         />
-        <RecordPlayButton
-          v-else
-          class="record-toggle-btn record-toggle-btn--play"
-          :aria-label="'Start recording'"
-          :title="'Start'"
-          :iconSize="56"
-          @click="startRecording"
-        />
+        <PlayButton v-else class="record-toggle-btn record-toggle-btn--play" @click="startRecording" />
         <div class="overlay-row">
           <div v-if="isRecording" class="time-display">
             <div class="time-part" v-for="(part, idx) in formattedConsumingTimeParts.parts" :key="idx">
@@ -35,7 +28,7 @@
           <div class="status-select-section">
             <div class="status-display">
               <div class="status-label-row">
-                <span style="color: gray;">正在</span>
+                <span style="color: gray;">{{ t('record.currently') }}</span>
                 <span class="short-text">
                   {{ currentStatus }}
                   <template v-if="currentStatusNoteDisplay">
@@ -43,7 +36,12 @@
                   </template>
                 </span>
               </div>
-              <button class="edit-status-btn" @click="openModal" title="Edit Statuses">
+              <button
+                class="edit-status-btn"
+                @click="openModal"
+                :title="t('record.editStatus')"
+                :aria-label="t('record.editStatus')"
+              >
                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M13.586 3.586a2 2 0 0 1 2.828 2.828l-8.5 8.5a2 2 0 0 1-.878.515l-3 1a1 1 0 0 1-1.263-1.263l1-3a2 2 0 0 1 .515-.878l8.5-8.5ZM15 5l-1-1" stroke="#888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </button>
             </div>
@@ -51,6 +49,15 @@
           </div>
         </div>
       </div>
+      <button
+        type="button"
+        class="btn-result"
+        :aria-label="t('record.result')"
+        :title="t('record.result')"
+        @click="goResultSharing"
+      >
+        <ButtonResultIcon />
+      </button>
     </div>
   </div>
 </template>
@@ -58,9 +65,13 @@
 <script setup>
 import { computed, ref, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import RecordPlayButton from '@/components/buttons/RecordPlayButton.vue'
+  import { useRoute, useRouter } from 'vue-router'
+import PlayButton from '@/components/buttons/PlayButton.vue'
 import RecordPauseButton from '@/components/buttons/RecordPauseButton.vue'
+import ButtonResultIcon from '@/components/buttons/svg/ButtonResult.vue'
 const { t } = useI18n({ useScope: 'global' })
+  const route = useRoute()
+  const router = useRouter()
 const props = defineProps({
   isRecording: {
     type: Boolean,
@@ -94,29 +105,29 @@ const props = defineProps({
 const formatDurationParts = (ms) => {
   const seconds = Math.floor(ms / 1000)
   if (seconds < 60) {
-    return { parts: [{ value: seconds, label: '秒' }], type: 'second', raw: ms }
+    return { parts: [{ value: seconds, label: t('common.timeUnitSecond') }], type: 'second', raw: ms }
   }
   if (seconds < 3600) {
     const m = Math.floor(seconds / 60)
     const s = seconds % 60
     return { parts: [
-      { value: m, label: '分' },
-      { value: s, label: '秒' }
+      { value: m, label: t('common.timeUnitMinute') },
+      { value: s, label: t('common.timeUnitSecond') }
     ], type: 'minute-second', raw: ms }
   }
   if (seconds < 86400) {
     const h = Math.floor(seconds / 3600)
     const m = Math.floor((seconds % 3600) / 60)
     return { parts: [
-      { value: h, label: '時' },
-      { value: m, label: '分' }
+      { value: h, label: t('common.timeUnitHour') },
+      { value: m, label: t('common.timeUnitMinute') }
     ], type: 'hour-minute', raw: ms }
   }
   const d = Math.floor(seconds / 86400)
   const h = Math.floor((seconds % 86400) / 3600)
   return { parts: [
-    { value: d, label: '天' },
-    { value: h, label: '時' }
+    { value: d, label: t('common.timeUnitDay') },
+    { value: h, label: t('common.timeUnitHour') }
   ], type: 'day-hour', raw: ms }
 }
 
@@ -141,7 +152,7 @@ onUnmounted(() => {
 
 const formattedConsumingTimeParts = computed(() => {
   if (!props.currentTimeSlot || !props.currentTimeSlot.start) {
-    return { parts: [{ value: 0, label: '秒' }], type: 'second', raw: 0 }
+    return { parts: [{ value: 0, label: t('common.timeUnitSecond') }], type: 'second', raw: 0 }
   }
   const { start, end } = props.currentTimeSlot
   const endTime = end ? new Date(end) : new Date(now.value)
@@ -172,6 +183,14 @@ const currentStatus = computed(() => {
 const currentStatusNoteDisplay = computed(() => {
   return String(props.currentStatusNote || '').trim()
 })
+
+const goResultSharing = () => {
+  router.push({
+    name: 'record',
+    params: { record_id: route.params.record_id },
+    query: { 'result-sharing': '1' }
+  })
+}
 </script>
 
 <style scoped>
@@ -210,13 +229,6 @@ const currentStatusNoteDisplay = computed(() => {
   height: 48px;
   top: -0.8rem;
   left: -0.8rem;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.95);
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
   z-index: 110;
   transition: background 0.2s, transform 0.05s;
 }
@@ -390,5 +402,15 @@ const currentStatusNoteDisplay = computed(() => {
   max-width: 100%;
   white-space: normal;
   text-overflow: ellipsis;
+}
+
+.btn-result {
+  position: absolute;
+  right: -4rem;
+  bottom: 0.2rem;
+  z-index: 130;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 </style>

@@ -5,10 +5,11 @@
         v-for="t in tabs"
         :key="t.key"
         class="tab__title"
-        :class="{ 'tab__title--active': t.key === activeKey }"
+        :class="{ 'tab__title--active': t.key === activeKey, 'tab__title--disabled': Boolean(t.disabled) }"
         type="button"
         role="tab"
         :aria-selected="t.key === activeKey"
+        :disabled="Boolean(t.disabled)"
         @click="setActive(t.key)"
       >
         {{ t.label }}
@@ -69,6 +70,8 @@ watch(
 const activeKey = computed(() => internalKey.value)
 
 function setActive(key) {
+  const target = (props.tabs || []).find((t) => t && t.key === key) || null
+  if (target && target.disabled) return
   if (!key || key === internalKey.value) return
   internalKey.value = key
   emit('update:modelValue', key)
@@ -78,23 +81,28 @@ function setActive(key) {
 
 <style scoped>
 .tab {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  margin-top: 1rem;
 }
 
 .tab__header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0.25rem 0;
+  z-index: 1;
+  width: fit-content;
+  background: #e5e7eb;
+  border-radius: 10px 10px 0 0;
 }
 
 .tab__title {
   border: none;
-  background: transparent;
-  color: #374151;
+  background: #e5e7eb;
+  color: #475161;
   font-weight: 800;
-  padding: 0.55rem 0.9rem;
-  border-top: 3px solid transparent;
+  padding: 0.55rem 1.5rem;
   border-left: 0;
   border-right: 0;
   border-bottom: 0;
@@ -106,12 +114,21 @@ function setActive(key) {
 }
 
 .tab__title--active {
-  border-top-color: #42b983;
+  border-top: 3px solid #1f6142;
   background: white;
   color: #0f5132;
 }
 
+.tab__title--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .tab__content {
   min-width: 0;
+  display: flex;
+  flex: 1;
+  background: white;
+  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
 }
 </style>

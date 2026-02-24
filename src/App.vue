@@ -16,11 +16,14 @@
 
   <RouterView />
 
+  <ToastHost />
+
   <GlobalConfirmationModal />
 </template>
 
 <script setup>
 import GlobalConfirmationModal from '@/components/modals/GlobalConfirmationModal.vue'
+import ToastHost from '@/components/ui/ToastHost.vue'
 import { RouterView } from 'vue-router'
 </script>
 

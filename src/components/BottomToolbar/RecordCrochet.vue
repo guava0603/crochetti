@@ -31,7 +31,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { BasicStitch } from '@/constants/crochetData.js'
+import { getNodePerRepeatGenerate, getNodeTotalGenerate } from '@/utils/crochetGenerate.js'
 
 const props = defineProps({
   componentName: {
@@ -61,30 +61,18 @@ const getCrochetNumber = computed(() => {
   const nodes = props.row.content.stitch_node_list
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i]
-    let nodeGenerate = 0
-
-    if (node.type === 'pattern') {
-      const patternGenerate = node.pattern.reduce((sum, item) => {
-        const stitch = BasicStitch[item.stitch_id]
-        const generate = stitch?.generate || 1
-        return sum + (item.count || 1) * generate
-      }, 0)
-      nodeGenerate = patternGenerate * node.count
-    } else {
-      const stitch = BasicStitch[node.stitch_id]
-      const generate = stitch?.generate || 1
-      nodeGenerate = (node.count || 1) * generate
-    }
+    const nodeGenerate = getNodeTotalGenerate(node)
 
     if (remaining < nodeGenerate) {
       nodeIndex = i
       if (node.type === 'pattern') {
-        let innerRemaining = remaining
-        for (let j = 0; j < node.pattern.length; j++) {
+        const per = getNodePerRepeatGenerate(node)
+        const rawRemainder = per > 0 ? (remaining % per) : remaining
+        let innerRemaining = rawRemainder === 0 && remaining > 0 ? per : rawRemainder
+
+        for (let j = 0; j < (node.pattern || []).length; j++) {
           const item = node.pattern[j]
-          const stitch = BasicStitch[item.stitch_id]
-          const generate = stitch?.generate || 1
-          const itemGenerate = (item.count || 1) * generate
+          const itemGenerate = getNodeTotalGenerate(item)
           if (innerRemaining < itemGenerate) {
             stitchIndex = j
             selectedCount = innerRemaining

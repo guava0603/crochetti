@@ -1,5 +1,7 @@
 // Fixed data structures for crochet terminology and techniques
 
+import { calculateConsumeGenerateCore } from '@/utils/crochetStatsCore.js'
+
 /**
  * 定義每一針或每一組的基礎結構
  * type SingleAnchor = SimpleStitch | Bundle | Pattern;
@@ -78,14 +80,14 @@ export const BasicStitch = [
   },
   {
     index: 5,
-    nameKey: 'crochet.stitches.singleCrochetIncrease',
+    nameKey: 'crochet.stitches.increase.singleCrochet',
     symbol_jp: 'V',
     consume: 1,
     generate: 2
   },
   {
     index: 6,
-    nameKey: 'crochet.stitches.singleCrochetDecrease',
+    nameKey: 'crochet.stitches.decrease.singleCrochet',
     symbol_jp: 'A',
     consume: 2,
     generate: 1
@@ -99,14 +101,14 @@ export const BasicStitch = [
   },
   {
     index: 8,
-    nameKey: 'crochet.stitches.halfDoubleCrochetIncrease',
+    nameKey: 'crochet.stitches.increase.halfDoubleCrochet',
     symbol_jp: 'TV',
     consume: 1,
     generate: 2
   },
   {
     index: 9,
-    nameKey: 'crochet.stitches.halfDoubleCrochetDecrease',
+    nameKey: 'crochet.stitches.decrease.halfDoubleCrochet',
     symbol_jp: 'TA',
     consume: 2,
     generate: 1
@@ -120,14 +122,14 @@ export const BasicStitch = [
   },
   {
     index: 11,
-    nameKey: 'crochet.stitches.doubleCrochetIncrease',
+    nameKey: 'crochet.stitches.increase.doubleCrochet',
     symbol_jp: 'FV',
     consume: 1,
     generate: 2
   },
   {
     index: 12,
-    nameKey: 'crochet.stitches.doubleCrochetDecrease',
+    nameKey: 'crochet.stitches.decrease.doubleCrochet',
     symbol_jp: 'FA',
     consume: 2,
     generate: 1
@@ -141,14 +143,14 @@ export const BasicStitch = [
   },
   {
     index: 14,
-    nameKey: 'crochet.stitches.trebleCrochetIncrease',
+    nameKey: 'crochet.stitches.increase.trebleCrochet',
     symbol_jp: 'EV',
     consume: 1,
     generate: 2
   },
   {
     index: 15,
-    nameKey: 'crochet.stitches.trebleCrochetDecrease',
+    nameKey: 'crochet.stitches.decrease.trebleCrochet',
     symbol_jp: 'EA',
     consume: 2,
     generate: 1
@@ -168,6 +170,53 @@ export const BasicStitch = [
     generate: 1
   }
 ]
+
+const STITCH_KEY_PREFIX = 'crochet.stitches.'
+const STITCH_VARIANT_REGEX = /^crochet\.stitches\.(increase|decrease)\.(.+)$/
+
+export const getBaseStitchNameKey = (nameKey) => {
+  if (typeof nameKey !== 'string') return nameKey
+  const match = nameKey.match(STITCH_VARIANT_REGEX)
+  if (!match) return nameKey
+  return `${STITCH_KEY_PREFIX}${match[2]}`
+}
+
+export const getBaseStitchIdFromNameKey = (nameKey) => {
+  if (typeof nameKey !== 'string') return null
+  const variantMatch = nameKey.match(STITCH_VARIANT_REGEX)
+  if (variantMatch) return variantMatch[2]
+  if (nameKey.startsWith(STITCH_KEY_PREFIX)) return nameKey.slice(STITCH_KEY_PREFIX.length)
+  return null
+}
+
+export const getStitchGroup = (stitch) => {
+  const nameKey = stitch?.nameKey
+  if (typeof nameKey === 'string') {
+    const match = nameKey.match(STITCH_VARIANT_REGEX)
+    if (match?.[1] === 'increase') return 'increase'
+    if (match?.[1] === 'decrease') return 'decrease'
+  }
+  return 'general'
+}
+
+export const BasicStitchGeneral = BasicStitch.filter((s) => getStitchGroup(s) === 'general')
+export const BasicStitchIncrease = BasicStitch.filter((s) => getStitchGroup(s) === 'increase')
+export const BasicStitchDecrease = BasicStitch.filter((s) => getStitchGroup(s) === 'decrease')
+
+// Get increase/decrease variant stitch index for a given stitch_id.
+// - If the selected stitch is already an increase/decrease, we first resolve its base stitch.
+// - Returns null if no variant exists.
+export const getVariantStitchId = (stitchId, variant) => {
+  const stitch = BasicStitch[stitchId]
+  if (!stitch || !stitch.nameKey) return null
+
+  const baseId = getBaseStitchIdFromNameKey(stitch.nameKey)
+  if (!baseId) return null
+  const safeVariant = variant === 'decrease' ? 'decrease' : 'increase'
+  const variantKey = `${STITCH_KEY_PREFIX}${safeVariant}.${baseId}`
+  const match = BasicStitch.find((s) => s?.nameKey === variantKey)
+  return match ? match.index : null
+}
 
 export const CastOn = [
   {
@@ -255,15 +304,7 @@ export const createSimpleStitch = (stitchId) => {
  * @returns {object} Bundle 物件
  */
 export const createBundle = (bundle = [], consume = 1, count = 1, label = null) => {
-  // Calculate generate from bundle
-  let totalGenerate = 0
-
-  bundle.forEach(simpleStitch => {
-    const stitch = BasicStitch[simpleStitch.stitch_id]
-    if (stitch) {
-      totalGenerate += (stitch.generate || 0) * (simpleStitch.count || 1)
-    }
-  })
+  const totalGenerate = calculateConsumeGenerateCore(bundle, 1, BasicStitch).generate
 
   const node = {
     type: 'bundle',
@@ -286,36 +327,7 @@ export const createBundle = (bundle = [], consume = 1, count = 1, label = null) 
  * @returns {object} Pattern 物件
  */
 export const createPattern = (count, pattern = [], label = null) => {
-  const calculatePatternStats = (patternItems, repeatCount = 1) => {
-    let totalConsume = 0
-    let totalGenerate = 0
-
-    patternItems.forEach(anchor => {
-      if (anchor.type === 'stitch') {
-        const stitch = BasicStitch[anchor.stitch_id]
-        if (stitch) {
-          const stitchCount = anchor.count || 1
-          totalConsume += (stitch.consume || 0) * stitchCount
-          totalGenerate += (stitch.generate || 0) * stitchCount
-        }
-      } else if (anchor.type === 'bundle') {
-        const bundleCount = anchor.count || 1
-        totalConsume += (anchor.consume || 1) * bundleCount
-        totalGenerate += (anchor.generate || 0) * bundleCount
-      } else if (anchor.type === 'pattern') {
-        const nested = calculatePatternStats(anchor.pattern || [], anchor.count || 1)
-        totalConsume += nested.consume
-        totalGenerate += nested.generate
-      }
-    })
-
-    return {
-      consume: totalConsume * repeatCount,
-      generate: totalGenerate * repeatCount
-    }
-  }
-
-  const stats = calculatePatternStats(pattern, count)
+  const stats = calculateConsumeGenerateCore(pattern, count, BasicStitch)
 
   const node = {
     type: 'pattern',
@@ -357,25 +369,9 @@ export const createRow = (rowIndex, stitchNodeList = []) => {
  * @param {object} row - Row 物件
  */
 export const updateRowStats = (row) => {
-  let totalConsume = 0
-  let totalGenerate = 0
-
-  row.content.stitch_node_list.forEach(node => {
-    if (node.type === 'stitch') {
-      const stitch = BasicStitch[node.stitch_id]
-      if (stitch) {
-        totalConsume += (stitch.consume || 0) * (node.count || 1)
-        totalGenerate += (stitch.generate || 0) * (node.count || 1)
-      }
-    } else if (node.type === 'pattern') {
-      const patternStats = createPattern(node.count || 1, node.pattern || [])
-      totalConsume += patternStats.consume || 0
-      totalGenerate += patternStats.generate || 0
-    }
-  })
-
-  row.content.consume = totalConsume
-  row.content.generate = totalGenerate
+  const stats = calculateConsumeGenerateCore(row?.content?.stitch_node_list || [], 1, BasicStitch)
+  row.content.consume = stats.consume
+  row.content.generate = stats.generate
 }
 
 // Display helpers
@@ -392,7 +388,7 @@ export const getPatternItemDisplay = (anchor) => {
       return Array(item.count || 1).fill(stitch.symbol_jp)
     }).join(', ') || ''
     const count = anchor.count || 1
-    return count > 1 ? `${count}(${items})` : `(${items})`
+    return count > 1 ? `(${items}) * ${count}` : `(${items})`
   } else if (anchor.type === 'pattern') {
     if (anchor.pattern?.length === 1 && anchor.pattern[0].type === 'stitch') {
       const stitch = BasicStitch[anchor.pattern[0].stitch_id]
@@ -400,6 +396,7 @@ export const getPatternItemDisplay = (anchor) => {
       const count = anchor.count || 1
       return (count > 1 ? `${count}` : '') + stitch.symbol_jp
     }
+
     const text = (anchor.pattern || []).map(getPatternItemDisplay).join(', ')
     const count = anchor.count || 1
     return `[${text}] * ${count}`

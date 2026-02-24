@@ -8,52 +8,42 @@
 
       <div v-else class="body">
         <div class="card">
+          <div v-if="slotStartAtText" class="row">
+            <div class="label">{{ t('record.slotStartAtLabel') }}</div>
+            <div class="value">
+              <span class="value-main">{{ slotStartAtText }}</span>
+            </div>
+          </div>
+
           <div class="row">
             <div class="label">{{ t('record.slotStatus') }}</div>
             <div class="value">
-              <template v-if="!editing.status">
-                <span class="value-main">{{ statusLabel }}<span v-if="statusNoteDisplay" class="note"> ({{ statusNoteDisplay }})</span></span>
-                <button type="button" class="edit-btn" @click="toggleEdit('status')">{{ t('common.edit') }}</button>
-              </template>
-
-              <template v-else>
-                <span class="value-main">{{ statusLabel }}<span v-if="statusNoteDisplay" class="note"> ({{ statusNoteDisplay }})</span></span>
-                <button type="button" class="edit-btn" @click="openStatusModal">{{ t('record.editStatus') }}</button>
-                <button type="button" class="edit-btn" @click="toggleEdit('status')">{{ t('common.done') }}</button>
-              </template>
+              <span class="value-main">{{ statusLabel }}<span v-if="statusNoteDisplay" class="note"> ({{ statusNoteDisplay }})</span></span>
+              <button type="button" class="edit-btn" @click="openStatusModal">{{ t('common.edit') }}</button>
             </div>
           </div>
 
           <div class="row">
             <div class="label">{{ t('record.slotStart') }}</div>
             <div class="value">
-              <template v-if="!editing.start">
-                <span class="value-main">{{ startDisplay }}</span>
-                <button type="button" class="edit-btn" @click="toggleEdit('start')">{{ t('common.edit') }}</button>
-              </template>
-              <template v-else>
-                <input v-model="draftStart" type="datetime-local" class="dt-input" step="1" />
-                <button type="button" class="edit-btn" @click="toggleEdit('start')">{{ t('common.done') }}</button>
-              </template>
+              <input v-model="draftStart" type="datetime-local" class="dt-input" step="1" />
             </div>
           </div>
 
           <div class="row">
             <div class="label">{{ t('record.slotEnd') }}</div>
             <div class="value">
-              <template v-if="!editing.end">
-                <span class="value-main">{{ endDisplay }}</span>
-                <button type="button" class="edit-btn" @click="toggleEdit('end')">{{ t('common.edit') }}</button>
-              </template>
-              <template v-else>
-                <input v-model="draftEnd" type="datetime-local" class="dt-input" step="1" />
-                <button type="button" class="edit-btn" @click="toggleEdit('end')">{{ t('common.done') }}</button>
-              </template>
+              <input v-model="draftEnd" type="datetime-local" class="dt-input" step="1" />
             </div>
           </div>
         </div>
 
         <div class="bottom-bar">
+          <ButtonDelete
+            :disabled="saving || loading || !slot"
+            type="deleteTimeSlot"
+            @click="deleteTimeSlot"
+          />
           <button
             type="button"
             class="confirm-btn"
@@ -88,20 +78,26 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { onAuthStateChanged } from 'firebase/auth'
 
 import { auth } from '@/firebaseConfig'
 import { fetchUserRecord, setUserRecord } from '@/services/firestore/records'
 import { openConfirmation } from '@/services/ui/confirmation'
+import { openError } from '@/services/ui/notice'
 import { originalStatuses } from '@/constants/status.js'
+import { useRecordContext } from '@/composables/recordContext'
 
 import UpdateStatus from '@/components/modals/UpdateStatus.vue'
+import ButtonDelete from '@/components/buttons/ButtonDelete.vue'
 
 const route = useRoute()
+const router = useRouter()
 const { t } = useI18n({ useScope: 'global' })
 
-const recordId = ref(route.params.record_id)
+const recordCtx = useRecordContext()
+
+const recordId = recordCtx?.recordId || ref(route.params.record_id)
 const timeSlotId = computed(() => {
   const raw = route.query?.time_slot_id
   const n = Number(Array.isArray(raw) ? raw[0] : raw)
@@ -110,7 +106,7 @@ const timeSlotId = computed(() => {
 
 const slotIndex = computed(() => (timeSlotId.value == null ? -1 : timeSlotId.value - 1))
 
-const currentRecord = ref(null)
+const currentRecord = recordCtx?.recordData || ref(null)
 const currentUser = ref(null)
 const loading = ref(true)
 const saving = ref(false)
@@ -128,6 +124,37 @@ const slot = computed(() => {
   if (!Array.isArray(list) || idx < 0 || idx >= list.length) return null
   return list[idx]
 })
+
+const totalComponentCount = computed(() => {
+  const list = currentRecord.value?.component_list
+  return Array.isArray(list) ? list.length : 0
+})
+
+const slotStartComponentCount = computed(() => {
+  const list = slot.value?.end_at_list
+  if (!Array.isArray(list)) return null
+  let n = 0
+  for (const endAt of list) {
+    if (endAt && (endAt.row_index != null || endAt.crochet_count != null)) n += 1
+  }
+  return n
+})
+
+const slotStartAtText = computed(() => {
+  if (slotStartComponentCount.value == null) return ''
+  if (totalComponentCount.value <= 0) return ''
+  return t('record.slotStartAt', { n: slotStartComponentCount.value, total: totalComponentCount.value })
+})
+
+const loadRecord = async () => {
+  if (recordCtx) {
+    await recordCtx.loadRecord()
+    return
+  }
+  if (!currentUser.value || !recordId.value) return
+  const recordData = await fetchUserRecord(currentUser.value.uid, recordId.value)
+  currentRecord.value = recordData || null
+}
 
 const selfDefinedStatuses = computed(() => currentRecord.value?.self_defined_status || [])
 const statusNotes = computed(() => currentRecord.value?.self_defined_status_notes || [])
@@ -249,20 +276,6 @@ const fromDatetimeLocal = (localStr) => {
   return new Date(ms).toISOString()
 }
 
-const startDisplay = computed(() => {
-  const iso = fromDatetimeLocal(draftStart.value) || slot.value?.start
-  if (!iso) return '-'
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? '-' : d.toLocaleString()
-})
-
-const endDisplay = computed(() => {
-  const iso = fromDatetimeLocal(draftEnd.value) || slot.value?.end
-  if (!iso) return t('record.inProgress')
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? '-' : d.toLocaleString()
-})
-
 const openStatusModal = () => {
   modalStatusId.value = draftStatusId.value
   modalStatusNote.value = draftStatusNote.value
@@ -283,10 +296,6 @@ const openStatusModal = () => {
   modalState.show = true
 }
 
-const toggleEdit = (key) => {
-  editing[key] = !editing[key]
-}
-
 const isDirty = computed(() => {
   if (!slot.value) return false
 
@@ -301,12 +310,6 @@ const isDirty = computed(() => {
 
   return startChanged || endChanged || statusChanged || noteChanged
 })
-
-const loadRecord = async () => {
-  if (!currentUser.value || !recordId.value) return
-  const recordData = await fetchUserRecord(currentUser.value.uid, recordId.value)
-  currentRecord.value = recordData || null
-}
 
 const resetDraftFromSlot = () => {
   if (!slot.value) return
@@ -327,16 +330,40 @@ watch(timeSlotId, () => {
   editing.end = false
 })
 
+const deleteTimeSlot = async () => {
+  if (!currentUser.value || !recordId.value || !slot.value) return
+  if (slotIndex.value < 0) return
+
+  saving.value = true
+  try {
+    const nextRecord = JSON.parse(JSON.stringify(currentRecord.value || {}))
+    if (!Array.isArray(nextRecord.time_slots)) nextRecord.time_slots = []
+
+    const idx = slotIndex.value
+    if (idx < 0 || idx >= nextRecord.time_slots.length) return
+    nextRecord.time_slots.splice(idx, 1)
+
+    // Persist full record for now.
+    await setUserRecord(currentUser.value.uid, recordId.value, nextRecord)
+    currentRecord.value = nextRecord
+
+    // After delete, go back to the time-slot list page.
+    await router.push({
+      name: 'record',
+      params: { record_id: recordId.value },
+      query: { 'time-slots': '1' }
+    })
+  } finally {
+    saving.value = false
+  }
+}
+
 const confirmSave = async () => {
   if (!currentUser.value || !recordId.value || !slot.value) return
   if (!isDirty.value) return
 
   const ok = await openConfirmation({
-    title: t('common.confirm'),
-    message: t('record.confirmUpdateTimeSlot'),
-    confirmText: t('common.confirm'),
-    cancelText: t('common.cancel'),
-    confirmClass: 'btn-confirm'
+    type: 'confirmUpdateTimeSlot'
   })
   if (!ok) return
 
@@ -358,7 +385,11 @@ const confirmSave = async () => {
     const startMs = new Date(nextSlot.start).getTime()
     const endMs = new Date(nextSlot.end).getTime()
     if (Number.isFinite(startMs) && Number.isFinite(endMs) && endMs < startMs) {
-      alert(t('record.invalidTimeRange'))
+      await openError({
+        title: t('common.error'),
+        message: t('record.invalidTimeRange'),
+        confirmText: t('common.ok')
+      })
       return
     }
   }
@@ -439,7 +470,7 @@ onMounted(() => {
 
 .row {
   display: grid;
-  grid-template-columns: 90px 1fr;
+  grid-template-columns: 50px 1fr;
   gap: 0.75rem;
   align-items: center;
 }
@@ -501,13 +532,23 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(8px);
   border-top: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  gap: 0.75rem;
+}
+
+.bottom-bar :deep(.btn-delete) {
+  height: 44px;
+  border-radius: 12px;
+  font-weight: 900;
+  padding: 0 1rem;
 }
 
 .confirm-btn {
-  width: 100%;
+  flex: 1;
   border: none;
   border-radius: 12px;
-  padding: 0.85rem 1rem;
+  padding: 0 1rem;
+  height: 44px;
   font-size: 1rem;
   font-weight: 900;
   background: #42b983;

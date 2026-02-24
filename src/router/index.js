@@ -28,6 +28,11 @@ const router = createRouter({
       component: () => import('../views/ProjectView.vue'),
     },
     {
+      path: '/project/:project_id/download-design',
+      name: 'project-download-design',
+      component: () => import('../views/DownloadDesignView.vue'),
+    },
+    {
       path: '/add-project',
       name: 'add-project',
       component: () => import('../views/AddProjectView.vue'),

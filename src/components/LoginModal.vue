@@ -77,13 +77,11 @@ const loading = ref(false)
 const error = ref(null)
 
 const handleGoogleLogin = async () => {
-  console.log('Google login initiated')
   loading.value = true
   error.value = null
 
   try {
     const isApp = Capacitor.isNativePlatform()
-    console.log('Starting Google login. Running in app:', isApp)
 
     let result
 
@@ -115,7 +113,6 @@ const handleGoogleLogin = async () => {
     }
 
     // User successfully signed in
-    console.log('User signed in:', result.user)
     emit('login-success', result.user)
     emit('close')
   } catch (err) {
@@ -154,7 +151,6 @@ const handleAppleLogin = async () => {
     const result = await signInWithPopup(auth, provider)
 
     // User successfully signed in
-    console.log('User signed in with Apple:', result.user)
     emit('login-success', result.user)
     emit('close')
   } catch (err) {

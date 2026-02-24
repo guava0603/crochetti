@@ -1,10 +1,17 @@
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore"; // For Database
-import { getAuth } from "firebase/auth";           // For Authentication
+// 1. 改用 initializeAuth 以便自定義環境設定
+import {
+  initializeAuth,
+  indexedDBLocalPersistence,
+  getAuth
+} from "firebase/auth";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from "firebase/firestore";
+import { Capacitor } from "@capacitor/core";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyCfpdDjvsnbqSRyAdMP1B9AoKkQznGJU5g",
   authDomain: "corchetti-ec876.firebaseapp.com",
@@ -15,10 +22,28 @@ const firebaseConfig = {
   measurementId: "G-BYYQV4NEZS"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Export services to use them in your components
-export const db = getFirestore(app);
-export const auth = getAuth(app);
-const analytics = getAnalytics(app);
+// export const db = getFirestore(app);
+// ✅ 啟用離線持久化快取
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+});
+
+// 2. 針對原生 App 環境，使用 indexedDB 且不載入瀏覽器彈窗解析器
+let authInstance;
+if (Capacitor.isNativePlatform()) {
+  authInstance = initializeAuth(app, {
+    persistence: indexedDBLocalPersistence
+  });
+} else {
+  authInstance = getAuth(app);
+}
+
+export const auth = authInstance;
+
+// 3. ⚠️ 重要：暫時移除 getAnalytics(app)
+// Analytics 在 iOS Webview 中常會觸發 CORS 錯誤導致白屏
+

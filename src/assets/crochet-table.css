@@ -1,0 +1,189 @@
+/* Crochet table shared styles
+   Scoped under `.crochet-table` to avoid leaking globally.
+*/
+
+/* Table wrappers */
+.crochet-table.row-list-vertical {
+  display: flex;
+  flex-direction: column;
+  margin-top: 1rem;
+  overflow: visible;
+}
+
+.crochet-table .row-container {
+  position: relative;
+}
+
+.crochet-table--edit .row-container {
+  transition: all 0.2s ease;
+}
+
+.crochet-table--edit .row-container.dragging {
+  opacity: 0.5;
+  transform: scale(0.98);
+}
+
+.crochet-table--edit .row-container.drag-over {
+  border: 2px dashed #42b983;
+  background: rgba(66, 185, 131, 0.05);
+}
+
+.crochet-table .row-main {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+}
+
+/* Edit-only controls */
+.crochet-table--edit .drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  cursor: grab;
+  color: #666;
+  font-size: 14px;
+  user-select: none;
+}
+
+.crochet-table--edit .drag-handle:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.crochet-table--edit .drag-handle:active {
+  cursor: grabbing;
+}
+
+.crochet-table--edit .btn-add-row {
+  width: 100%;
+  padding: 0.7rem;
+  background: #f0f8ff;
+  border: 1px dashed #42b983;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #42b983;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+}
+
+.crochet-table--edit .btn-add-row:hover {
+  background: #e6f7ef;
+}
+
+/* Row repeat reminder */
+.crochet-table .repeat-reminder {
+  margin: 0.25rem 0.75rem 0.75rem;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+/* CrochetRow layout */
+.crochet-table .row-table {
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.crochet-table .row-table-cell {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  min-height: 44px;
+}
+
+.crochet-table .row-number {
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+  color: #111827;
+  background: #f9fafb;
+  border-right: 1px solid #e5e7eb;
+}
+
+.crochet-table .row-stitches {
+  min-width: 0;
+}
+
+.crochet-table .row-stitches.editable {
+  background: #fff7ed;
+  position: relative;
+}
+
+.crochet-table .row-stitches.record-mode {
+  cursor: pointer;
+}
+
+.crochet-table .row-generate {
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+  border-left: 1px solid #e5e7eb;
+}
+
+.crochet-table .row-generate.valid {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.crochet-table .row-generate.less {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.crochet-table .row-generate.invalid {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.crochet-table .row-generate.view-mode {
+  background: #f3f4f6 !important;
+  color: #6b7280 !important;
+}
+
+.crochet-table .row-editor {
+  width: 100%;
+  background: white;
+  border: 2px solid #42b983;
+  border-radius: 6px;
+  padding: 0;
+  overflow: visible;
+}
+
+.crochet-table .row-number-editor {
+  position: relative;
+  display: inline-block;
+}
+
+.crochet-table .row-card {
+  background: white;
+  border: none;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  transition: all 0.2s;
+  overflow: visible;
+  border: 1px solid #e0e0e0;
+}
+
+.crochet-table .row-card.clickable:hover {
+  background: #f9fafb;
+  border-color: #42b983;
+  cursor: pointer;
+}
+
+.crochet-table .stitch-preview {
+  color: #111827;
+}
+
+.crochet-table .separator {
+  color: #6b7280;
+}
+
+.crochet-table .clickable {
+  cursor: pointer;
+}
+
+.row-container--grouped-start {
+  margin-top: 0.75rem;
+}

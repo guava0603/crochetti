@@ -14,33 +14,11 @@
       <div v-if="isNumericStatusId" class="status-note">
         <label class="status-note-label">備註</label>
         <div class="status-note-controls">
-          <div class="status-note-input-wrap">
-            <input
-              ref="noteInputRef"
-              v-model="noteDraft"
-              class="status-note-input"
-              placeholder="選擇或新增備註"
-              @focus="openNoteMenu"
-              @input="openNoteMenu"
-              @keydown.esc.prevent="closeNoteMenu"
-              @blur="handleNoteBlur"
-            />
-            <div
-              v-if="showNoteMenu"
-              class="status-note-menu"
-              @mousedown.prevent
-            >
-              <button
-                v-for="(desc, idx) in filteredNoteSuggestions"
-                :key="idx"
-                type="button"
-                class="status-note-option"
-                @click="selectNote(desc)"
-              >
-                {{ desc }}
-              </button>
-            </div>
-          </div>
+          <SelectionInputCombineList
+            v-model="noteDraft"
+            :suggestions="noteSuggestions"
+            placeholder="選擇或新增備註"
+          />
         </div>
       </div>
 
@@ -72,6 +50,7 @@
 import { computed, nextTick, ref, toRefs, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SelectionInput from '@/components/tools/SelectionInput.vue'
+import SelectionInputCombineList from '@/components/Input/SelectionInputCombineList.vue'
 const { t } = useI18n({ useScope: 'global' })
 const props = defineProps({
   modalStatusId: [String, Number],
@@ -182,10 +161,7 @@ const handleCancel = () => {
 }
 
 // SelectionInput handles click-outside + escape.
-
-const noteInputRef = ref(null)
 const noteDraft = ref('')
-const isNoteMenuOpen = ref(false)
 
 const isNumericStatusId = computed(() => {
   return !isAdding.value && Number.isFinite(Number(modalStatusId.value))
@@ -199,25 +175,10 @@ const noteSuggestions = computed(() => {
     .filter(Boolean)
 })
 
-const filteredNoteSuggestions = computed(() => {
-  const q = noteDraft.value.trim().toLowerCase()
-  const list = noteSuggestions.value
-  if (!q) return list.slice(0, 10)
-  return list
-    .filter(s => s.toLowerCase().includes(q))
-    .slice(0, 10)
-})
-
-const showNoteMenu = computed(() => {
-  return isNoteMenuOpen.value && filteredNoteSuggestions.value.length > 0
-})
-
 watch(modalStatusId, () => {
   noteDraft.value = ''
-  isNoteMenuOpen.value = false
 
   if (isAdding.value) {
-    closeNoteMenu()
     nextTick(() => {
       customStatusInputRef.value?.focus?.()
     })
@@ -228,28 +189,6 @@ watch(modalStatusNote, (val) => {
   // Keep modal note in sync when opening/reopening modal.
   noteDraft.value = String(val || '')
 })
-
-const openNoteMenu = () => {
-  isNoteMenuOpen.value = true
-}
-
-const closeNoteMenu = () => {
-  isNoteMenuOpen.value = false
-}
-
-const handleNoteBlur = () => {
-  // Allow click selection from the menu before closing.
-  window.setTimeout(() => {
-    closeNoteMenu()
-  }, 0)
-}
-
-const selectNote = (desc) => {
-  noteDraft.value = desc
-  closeNoteMenu()
-  // Keep focus on input for quick edits
-  noteInputRef.value?.focus?.()
-}
 
 const handleSave = () => {
   if (isAdding.value) {
@@ -331,55 +270,6 @@ const handleSaveNote = () => {
   grid-template-columns: 1fr;
   gap: 0.5rem;
   align-items: center;
-}
-
-.status-note-input-wrap {
-  position: relative;
-}
-
-.status-note-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  z-index: 20;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
-  padding: 0.25rem;
-  max-height: 220px;
-  overflow: auto;
-}
-
-.status-note-option {
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  padding: 0.5rem 0.6rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: #111827;
-}
-
-.status-note-option:hover {
-  background: #f3f4f6;
-}
-
-.status-note-input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.95rem;
-}
-
-.status-note-input:focus {
-  outline: none;
-  border-color: #42b983;
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.1);
 }
 
 .status-input {

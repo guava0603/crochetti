@@ -4,7 +4,12 @@
       <h3>{{ title }}</h3>
       <p>{{ message }}</p>
       <div class="modal-actions">
-        <button @click="$emit('cancel')" class="btn-cancel" type="button">
+        <button
+          v-if="cancelText"
+          @click="$emit('cancel')"
+          class="btn-cancel"
+          type="button"
+        >
           {{ cancelText }}
         </button>
         <button

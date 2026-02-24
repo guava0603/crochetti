@@ -1,9 +1,14 @@
 <template>
+  <template v-if="variant === 'small'">
+    <svg @click="handleClick" width="20px" height="20px" stroke-width="2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="#f25f5f"><path d="M9.17218 14.8284L12.0006 12M14.829 9.17157L12.0006 12M12.0006 12L9.17218 9.17157M12.0006 12L14.829 14.8284" stroke="#f25f5f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#f25f5f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+  </template>
   <button
-    class="btn-delete"
+    v-else
+    :class="buttonClass"
     type="button"
     :disabled="disabled"
     :title="buttonText"
+    :aria-label="buttonText"
     @click="handleClick"
   >
     {{ buttonText }}
@@ -20,9 +25,14 @@ const { t } = useI18n({ useScope: 'global' })
 const props = defineProps({
   disabled: { type: Boolean, default: false },
   text: { type: String, default: '' },
-  confirmTitle: { type: String, default: '' },
-  confirmMessage: { type: String, default: '' },
-  loadingText: { type: String, default: '' }
+  type: {
+    type: [String, Object],
+    default: 'deleteItem'
+  },
+  variant: {
+    type: String,
+    default: 'default'
+  }
 })
 
 const emit = defineEmits(['click'])
@@ -34,18 +44,18 @@ function safeT(key, fallback) {
 
 const buttonText = computed(() => props.text || safeT('common.delete', 'Delete'))
 
+const variant = computed(() => (props.variant === 'small' ? 'small' : 'default'))
+
+const buttonClass = computed(() => [
+  'btn-delete',
+  variant.value === 'small' ? 'btn-delete--small' : null
+])
+
 async function handleClick() {
   if (props.disabled) return
 
   const ok = await openConfirmation({
-    title: props.confirmTitle || safeT('record.deleteTitle', safeT('project.deleteTitle', 'Delete?')),
-    message:
-      props.confirmMessage ||
-      safeT('record.deleteMessage', safeT('project.deleteMessage', 'Are you sure you want to delete?')),
-    confirmText: safeT('common.delete', 'Delete'),
-    cancelText: safeT('common.cancel', 'Cancel'),
-    confirmClass: 'btn-confirm-delete',
-    loadingText: props.loadingText || safeT('record.deleting', safeT('project.deleting', 'Deleting…')),
+    type: props.type,
     onConfirm: async () => {
       emit('click')
     }
@@ -74,9 +84,49 @@ async function handleClick() {
   letter-spacing: 0.02em;
 }
 
+.btn-delete--small {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #f25f5f;
+  border: 2px solid #f25f5f;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.btn-delete__x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transform: translateY(-1px);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .btn-delete:hover {
   background: #b91c1c;
   transform: translateY(-1px);
+}
+
+.btn-delete--small:hover {
+  background: rgba(242, 95, 95, 0.12);
+  transform: none;
 }
 
 .btn-delete:active {

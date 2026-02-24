@@ -1,42 +1,33 @@
 <template>
   <div class="set-selection-position">
-    <div class="title">目前做到</div>
+    <div class="title">{{ t('toolbar.setSelectionPosition.title') }}</div>
 
-    <div v-if="!pathSizes.length" class="empty">No selection.</div>
+    <div v-if="!pathSizes.length" class="empty">{{ t('toolbar.setSelectionPosition.noSelection') }}</div>
 
     <div v-else class="levels">
-      <div v-if="props.rowCount > 1" class="level-row">
-        <div class="level-label">行號</div>
-        <InputNumber
-          class="level-input"
-          :model-value="selectedRowIndex"
-          :min="props.rowIndex"
-          :max="props.rowIndex + props.rowCount - 1"
-          @update:modelValue="val => selectedRowIndex = val"
-        />
-      </div>
-      <div v-else class="level-label">第 {{ selectedRowIndex }} 行</div>
+      <div class="level-label">{{ t('toolbar.setSelectionPosition.rowLabel', { n: rowIndex }) }}</div>
       <div v-for="(size, idx) in pathSizes" :key="'level-' + idx" class="level-row">
-        <div class="level-label">{{ pathLabels[idx] || `Level ${idx + 1}` }}</div>
+        <div class="level-label">{{ pathLabels[idx] || t('toolbar.setSelectionPosition.level', { n: idx + 1 }) }}</div>
         <div class="level-input-label-wrapper">
-          <div class="level-label">第 </div>
+          <div class="level-label">{{ t('toolbar.setSelectionPosition.groupPrefix') }} </div>
           <InputNumber
             class="level-input"
+            size="sm"
             :model-value="pendingCounts[idx]"
             :min="1"
             :max="Math.max(1, size)"
             @update:modelValue="(value) => handleCountChange(idx, value)"
           />
-          <div class="level-label"> 組</div>
+          <div class="level-label"> {{ t('toolbar.setSelectionPosition.groupSuffix') }}</div>
         </div>
       </div>
     </div>
     <div class="action-buttons">
       <button type="button" class="cancel-button" @click="handleCancel">
-        取消
+        {{ t('common.cancel') }}
       </button>
       <button type="button" class="confirm-button" @click="handleConfirm">
-        確認
+        {{ t('common.confirm') }}
       </button>
     </div>
   </div>
@@ -44,8 +35,12 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import InputNumber from '@/components/Input/InputNumber.vue'
-import { BasicStitch, getPatternItemDisplay } from '@/constants/crochetData.js'
+import { getPatternItemDisplay } from '@/constants/crochetData.js'
+import { getNodeSize, computeGenerateDone } from '@/utils/crochetPosition.js'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps({
   selectionList: {
@@ -70,114 +65,6 @@ const emit = defineEmits([
   'update-end-at', // (row_index, crochet_count)
   'cancel'
 ])
-
-const getNodeSize = (node) => {
-  if (!node) return 0
-
-  if (node.type === 'stitch') {
-    return node.count || 1
-  }
-
-  if (node.type === 'bundle') {
-    return node.count || 1
-  }
-
-  if (node.type === 'pattern') {
-    return node.count || 1
-  }
-
-  return 0
-}
-
-const getStitchGenerate = (node) => {
-  if (!node) return 0
-  return BasicStitch[node.stitch_id]?.generate || 0
-}
-
-const getBundleGenerate = (node) => {
-  if (!node) return 0
-  return node.generate || 0
-}
-
-const getPatternRepeatGenerate = (pattern = []) => {
-  return pattern.reduce((sum, item) => {
-    if (item.type === 'stitch') {
-      return sum + (getStitchGenerate(item) * (item.count || 1))
-    }
-    if (item.type === 'bundle') {
-      return sum + (getBundleGenerate(item) * (item.count || 1))
-    }
-    if (item.type === 'pattern') {
-      return sum + (getPatternRepeatGenerate(item.pattern || []) * (item.count || 1))
-    }
-    return sum
-  }, 0)
-}
-
-const getNodeTotalGenerate = (node) => {
-  if (!node) return 0
-  if (node.type === 'stitch') {
-    return getStitchGenerate(node) * (node.count || 1)
-  }
-  if (node.type === 'bundle') {
-    return getBundleGenerate(node) * (node.count || 1)
-  }
-  if (node.type === 'pattern') {
-    return getPatternRepeatGenerate(node.pattern || []) * (node.count || 1)
-  }
-  return 0
-}
-
-const computeGenerateDone = (selectionList, stitchList, counts) => {
-  if (!Array.isArray(selectionList) || selectionList.length === 0) return 0
-
-  let total = 0
-  let currentList = stitchList
-  let countIndex = 0
-
-  for (let level = 0; level < selectionList.length; level += 1) {
-    const selection = selectionList[level]
-    const index = selection?.start
-    if (index === null || index === undefined) break
-
-    for (let i = 0; i < index; i += 1) {
-      total += getNodeTotalGenerate(currentList?.[i])
-    }
-
-    const node = currentList?.[index]
-    if (!node) break
-
-    const size = getNodeSize(node)
-    const selectedCount = size > 1 ? (counts?.[countIndex] ?? 1) : 1
-    if (size > 1) countIndex += 1
-
-    if (node.type === 'pattern') {
-      const perRepeat = getPatternRepeatGenerate(node.pattern || [])
-      if (level === selectionList.length - 1) {
-        total += perRepeat * selectedCount
-        return total
-      }
-
-      total += perRepeat * Math.max(0, selectedCount - 1)
-      currentList = node.pattern || []
-      continue
-    }
-
-    if (node.type === 'stitch') {
-      total += getStitchGenerate(node) * selectedCount
-      return total
-    }
-
-    if (node.type === 'bundle') {
-      total += getBundleGenerate(node) * selectedCount
-      return total
-    }
-
-    break
-  }
-
-  return total
-}
 
 const getNodePath = (stitchList, selectionList) => {
   if (!Array.isArray(selectionList) || selectionList.length === 0) return []
@@ -218,9 +105,6 @@ const pathLabels = computed(() => {
 const selectionCounts = ref([])
 const pendingCounts = ref([])
 
-// Add selectedRowIndex ref, initialized to props.rowIndex
-const selectedRowIndex = ref(props.rowIndex)
-
 watch(pathSizes, (sizes) => {
   const defaults = sizes.map(() => 1)
   selectionCounts.value = defaults
@@ -236,7 +120,7 @@ const handleCountChange = (index, value) => {
 const handleConfirm = () => {
   selectionCounts.value = [...pendingCounts.value]
   const generateCount = computeGenerateDone(props.selectionList, props.stitchList, selectionCounts.value)
-  emit('update-end-at', selectedRowIndex.value, generateCount)
+  emit('update-end-at', props.rowIndex, generateCount)
 }
 
 const handleCancel = () => {

@@ -1,15 +1,26 @@
 <template>
   <div class="project-card" role="button" tabindex="0" @click="emitOpen" @keydown.enter.prevent="emitOpen">
     <div class="project-card__top">
-      <h3 class="project-card__title">{{ project?.name || `Project ${project?.id || ''}` }}</h3>
+      <h3 class="project-card__title">{{ project?.name || t('project.card.fallbackTitle', { id: project?.id || '' }) }}</h3>
 
-      <div class="project-card__menu" @click.stop>
-        <MoreMenu :disabled="disabled" :label="t('project.more')" :items="menuItems" />
+      <ButtonLink
+        v-if="showCopyLink"
+        class="project-card__copy-link"
+        :disabled="disabled"
+        @click.stop="emit('share', project)"
+      />
+      <div v-else-if="menuItems.length" class="project-card__actions" @click.stop>
+        <MoreMenu
+          v-if="menuItems.length"
+          :disabled="disabled"
+          :label="t('project.more')"
+          :items="menuItems"
+        />
       </div>
     </div>
 
     <p v-if="project?.description" class="project-card__desc">{{ project.description }}</p>
-    <p v-else class="project-card__desc project-card__desc--empty">No description</p>
+    <p v-else class="project-card__desc project-card__desc--empty">{{ t('project.card.noDescription') }}</p>
   </div>
 </template>
 
@@ -17,6 +28,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MoreMenu from '@/components/buttons/MoreMenu.vue'
+import ButtonLink from '@/components/buttons/svg/ButtonLink.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -25,6 +37,7 @@ const props = defineProps({
   disabled: { type: Boolean, default: false },
   copying: { type: Boolean, default: false },
   showCopy: { type: Boolean, default: true },
+  showCopyLink: { type: Boolean, default: false },
   showShare: { type: Boolean, default: true },
   showDelete: { type: Boolean, default: true }
 })
@@ -85,9 +98,6 @@ const emitOpen = () => {
 }
 
 .project-card:hover {
-  z-index: 5;
-  border-color: #42b983;
-  box-shadow: 0 4px 12px rgba(66, 185, 131, 0.15);
   cursor: pointer;
 }
 
@@ -114,11 +124,19 @@ const emitOpen = () => {
   line-height: 1.3;
 }
 
-.project-card__menu {
+.project-card__actions {
   flex: none;
   position: absolute;
   top: 10px;
   right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.project-card__copy-link:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .project-card__desc {

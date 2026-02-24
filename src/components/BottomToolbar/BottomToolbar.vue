@@ -16,17 +16,13 @@ const isExpanded = ref(true)
   bottom: 0;
   left: 0;
   right: 0;
-  background: white;
-  border-top: 2px solid #e5e7eb;
-  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
-  padding: 1rem;
   z-index: 101;
   transition: max-height 0.3s ease;
-  min-height: 30vh;
 }
 
 .crochet-scrollbar.expanded {
   max-height: 50vh;
+  height: fit-content;
 }
 
 .expand-button {

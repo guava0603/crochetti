@@ -1,34 +1,47 @@
 <template>
-  <div class="crochet-list">
-    <button
-      v-for="crochet in BasicStitch"
-      :key="crochet.index"
-      type="button"
-      @click="$emit('stitch-click', crochet.index)"
-      class="crochet-button"
-      :disabled="disabled"
-    >
-      <div class="crochet-symbol">{{ crochet.symbol_jp }}</div>
-    </button>
-    <button
-      v-if="showCustomButton"
-      type="button"
-      @click="$emit('custom-click')"
-      class="crochet-button custom-button"
-      :disabled="disabled"
-    >
-      <div class="crochet-symbol">自定義</div>
-    </button>
+  <div class="crochet-list-wrapper">
+    <div class="crochet-list">
+      <button
+        v-for="crochet in stitches"
+        :key="crochet.index"
+        type="button"
+        @click="$emit('stitch-click', crochet.index)"
+        class="crochet-button"
+        :disabled="disabled || !isStitchEnabled(crochet.index)"
+      >
+        <div class="crochet-symbol">{{ crochet.symbol_jp }}</div>
+      </button>
+      <button
+        v-if="showCustomButton"
+        type="button"
+        @click="$emit('custom-click')"
+        class="crochet-button custom-button"
+        :disabled="disabled"
+      >
+        <div class="crochet-symbol">{{ t('toolbar.addCrochet.custom') }}</div>
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { BasicStitch } from '@/constants/crochetData'
+import { useI18n } from 'vue-i18n'
+import { BasicStitchGeneral } from '@/constants/crochetData'
 
-defineProps({
+const { t } = useI18n({ useScope: 'global' })
+
+const props = defineProps({
   disabled: {
     type: Boolean,
     default: false
+  },
+  stitches: {
+    type: Array,
+    default: () => BasicStitchGeneral
+  },
+  enabledStitchIds: {
+    type: Array,
+    default: null
   },
   showCustomButton: {
     type: Boolean,
@@ -36,10 +49,22 @@ defineProps({
   }
 })
 
+const isStitchEnabled = (stitchId) => {
+  const list = props.enabledStitchIds
+  if (!Array.isArray(list) || list.length === 0) return true
+  return list.includes(stitchId)
+}
+
 defineEmits(['stitch-click', 'custom-click'])
 </script>
 
 <style scoped>
+.crochet-list-wrapper {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
 .crochet-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
@@ -47,6 +72,7 @@ defineEmits(['stitch-click', 'custom-click'])
   overflow-y: auto;
   max-height: calc(50vh - 80px);
   padding-right: 0.5rem;
+  flex: 1;
 }
 
 .crochet-scrollbar:not(.expanded) .crochet-list {

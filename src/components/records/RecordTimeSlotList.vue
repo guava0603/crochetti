@@ -46,16 +46,19 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '@/firebaseConfig'
 import { fetchUserRecord } from '@/services/firestore/records'
 import { originalStatuses } from '@/constants/status.js'
+import { useRecordContext } from '@/composables/recordContext'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n({ useScope: 'global' })
 
-const recordId = ref(route.params.record_id)
-const currentRecord = ref(null)
+const recordCtx = useRecordContext()
+
+const recordId = recordCtx?.recordId || ref(route.params.record_id)
+const currentRecord = recordCtx?.recordData || ref(null)
 const currentUser = ref(null)
 const currentTime = ref(Date.now())
-const loading = ref(true)
+const loading = recordCtx?.recordLoading || ref(true)
 
 let timerInterval = null
 
@@ -116,6 +119,21 @@ const startTimeGroups = computed(() => {
   return groups
 })
 
+const totalComponentCount = computed(() => {
+  const list = currentRecord.value?.component_list
+  return Array.isArray(list) ? list.length : 0
+})
+
+const getSlotStartComponentCount = (slot) => {
+  const list = slot?.end_at_list
+  if (!Array.isArray(list)) return null
+  let n = 0
+  for (const endAt of list) {
+    if (endAt && (endAt.row_index != null || endAt.crochet_count != null)) n += 1
+  }
+  return n
+}
+
 const goSingleTimeSlot = (index) => {
   const n = Number(index) + 1
   if (!Number.isFinite(n) || n <= 0) return
@@ -142,8 +160,15 @@ const formatSlotStatusNote = (slot) => {
     }
   }
 
-  if (!note) return statusLabel
-  return `${statusLabel} · ${note}`
+  const parts = [statusLabel]
+  if (note) parts.push(note)
+
+  const done = getSlotStartComponentCount(slot)
+  if (done != null && totalComponentCount.value > 0) {
+    parts.push(t('record.slotStartAt', { n: done, total: totalComponentCount.value }))
+  }
+
+  return parts.join(' · ')
 }
 
 const formatSlotDuration = (slot) => {
@@ -168,12 +193,25 @@ const formatSlotDuration = (slot) => {
 }
 
 const loadRecord = async () => {
+  if (recordCtx) {
+    await recordCtx.loadRecord()
+    return
+  }
+
   if (!currentUser.value || !recordId.value) return
   const recordData = await fetchUserRecord(currentUser.value.uid, recordId.value)
   currentRecord.value = recordData || null
 }
 
 onMounted(() => {
+  if (recordCtx) {
+    loadRecord()
+    timerInterval = setInterval(() => {
+      currentTime.value = Date.now()
+    }, 1000)
+    return
+  }
+
   const unsubscribe = onAuthStateChanged(auth, async (user) => {
     currentUser.value = user || null
     loading.value = true

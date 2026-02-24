@@ -34,6 +34,14 @@
   --color-text: var(--vt-c-text-light-1);
 
   --section-gap: 160px;
+
+  --safe-area-top: 0px;
+  --safe-area-bottom: 0px;
+}
+
+html.is-app {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -62,6 +70,7 @@ body {
   min-height: 100vh;
   color: var(--color-text);
   background: var(--color-background);
+  touch-action: manipulation;
   transition:
     color 0.5s,
     background-color 0.5s;

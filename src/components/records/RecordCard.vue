@@ -46,6 +46,16 @@ const { t } = useI18n({ useScope: 'global' })
 const title = computed(() => props.record?.project_name || props.record?.projectName || 'Record')
 
 const meta = computed(() => {
+  const latestMs = Number(props.record?.latest_start_ms)
+  if (Number.isFinite(latestMs) && latestMs > 0) {
+    const latest = new Date(latestMs)
+    try {
+      return latest.toLocaleString()
+    } catch {
+      return String(latest)
+    }
+  }
+
   const slots = Array.isArray(props.record?.time_slots) ? props.record.time_slots : []
   const latest = slots
     .map((s) => (s?.start ? new Date(s.start) : null))
@@ -90,12 +100,7 @@ async function handleDelete() {
   if (!uid) return
 
   const ok = await openConfirmation({
-    title: t('record.deleteTitle'),
-    message: t('record.deleteMessage'),
-    confirmText: t('common.delete'),
-    cancelText: t('common.cancel'),
-    confirmClass: 'btn-confirm-delete',
-    loadingText: t('record.deleting'),
+    type: 'deleteRecord',
     onConfirm: async () => {
       await deleteUserRecord(uid, props.record.id)
       emit('deleted', props.record)

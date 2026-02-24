@@ -7,6 +7,12 @@
       </div>
       <h2 class="result-title">{{ t('recordResult.title') }}</h2>
 
+      <div class="result-actions">
+        <button type="button" class="btn-more-details" @click="goTimeSlots">
+          {{ t('record.moreDetails') }}
+        </button>
+      </div>
+
       <div v-if="loading" class="result-empty">
         {{ t('common.loading') }}
       </div>
@@ -49,20 +55,24 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '@/firebaseConfig'
 import { fetchUserRecord } from '@/services/firestore/records'
 import { originalStatuses } from '@/constants/status.js'
+import { useRecordContext } from '@/composables/recordContext'
 
 const route = useRoute()
+const router = useRouter()
 const { t } = useI18n({ useScope: 'global' })
 
-const recordId = ref(route.params.record_id)
-const currentRecord = ref(null)
+const recordCtx = useRecordContext()
+
+const recordId = recordCtx?.recordId || ref(route.params.record_id)
+const currentRecord = recordCtx?.recordData || ref(null)
 const currentUser = ref(null)
 const currentTime = ref(Date.now())
-const loading = ref(true)
+const loading = recordCtx?.recordLoading || ref(true)
 
 let timerInterval = null
 
@@ -229,12 +239,33 @@ const effortText = computed(() => formatDuration(totalEffortMs.value))
 const showSummary = computed(() => !loading.value && timeSlots.value.length > 0 && recordSpanMs.value != null)
 
 const loadRecord = async () => {
+  if (recordCtx) {
+    await recordCtx.loadRecord()
+    return
+  }
+
   if (!currentUser.value || !recordId.value) return
   const recordData = await fetchUserRecord(currentUser.value.uid, recordId.value)
   currentRecord.value = recordData || null
 }
 
+const goTimeSlots = () => {
+  router.push({
+    name: 'record',
+    params: { record_id: recordId.value },
+    query: { 'time-slots': '1' }
+  })
+}
+
 onMounted(() => {
+  if (recordCtx) {
+    loadRecord()
+    timerInterval = setInterval(() => {
+      currentTime.value = Date.now()
+    }, 1000)
+    return
+  }
+
   const unsubscribe = onAuthStateChanged(auth, async (user) => {
     currentUser.value = user || null
     loading.value = true
@@ -273,6 +304,32 @@ onUnmounted(() => {
   font-size: 1.25rem;
   font-weight: 900;
   color: #111827;
+}
+
+.result-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-more-details {
+  border: 1px solid rgba(66, 185, 131, 0.35);
+  background: rgba(66, 185, 131, 0.12);
+  color: #0f5132;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.05s, opacity 0.15s;
+}
+
+.btn-more-details:hover {
+  background: rgba(66, 185, 131, 0.18);
+}
+
+.btn-more-details:active {
+  transform: translateY(1px);
 }
 
 .result-summary {

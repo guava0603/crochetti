@@ -3,22 +3,22 @@
 
     <form @submit.prevent="handleNext" class="step-form">
       <div class="form-group">
-        <label for="projectName">Project Name *</label>
+        <label for="projectName">{{ $t('addProject.info.projectNameLabel') }} *</label>
         <input
           id="projectName"
           v-model="formData.name"
           type="text"
-          placeholder="Enter project name"
+          :placeholder="$t('addProject.info.projectNamePlaceholder')"
           required
         />
       </div>
 
       <div class="form-group">
-        <label for="projectDescription">Description</label>
+        <label for="projectDescription">{{ $t('addProject.info.descriptionLabel') }}</label>
         <textarea
           id="projectDescription"
           v-model="formData.description"
-          placeholder="Enter project description (optional)"
+          :placeholder="$t('addProject.info.descriptionPlaceholder')"
           rows="5"
         ></textarea>
       </div>
@@ -29,7 +29,7 @@
 
       <div class="button-group">
         <button type="submit" class="btn-primary">
-          Next
+          {{ $t('addProject.common.next') }}
         </button>
       </div>
     </form>
@@ -38,6 +38,9 @@
 
 <script setup>
 import { ref, defineProps, defineEmits } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps({
   initialData: {
@@ -60,7 +63,7 @@ const error = ref(null)
 
 const handleNext = () => {
   if (!formData.value.name.trim()) {
-    error.value = 'Project name is required'
+    error.value = t('addProject.info.errors.projectNameRequired')
     return
   }
 

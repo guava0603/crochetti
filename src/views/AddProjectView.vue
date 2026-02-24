@@ -1,20 +1,21 @@
 <template>
   <div class="add-project-view">
-    <div class="back-button-wrapper">
-      <LastPage />
-    </div>
-    <h1>Add New Project</h1>
+    <TopBanner
+      :title="$t('addProject.title')"
+      :show-more="false"
+      @last-page="$router.back()"
+    />
 
     <!-- Progress indicator -->
     <div class="progress-steps">
       <div class="step" :class="{ active: currentStep === 1, completed: currentStep > 1 }">
         <div class="step-number">1</div>
-        <div class="step-label">Basic Info</div>
+        <div class="step-label">{{ $t('addProject.steps.basicInfo') }}</div>
       </div>
       <div class="step-divider"></div>
       <div class="step" :class="{ active: currentStep === 2, completed: currentStep > 2 }">
         <div class="step-number">2</div>
-        <div class="step-label">Design</div>
+        <div class="step-label">{{ $t('addProject.steps.design') }}</div>
       </div>
     </div>
 
@@ -38,12 +39,16 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { auth } from '../firebaseConfig'
 import { createProject } from '@/services/firestore/projects'
+import { openError } from '@/services/ui/notice'
 import AddProjectInfo from '../components/AddProject/AddProjectInfo.vue'
 import AddProjectDesign from '../components/AddProject/AddProjectDesign.vue'
-import LastPage from '../components/buttons/LastPage.vue'
+import TopBanner from '@/components/layout/TopBanner.vue'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const router = useRouter()
 const currentStep = ref(1)
@@ -67,7 +72,11 @@ const handleSubmit = async (data) => {
   try {
     const user = auth.currentUser
     if (!user) {
-      alert('You must be logged in to create a project')
+      await openError({
+        title: t('common.error'),
+        message: t('addProject.errors.loginRequired'),
+        confirmText: t('common.ok')
+      })
       return
     }
 
@@ -81,13 +90,16 @@ const handleSubmit = async (data) => {
     }
 
     const projectId = await createProject(projectData)
-    console.log('Project created successfully:', projectId)
 
     // Navigate to project page
     router.push(`/project/${projectId}`)
   } catch (err) {
     console.error('Error creating project:', err)
-    alert('Failed to create project: ' + err.message)
+    await openError({
+      title: t('common.error'),
+      message: t('addProject.errors.createFailed', { message: String(err?.message || '') }),
+      confirmText: t('common.ok')
+    })
   }
 }
 </script>
@@ -98,12 +110,6 @@ const handleSubmit = async (data) => {
   margin: 0 auto;
   padding: 2rem;
   position: relative;
-}
-
-.back-button-wrapper {
-  position: absolute;
-  top: 2rem;
-  left: 2rem;
 }
 
 h1 {

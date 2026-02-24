@@ -70,11 +70,7 @@ const handleLoginSuccess = (loggedInUser) => {
 const handleLogout = async () => {
   try {
     await openConfirmation({
-      title: t('auth.logoutTitle'),
-      message: t('auth.logoutMessage'),
-      confirmText: t('auth.logout'),
-      cancelText: t('common.cancel'),
-      loadingText: t('auth.loggingOut'),
+      type: 'logout',
       onConfirm: async () => {
         await signOut(auth)
         user.value = null

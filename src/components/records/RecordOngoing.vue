@@ -6,23 +6,32 @@
       </div>
 
       <div class="record-panel">
+        <CarouselSelection
+          v-model="selectedComponentIndex"
+          :items="componentList"
+          aria-label="Components"
+          :get-progress="getComponentProgress"
+          :get-item-label="getComponentLabel"
+          @settle="handleCarouselSettle"
+        />
+
         <!-- Project Display (Record mode) -->
         <div class="project-display">
           <div
-            v-for="(component, cIndex) in currentRecord?.component_list"
-            :key="cIndex"
+            v-if="activeComponent"
             class="component-section"
-            :ref="(el) => setComponentSectionRef(cIndex, el)"
+            :ref="(el) => setComponentSectionRef(selectedComponentIndex, el)"
           >
-            <span class="component-progress-tag">{{ getComponentProgress(cIndex) }}%</span>
-            <h4>{{ component.name || `Component ${cIndex + 1}` }}</h4>
-            <CrochetTable
-              :ref="(el) => setComponentTableRef(cIndex, el)"
-              :model-value="component.content.row_list"
-              :type="'record'"
-              :component-id="cIndex"
-              :component-name="component.name || `Component ${cIndex + 1}`"
-              @update-end-at="(row_index, crochet_count) => handleUpdateEndAt(cIndex, row_index, crochet_count)"
+            <span class="component-progress-tag">{{ getComponentProgress(selectedComponentIndex) }}%</span>
+            <h4>{{ getComponentLabel(activeComponent, selectedComponentIndex) }}</h4>
+            <RecordingTable
+              :ref="(el) => setComponentTableRef(selectedComponentIndex, el)"
+              :model-value="activeComponent.content.row_list"
+              :row-groups="activeComponent.content.row_groups"
+              :component-id="selectedComponentIndex"
+              :component-name="getComponentLabel(activeComponent, selectedComponentIndex)"
+              @update-end-at="(row_index, crochet_count) => handleUpdateEndAt(selectedComponentIndex, row_index, crochet_count)"
+              @revert-selection="applySelectionForComponent(selectedComponentIndex)"
             />
           </div>
         </div>
@@ -37,9 +46,7 @@
           </button>
           <ButtonDelete
             :text="$t('record.deleteRecord')"
-            :confirm-title="$t('record.deleteTitle')"
-            :confirm-message="$t('record.deleteMessage')"
-            :loading-text="$t('record.deleting')"
+            type="deleteRecord"
             @click="deleteRecord"
           />
         </div>
@@ -91,25 +98,94 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { fetchProject } from '@/services/firestore/projects'
 import { deleteUserRecord, fetchUserRecord, mergeUserRecord, setUserRecord } from '@/services/firestore/records'
 import { openConfirmation } from '@/services/ui/confirmation'
+import { openError, openNotice } from '@/services/ui/notice'
+import { useRecordContext } from '@/composables/recordContext'
 
-import { BasicStitch } from '@/constants/crochetData.js'
-import CrochetTable from '@/components/Crochet/CrochetTable.vue'
+import { endAtToSelectionList } from '@/utils/crochetPosition.js'
+import { expandComponentListByCount } from '@/utils/componentInstances'
+import {
+  clampCrochetCount,
+  findRowWithRepeated,
+  getComponentProgressPercent
+} from '@/utils/recordProgressGenerate.js'
+import RecordingTable from '@/components/CrochetTable/RecordingTable.vue'
 import ButtonDelete from '@/components/buttons/ButtonDelete.vue'
 import RecordOptions from '@/components/FloatingTransparentBox/RecordOptions.vue'
-import { createSelection, isInSelection } from '@/constants/selection'
+import CarouselSelection from '@/components/Input/CarouselSelection.vue'
 import { originalStatuses } from '@/constants/status.js'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n({ useScope: 'global' })
 
-const recordId = ref(route.params.record_id)
-const currentRecord = ref(null)
+const recordCtx = useRecordContext()
+
+const recordId = recordCtx?.recordId || ref(route.params.record_id)
+const currentRecord = recordCtx?.recordData || ref(null)
 const isRecording = ref(false)
 const currentTime = ref(Date.now())
 const currentUser = ref(null)
 
 const recordViewRef = ref(null)
+
+const componentList = computed(() => {
+  const list = currentRecord.value?.component_list
+  return Array.isArray(list) ? list : []
+})
+
+const getComponentLabel = (component, cIndex) => {
+  const name = component?.name || `Component ${cIndex + 1}`
+  const total = Number(component?._instance?.total)
+  const idx = Number(component?._instance?.index)
+  if (Number.isFinite(total) && total > 1 && Number.isFinite(idx) && idx > 0) {
+    return `${name} (${idx}/${total})`
+  }
+  return name
+}
+
+const clampComponentIndex = (idx) => {
+  const len = componentList.value.length
+  if (len <= 0) return 0
+  const n = Number(idx)
+  if (!Number.isFinite(n) || n < 0) return 0
+  return Math.min(len - 1, n)
+}
+
+const selectedComponentIndex = ref(0)
+const activeComponent = computed(() => componentList.value?.[selectedComponentIndex.value] || null)
+
+watch(
+  () => [currentRecord.value?.last_selected_component_index, componentList.value.length],
+  () => {
+    const next = clampComponentIndex(currentRecord.value?.last_selected_component_index ?? 0)
+    selectedComponentIndex.value = next
+  },
+  { immediate: true }
+)
+
+watch(
+  () => selectedComponentIndex.value,
+  (idx) => {
+    if (currentRecord.value) currentRecord.value.last_selected_component_index = clampComponentIndex(idx)
+  }
+)
+
+// Debug helper: log a stable snapshot whenever end_at values change.
+// watch(
+//   () => (currentRecord.value?.component_list || [])
+//     .map((c) => (c?.end_at ? `${c.end_at.row_index}:${c.end_at.crochet_count}` : 'null'))
+//     .join('|'),
+//   () => {
+//     // Keep logs deterministic (devtools sometimes shows proxies out-of-date).
+//     console.log('[record] end_at changed:', snapshot((currentRecord.value?.component_list || []).map(c => c?.end_at ?? null)))
+//   }
+// )
+
+const handleCarouselSettle = async (idx) => {
+  await nextTick()
+  applySelectionForComponent(clampComponentIndex(idx))
+  setTimeout(updateCenteredComponent, 0)
+}
 
 // Delete the whole record
 const deleteRecord = async () => {
@@ -119,82 +195,24 @@ const deleteRecord = async () => {
     listEndAt.value = []
     isRecording.value = false
     isComponentEditing.value = false
-    alert('Record deleted successfully.')
+    await openNotice({
+      title: t('common.notice'),
+      message: t('record.deleteSuccessNotice'),
+      confirmText: t('common.ok')
+    })
     router.back()
   } catch (error) {
     console.error('Error deleting record:', error)
   }
 }
 
-// Helper: translate endAt to selectionList for a row
-// Recursively find the selection path for a given crochet_count in a (possibly nested) pattern
-function endAtToSelectionList(row, endAt) {
-  if (!row || !row.content || !row.content.stitch_node_list) return []
-
-  let crochetCount = endAt.crochet_count
-  let nodes = row.content.stitch_node_list
-  let path = []
-
-  function descend(nodes, count) {
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i]
-      let nodeGen = node.generate || BasicStitch[node.stitch_id]?.generate || 0
-      if (!nodeGen && node.type === 'pattern') {
-        if (node.pattern.length === 1 && node.pattern[0].type === 'stitch') {
-          nodeGen = BasicStitch[node.pattern[0].stitch_id]?.generate * (node.count || 0)
-        }
-      }
-      if (count < nodeGen) {
-        path.push({ start: i, end: i })
-        if (node.type === 'pattern') {
-          const per = nodeGen / (node.count || 1)
-          const newCount = count % per
-          if (!(node.pattern.length === 1 && node.pattern[0].type === 'stitch')) {
-            descend(node.pattern, newCount === 0 ? per : newCount)
-          }
-        } else if (node.type === 'stitch') {
-          // If it's a stitch, we are done with this path
-        } else if (node.type === 'bundle') {
-          // For bundle, we consider it as a single node for selection purposes
-        } else {
-          console.warn('Unknown node type in endAtToSelectionList:', node.type)
-        }
-        break
-      } else if (count === nodeGen) {
-        path.push({ start: i, end: i })
-        if (node.type === 'pattern' && !(node.pattern.length === 1 && node.pattern[0].type === 'stitch')) {
-          descend(node.pattern, count)
-        }
-        break
-      }
-      count -= nodeGen
-    }
-  }
-
-  descend(nodes, crochetCount)
-
-  // If not found, fallback to last
-  if (path.length === 0 && nodes.length > 0) {
-    path = [{ start: nodes.length - 1, end: nodes.length - 1 }]
-  }
-  console.log('[endAtToSelectionList] Computed selection path for endAt:', endAt, 'is:', path)
-  return path
-}
-
-const findRowWithRepeated = (rowList, targetRowIndex) => {
-  for (const row of rowList) {
-    const row_index_range = createSelection(row.row_index, row.row_index + row.count - 1)
-    if (isInSelection(row_index_range, targetRowIndex)) {
-      return row
-    }
-  }
-  return null
-}
+// NOTE: generate/progress helpers are shared in `src/utils/*`.
 
 const componentTableRefs = new Map()
 const componentSectionRefs = new Map()
 
 const setComponentSectionRef = (componentId, el) => {
+  console.log('[setComponentSectionRef]', componentId, el)
   if (el) {
     componentSectionRefs.set(componentId, el)
   } else {
@@ -203,6 +221,7 @@ const setComponentSectionRef = (componentId, el) => {
 }
 
 const setComponentTableRef = (componentId, el) => {
+  console.log('[setComponentTableRef]', componentId, el)
   if (el) {
     componentTableRefs.set(componentId, el)
   } else {
@@ -392,28 +411,27 @@ const confirmAddCustomStatus = async (nameArg) => {
 }
 
 // Set selection for each CrochetTable at mount
-function applyInitialSelections() {
-  const endAtOnComponent = currentRecord.value?.component_list?.map(comp => comp.end_at) || null
-  if (!endAtOnComponent) {
-    console.log('No endAt data found in component_list, skipping initial selection application.')
-    return
+const applySelectionForComponent = (cIdx) => {
+  if (!currentRecord.value?.component_list?.[cIdx]) return
+  const component = currentRecord.value.component_list[cIdx]
+  const endAt = component?.end_at
+  if (!endAt) return
+
+  const tableRef = componentTableRefs.get(cIdx)
+  if (!tableRef) return
+
+  const base_row = findRowWithRepeated(component.content.row_list, component.content.row_groups, endAt.row_index)
+  if (!base_row) return
+
+  const baseGenerate = Number(base_row?.content?.generate ?? base_row?.generate ?? 0)
+  const nextCrochetCount = clampCrochetCount(endAt?.crochet_count, baseGenerate)
+  if (nextCrochetCount !== Number(endAt?.crochet_count)) {
+    endAt.crochet_count = nextCrochetCount
+    currentRecord.value.component_list[cIdx].end_at.crochet_count = nextCrochetCount
   }
 
-  for (let cIdx = 0; cIdx < currentRecord.value.component_list.length; cIdx++) {
-    const component = currentRecord.value.component_list[cIdx]
-    const endAt = endAtOnComponent[cIdx]
-    if (endAt) {
-      const tableRef = componentTableRefs.get(cIdx)
-      const base_row = findRowWithRepeated(component.content.row_list, endAt.row_index)
-      if (endAt.crochet_count >= base_row.generate) {
-        console.warn('Crochet count in endAt exceeds the generate of the base row. Adjusting crochet_count to match generate.', { endAt, base_row })
-        endAt.crochet_count = base_row.generate - 1
-        currentRecord.value.component_list[cIdx].end_at.crochet_count = base_row.generate - 1
-      }
-      const selectionList = endAtToSelectionList(base_row, endAt)
-      tableRef?.applySelection({ row_index: base_row.row_index, selectionList })
-    }
-  }
+  const selectionList = endAtToSelectionList(base_row, endAt)
+  tableRef.applySelection({ row_index: endAt.row_index, selectionList })
 }
 
 const syncingProject = ref(false)
@@ -423,12 +441,7 @@ const handleSyncProject = async () => {
   if (!currentRecord.value) return
 
   await openConfirmation({
-    title: t('record.syncConfirmTitle'),
-    message: t('record.syncConfirmMessage'),
-    confirmText: t('project.confirmUpdate'),
-    cancelText: t('common.cancel'),
-    confirmClass: 'btn-confirm',
-    loadingText: t('record.syncing'),
+    type: 'syncProject',
     onConfirm: async () => {
       await syncProject()
     }
@@ -438,11 +451,19 @@ const handleSyncProject = async () => {
 const syncProject = async () => {
   if (syncingProject.value) return
   if (!currentUser.value) {
-    alert('Please login to sync project')
+    openError({
+      title: t('common.error'),
+      message: t('auth.loginRequired'),
+      confirmText: t('common.ok')
+    })
     return
   }
   if (!currentRecord.value?.project_id) {
-    alert('No project_id found on this record')
+    openError({
+      title: t('common.error'),
+      message: t('record.noProjectId'),
+      confirmText: t('common.ok')
+    })
     return
   }
 
@@ -452,10 +473,14 @@ const syncProject = async () => {
     const projectId = String(currentRecord.value.project_id)
     const projectData = await fetchProject(projectId)
     if (!projectData) {
-      alert('Project not found')
+      openError({
+        title: t('common.error'),
+        message: t('project.notFound'),
+        confirmText: t('common.ok')
+      })
       return
     }
-    const projectComponents = Array.isArray(projectData.component_list) ? projectData.component_list : []
+    const projectComponents = expandComponentListByCount(projectData.component_list, { resetEndAt: false })
     const recordComponents = Array.isArray(currentRecord.value.component_list) ? currentRecord.value.component_list : []
 
     const endAtByIndex = recordComponents.map((c) => c?.end_at ?? null)
@@ -473,12 +498,20 @@ const syncProject = async () => {
 
     await saveRecord()
     await nextTick()
-    applyInitialSelections()
+        applySelectionForComponent(clampComponentIndex(currentRecord.value?.last_selected_component_index ?? selectedComponentIndex.value))
     setTimeout(updateCenteredComponent, 300)
-    alert('Project synced')
+    openNotice({
+      title: t('common.notice'),
+      message: t('record.syncSuccessNotice'),
+      confirmText: t('common.ok')
+    })
   } catch (error) {
     console.error('Error syncing project:', error)
-    alert('Failed to sync project. Please try again.')
+    openError({
+      title: t('common.error'),
+      message: t('record.syncFailedNotice'),
+      confirmText: t('common.ok')
+    })
   } finally {
     syncingProject.value = false
   }
@@ -534,7 +567,7 @@ const startRecording = () => {
     end: null,
     status_id: currentStatusId.value,
     status_note: currentStatusNote.value,
-    end_at_list: (currentRecord.value?.component_list || []).map((comp) => ({ ...comp.end_at }))
+    end_at_list: (currentRecord.value?.component_list || []).map((comp) => (comp?.end_at ? { ...comp.end_at } : null))
   })
   isRecording.value = true
   saveRecord()
@@ -555,7 +588,6 @@ const pauseRecording = () => {
 
 const handleStatusChange = (event) => {
   const value = event.target.value
-  console.log('Status changed to:', value)
   if (value === '__add_custom__') {
     openModal('add_custom_status')
   }
@@ -566,60 +598,41 @@ const saveRecord = async () => {
     if (!currentUser.value) return
 
     await setUserRecord(currentUser.value.uid, recordId.value, currentRecord.value)
-    console.log('Record saved successfully', currentRecord.value)
   } catch (error) {
     console.error('Error saving record:', error)
   }
 }
 
-const getComponentRow = (componentIndex, rowIndex) => {
-  const component = currentRecord.value?.component_list?.[componentIndex]
-  const rows = component?.content?.row_list
-  if (!Array.isArray(rows) || rows.length === 0) return null
-
-  for (let idx = 0; idx < rows.length; idx++) {
-    const row = rows[idx]
-    if (row.row_index === rowIndex) {
-      return row
-    } else if (row.row_index > rowIndex) {
-      return rows[Math.max(0, idx - 1)]
-    }
-  }
-
-  const lastRow = rows[rows.length - 1]
-  if (lastRow && component) {
-    const lastRowIndex = Number(lastRow.row_index) + Math.max(0, Number(lastRow.count || 1) - 1)
-    const lastRowGenerate = Number(lastRow?.content?.generate ?? lastRow?.generate ?? 0)
-    const lastCrochetCount = Math.max(0, lastRowGenerate - 1)
-
-    component.end_at = {
-      row_index: lastRowIndex,
-      crochet_count: lastCrochetCount
-    }
-  }
-
-  return lastRow
-}
-
 const handleUpdateEndAt = async (componentId, rowIndex, crochetCount) => {
-  console.log('[handleUpdateEndAt] called with:', componentId, rowIndex, crochetCount)
   if (componentId < 0 || rowIndex < 0 || crochetCount < 0) {
     console.warn('[handleUpdateEndAt] Invalid parameters:', componentId, rowIndex, crochetCount)
     isComponentEditing.value = false
     return
   }
 
+  const component = currentRecord.value?.component_list?.[componentId]
+  if (!component) {
+    isComponentEditing.value = false
+    return
+  }
+
+  const baseRow = findRowWithRepeated(component.content.row_list, component.content.row_groups, rowIndex)
+  const baseGenerate = Number(baseRow?.content?.generate ?? baseRow?.generate ?? 0)
+  const safeCrochetCount = clampCrochetCount(crochetCount, baseGenerate)
+
   currentRecord.value.component_list[componentId].end_at = {
     row_index: rowIndex,
-    crochet_count: crochetCount
+    crochet_count: safeCrochetCount
   }
+
+  // Persist current carousel selection along with record updates.
+  currentRecord.value.last_selected_component_index = clampComponentIndex(selectedComponentIndex.value)
 
   try {
     if (!currentUser.value) return
     await mergeUserRecord(currentUser.value.uid, recordId.value, {
       ...currentRecord.value
     })
-    console.log('[handleUpdateEndAt] Firestore updated for end_at', currentRecord.value.component_list[componentId])
   } catch (error) {
     console.error('[handleUpdateEndAt] Error updating Firestore:', error)
   }
@@ -629,23 +642,9 @@ const getComponentProgress = (cIndex) => {
   if (!currentRecord.value?.component_list) return 0
 
   const component = currentRecord.value.component_list[cIndex]
-  if (!component?.end_at) return 0
-
-  let totalGenerates = 0
-  component.content.row_list.forEach(row => totalGenerates += row.content.generate * row.count || 0)
-
-  let currentGenerated = 0
-  const base_row = getComponentRow(cIndex, component.end_at?.row_index)
-  console.log('Base row for progress calculation:', base_row)
-  for (let i = 0; component.content.row_list[i].row_index < base_row.row_index; i++) {
-    const row = component.content.row_list[i]
-    currentGenerated += row.content?.generate * row.count
-  }
-  currentGenerated += (component.end_at?.row_index - base_row.row_index) * base_row.content.generate
-  currentGenerated += component.end_at?.crochet_count || 0
-
-  return Math.round(currentGenerated * 100 / totalGenerates)
+  return getComponentProgressPercent(component)
 }
+
 
 let timerInterval = null
 onMounted(() => {
@@ -658,7 +657,7 @@ onMounted(() => {
       }, 1000)
 
       nextTick(() => {
-        applyInitialSelections()
+        applySelectionForComponent(clampComponentIndex(currentRecord.value?.last_selected_component_index ?? 0))
       })
       unsubscribe()
     }
@@ -678,12 +677,16 @@ const loadRecord = async () => {
       return
     }
 
-    const recordData = await fetchUserRecord(currentUser.value.uid, recordId.value)
-    if (recordData) {
-      currentRecord.value = recordData
+    if (recordCtx) {
+      await recordCtx.loadRecord()
     } else {
-      router.push(-1)
-      return
+      const recordData = await fetchUserRecord(currentUser.value.uid, recordId.value)
+      if (recordData) {
+        currentRecord.value = recordData
+      } else {
+        router.push(-1)
+        return
+      }
     }
 
     if (lastTimeSlot.value) {
@@ -788,6 +791,32 @@ watch(isComponentEditing, async (isEditing) => {
 }
 
 .btn-sync-project:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-view-report {
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.12);
+  color: #4c1d95;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.05s, opacity 0.15s;
+  white-space: nowrap;
+}
+
+.btn-view-report:hover {
+  background: rgba(139, 92, 246, 0.18);
+}
+
+.btn-view-report:active {
+  transform: translateY(1px);
+}
+
+.btn-view-report:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }

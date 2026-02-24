@@ -55,6 +55,7 @@ const emit = defineEmits(['open', 'deleted'])
   padding: 2rem;
   margin: 0;
   box-shadow: none;
+  flex: 1;
 }
 
 .records-grid {

@@ -8,7 +8,9 @@
       aria-haspopup="menu"
       @click="toggle"
     >
-      <span class="more-menu__icon" aria-hidden="true">⋯</span>
+      <slot name="icon">
+        <span class="more-menu__icon" aria-hidden="true">⋯</span>
+      </slot>
       <span class="sr-only">{{ label }}</span>
     </button>
 
@@ -120,17 +122,17 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   border: none;
-  background: none;
+  background: #fff;
   cursor: pointer;
   transition: background 0.15s, transform 0.05s, opacity 0.15s;
 }
 
 .more-menu__button:hover {
-  background: rgba(255, 255, 255, 1);
+  background: #f3f4f6;
 }
 
 .more-menu__button:active {
