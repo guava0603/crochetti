@@ -5,6 +5,75 @@ rules_version = '2';
 //    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isImageUpload(maxBytes) {
+      return request.resource != null
+        && request.resource.size < maxBytes
+        && request.resource.contentType != null
+        && (
+          request.resource.contentType.matches('image/.*')
+          // Some clients (especially native/webview bridges) may send a generic content type.
+          || request.resource.contentType == 'application/octet-stream'
+        );
+    }
+
+    function projectPath(projectId) {
+      return /databases/(default)/documents/projects/$(projectId);
+    }
+
+    function projectExists(projectId) {
+      return firestore.exists(projectPath(projectId));
+    }
+
+    function isProjectOwner(projectId) {
+      return signedIn()
+        && projectExists(projectId)
+        && firestore.get(projectPath(projectId)).data.authorId == request.auth.uid;
+    }
+
+    function isProjectPublic(projectId) {
+      return projectExists(projectId)
+        && firestore.get(projectPath(projectId)).data.is_public == true;
+    }
+
+    // Project images are readable when the project is public, or by the owner.
+    // Only the owner may upload/update/delete images.
+    match /projects/{projectId}/images/{fileName} {
+      allow read: if isProjectPublic(projectId) || isProjectOwner(projectId);
+      allow write: if isProjectOwner(projectId)
+        && isImageUpload(25 * 1024 * 1024);
+    }
+
+    // Component card images (uploaded from the component editor UI).
+    // These are stored by componentId (no projectId available at upload time),
+    // so we restrict access to authenticated users only.
+    match /component-images/{componentId}/{fileName} {
+      allow read: if signedIn();
+      allow write: if signedIn()
+        && isImageUpload(25 * 1024 * 1024);
+    }
+
+    // User avatar images.
+    match /users/{userId}/avatar/{fileName} {
+      allow read: if true;
+      allow write: if signedIn()
+        && request.auth.uid == userId
+        && isImageUpload(25 * 1024 * 1024);
+    }
+
+    // Record result images (photos uploaded after finishing a record).
+    // Keep private to the owner since records are stored under users/{uid}/records.
+    match /users/{userId}/records/{recordId}/result/{fileName} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if signedIn()
+        && request.auth.uid == userId
+        && isImageUpload(25 * 1024 * 1024);
+    }
+
+    // Default deny.
     match /{allPaths=**} {
       allow read, write: if false;
     }

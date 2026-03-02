@@ -1,14 +1,71 @@
 import { db } from '@/firebaseConfig'
 import {
   addDoc,
+  arrayRemove,
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   serverTimestamp,
   Timestamp,
-  updateDoc
+  updateDoc,
+  where,
+  query,
+  documentId
 } from 'firebase/firestore'
+
+function normalizeEmptyNotesForSave(componentList) {
+  const list = Array.isArray(componentList) ? componentList : []
+
+  const cloned = list.map((c) => {
+    if (!c || typeof c !== 'object') return c
+    return { ...c }
+  })
+
+  for (const c of cloned) {
+    if (!c || typeof c !== 'object') continue
+    if (!('notes' in c)) continue
+
+    const notes = c.notes
+
+    if (Array.isArray(notes)) {
+      const hasObjectNotes = notes.some((n) => n && typeof n === 'object' && 'description' in n)
+
+      if (hasObjectNotes) {
+        const cleaned = notes
+          .map((n) => {
+            if (typeof n === 'string') return { description: n }
+            return n
+          })
+          .map((n) => ({
+            ...n,
+            description: String(n?.description ?? '').trim()
+          }))
+          .filter((n) => n.description)
+
+        if (cleaned.length) c.notes = cleaned
+        else delete c.notes
+      } else {
+        const cleaned = notes
+          .map((n) => String(n ?? '').trim())
+          .filter(Boolean)
+
+        if (cleaned.length) c.notes = cleaned
+        else delete c.notes
+      }
+    } else if (typeof notes === 'string') {
+      const cleaned = notes.trim()
+      if (cleaned) c.notes = [cleaned]
+      else delete c.notes
+    } else {
+      delete c.notes
+    }
+  }
+
+  return cloned
+}
 
 export async function fetchProject(projectId) {
   if (!projectId) return null
@@ -44,6 +101,9 @@ export async function createProject(projectData) {
   const projectsRef = collection(db, 'projects')
 
   const payload = { ...projectData }
+  if (Array.isArray(payload.component_list)) {
+    payload.component_list = normalizeEmptyNotesForSave(payload.component_list)
+  }
   // Always set timestamps on create.
   delete payload.created_at
   delete payload.updated_at
@@ -58,6 +118,9 @@ export async function updateProject(projectId, partial) {
   if (!projectId) throw new Error('updateProject: missing projectId')
 
   const payload = { ...partial }
+  if (Array.isArray(payload.component_list)) {
+    payload.component_list = normalizeEmptyNotesForSave(payload.component_list)
+  }
   // Do not allow callers to overwrite created_at.
   delete payload.created_at
   payload.updated_at = serverTimestamp()
@@ -65,7 +128,71 @@ export async function updateProject(projectId, partial) {
   return updateDoc(doc(db, 'projects', String(projectId)), payload)
 }
 
+export async function addRecordToProjectOngoing(projectId, recordId) {
+  if (!projectId || !recordId) return
+  const ref = doc(db, 'projects', String(projectId))
+  return updateDoc(ref, {
+    'record.ongoing_list': arrayUnion(String(recordId)),
+    updated_at: serverTimestamp()
+  })
+}
+
+export async function completeProjectRecord(projectId, recordId) {
+  if (!projectId || !recordId) return
+  const ref = doc(db, 'projects', String(projectId))
+  return updateDoc(ref, {
+    'record.ongoing_list': arrayRemove(String(recordId)),
+    'record.completed_list': arrayUnion(String(recordId)),
+    updated_at: serverTimestamp()
+  })
+}
+
 export async function deleteProject(projectId) {
   if (!projectId) throw new Error('deleteProject: missing projectId')
   return deleteDoc(doc(db, 'projects', String(projectId)))
+}
+
+function normalizeProjectSummary(id, data) {
+  const d = data || {}
+  const images = Array.isArray(d?.images) ? d.images.filter(Boolean) : []
+  const image = (typeof d?.image === 'string' && d.image.trim()) ? d.image.trim() : null
+
+  return {
+    id: String(id),
+    name: d?.name || '',
+    description: d?.description || '',
+    authorId: d?.authorId || '',
+    is_public: Boolean(d?.is_public),
+    image: images[0] || image || null,
+    created_at: d?.created_at ?? null,
+    updated_at: d?.updated_at ?? null,
+    createdAt: d?.createdAt || null
+  }
+}
+
+export async function fetchProjectSummariesByIds(projectIds) {
+  const ids = (Array.isArray(projectIds) ? projectIds : [])
+    .map((x) => String(x || '').trim())
+    .filter(Boolean)
+
+  if (!ids.length) return []
+
+  // Firestore 'in' query supports up to 10 values.
+  const chunks = []
+  for (let i = 0; i < ids.length; i += 10) chunks.push(ids.slice(i, i + 10))
+
+  const projectsRef = collection(db, 'projects')
+  const results = []
+
+  for (const chunk of chunks) {
+    const q = query(projectsRef, where(documentId(), 'in', chunk))
+    const snap = await getDocs(q)
+    snap.forEach((d) => {
+      results.push(normalizeProjectSummary(d.id, d.data()))
+    })
+  }
+
+  // Preserve incoming ID order.
+  const byId = new Map(results.map((p) => [String(p.id), p]))
+  return ids.map((id) => byId.get(String(id))).filter(Boolean)
 }

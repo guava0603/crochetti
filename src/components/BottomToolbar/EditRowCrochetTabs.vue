@@ -32,10 +32,12 @@
             ref="editCrochetRef"
             :selected-node-type="currentSelectedData.selectedNodeType"
             :selected-count="currentSelectedData.selectedCount"
+            :virtual-whole-row="Boolean(currentSelectedData.virtualWholeRow)"
             :current-pattern="currentSelectedData.currentPattern"
             :can-go-parent="canGoParent"
             @delete-selection="() => $emit('delete-selection')"
             @add-inner-selection="(next) => $emit('add-inner-selection', next)"
+            @draft-pattern-change="(next) => $emit('draft-pattern-change', next)"
             @confirm="(changes) => $emit('confirm', changes)"
             @cancel="() => $emit('cancel')"
             @go-parent="(event) => $emit('go-parent', event)"
@@ -123,6 +125,7 @@ const emit = defineEmits([
   'delete-group-rows',
   'delete-selection',
   'add-inner-selection',
+  'draft-pattern-change',
   'confirm',
   'cancel',
   'go-parent',

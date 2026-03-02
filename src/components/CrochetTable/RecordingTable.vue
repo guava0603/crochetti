@@ -8,7 +8,7 @@
         'row-container--grouped': row.group_index !== undefined && row.group_index !== null,
 				'row-container--grouped-start': isRowContainerGroupedStart(visibleRows, idx)
       }"
-			@click.stop
+			@click.stop="handleRowContainerClick(row.row_index, $event)"
 		>
 			<CrochetRow
 				:ref="setRowRef(row.row_index)"
@@ -34,12 +34,13 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import CrochetRow from './Crochet/CrochetRow.vue'
 import CrochetNode from './Crochet/CrochetNode.vue'
 import BottomToolbar from '@/components/BottomToolbar/BottomToolbar.vue'
 import SetSelectionPosition from '@/components/BottomToolbar/SetSelectionPosition.vue'
 import { isRowContainerGroupedStart } from '@/utils/crochetTable.js'
+import { openConfirmation } from '@/services/ui/confirmation'
 
 const props = defineProps({
 	modelValue: {
@@ -79,10 +80,65 @@ const activeToolbarKey = ref(TOOLBAR_KEYS.NONE)
 const activeRowIndex = ref(null)
 const selectionListForPosition = ref([])
 const suppressAutoOpenRowIndex = ref(null)
+const promptingCompleteWholeRow = ref(false)
+const lastSelectionByRowIndex = new Map()
 
-const handleRowSelectionChange = (rowIndex, nextSelectionList) => {
+const isClickOnCrochetNode = (event) => {
+	const target = event?.target
+	if (!target || typeof target !== 'object') return false
+	if (typeof target.closest === 'function') {
+		return Boolean(target.closest('.pattern-text'))
+	}
+	return false
+}
+
+const handleRowContainerClick = async (rowIndex, event) => {
+	if (promptingCompleteWholeRow.value) return
+	// Clicking on a CrochetNode should only trigger selection behavior.
+	// CrochetNode uses @click.stop, but keep this guard for safety.
+	if (isClickOnCrochetNode(event)) return
+
+	promptingCompleteWholeRow.value = true
+	try {
+		const ok = await openConfirmation({
+			type: {
+				id: 'completeWholeRow',
+				params: {
+					name: String(props.componentName || '').trim(),
+					row: rowIndex
+				}
+			}
+		})
+
+		if (ok) {
+			const row = visibleRows.value.find(r => r?.row_index === rowIndex) || null
+			const generate = Number(row?.content?.generate ?? row?.generate ?? 0)
+			if (Number.isFinite(generate) && generate >= 0) {
+				emit('update-end-at', rowIndex, generate)
+				activeToolbarKey.value = TOOLBAR_KEYS.NONE
+				selectionListForPosition.value = []
+				activeRowIndex.value = null
+				await nextTick()
+				emit('revert-selection')
+			}
+			return
+		}
+
+		// If user doesn't complete the whole row, open the selection-position toolbar.
+		activeRowIndex.value = rowIndex
+		selectionListForPosition.value = lastSelectionByRowIndex.get(rowIndex) || []
+		activeToolbarKey.value = TOOLBAR_KEYS.SELECTION_POSITION
+	} finally {
+		promptingCompleteWholeRow.value = false
+	}
+}
+
+const handleRowSelectionChange = async (rowIndex, nextSelectionList) => {
 	const safeList = Array.isArray(nextSelectionList) ? nextSelectionList : []
 	const isSelected = safeList.length > 0
+	const prevSelectedRowIndex = selectedRowIndex.value
+
+	lastSelectionByRowIndex.set(rowIndex, safeList)
 
 	if (!isSelected) {
 		if (selectedRowIndex.value === rowIndex) selectedRowIndex.value = null
@@ -111,7 +167,10 @@ const handleRowSelectionChange = (rowIndex, nextSelectionList) => {
 		return
 	}
 
-	activeToolbarKey.value = TOOLBAR_KEYS.SELECTION_POSITION
+	const isNewRowSelection = prevSelectedRowIndex !== rowIndex
+	if (isNewRowSelection) {
+		activeToolbarKey.value = TOOLBAR_KEYS.SELECTION_POSITION
+	}
 }
 
 const activeRow = computed(() => {
@@ -146,6 +205,12 @@ watch(() => props.modelValue, (newValue) => {
 const applySelection = (endAt) => {
 	const { row_index, selectionList } = endAt
 	const safeList = Array.isArray(selectionList) ? selectionList : []
+
+	// When parent restores selection (or clears it), never keep the previous
+	// component's toolbar state around.
+	activeToolbarKey.value = TOOLBAR_KEYS.NONE
+	activeRowIndex.value = null
+	selectionListForPosition.value = []
 
 	if (safeList.length === 0) {
 		if (selectedRowIndex.value !== null) {

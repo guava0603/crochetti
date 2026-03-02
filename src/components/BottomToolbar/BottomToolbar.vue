@@ -17,6 +17,7 @@ const isExpanded = ref(true)
   left: 0;
   right: 0;
   z-index: 101;
+  background: white;
   transition: max-height 0.3s ease;
 }
 

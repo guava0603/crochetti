@@ -7,7 +7,8 @@
     <CrochetStitch
       v-if="node.type === 'stitch'"
       :stitch-id="node.stitch_id"
-      :count="1"
+      :position="node.position"
+      :count="node.count || 1"
     />
 
     <CrochetBundle

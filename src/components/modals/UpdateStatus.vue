@@ -7,17 +7,17 @@
         <SelectionInput
           v-model="statusIdProxy"
           :options="statusOptions"
-          :placeholder="'選擇分類'"
+          :placeholder="t('statusModal.selectCategoryPlaceholder')"
         />
       </div>
 
       <div v-if="isNumericStatusId" class="status-note">
-        <label class="status-note-label">備註</label>
+        <label class="status-note-label">{{ t('common.notes') }}</label>
         <div class="status-note-controls">
           <SelectionInputCombineList
             v-model="noteDraft"
             :suggestions="noteSuggestions"
-            placeholder="選擇或新增備註"
+            :placeholder="t('statusModal.notePlaceholder')"
           />
         </div>
       </div>
@@ -28,18 +28,18 @@
           ref="customStatusInputRef"
           v-model="customStatusDraft"
           class="status-input"
-          placeholder="輸入新分類名稱"
+          :placeholder="t('statusModal.newCategoryPlaceholder')"
         />
       </div>
       <div class="modal-actions">
-        <button class="btn-cancel" @click="handleCancel">取消</button>
+        <button class="btn-cancel" @click="handleCancel">{{ t('common.cancel') }}</button>
         <button
           class="btn-confirm"
           type="button"
           :disabled="isAddStatusSaving || (isAdding && !customStatusDraft.trim())"
           @click="handleSave"
         >
-          {{ isAddStatusSaving ? '儲存中...' : '儲存' }}
+          {{ isAddStatusSaving ? t('common.saving') : t('common.save') }}
         </button>
       </div>
     </div>
@@ -107,13 +107,13 @@ const statusOptions = computed(() => {
   }
 
   if ((selfDefinedStatuses.value || []).length > 0) {
-    out.push({ kind: 'group', label: '自定義' })
+    out.push({ kind: 'group', label: t('statusModal.customGroupLabel') })
     for (const s of selfDefinedStatuses.value || []) {
       out.push({ value: s.id, label: s.name })
     }
   }
 
-  out.push({ value: '__add_custom__', label: '新增' })
+  out.push({ value: '__add_custom__', label: t('statusModal.addCustomOption') })
   return out
 })
 
@@ -124,7 +124,7 @@ const isAddStatusSaving = ref(false)
 const isAdding = computed(() => String(modalStatusId.value) === '__add_custom__')
 
 const displayTitle = computed(() => {
-  return isAdding.value ? '新增自定義分類' : '編輯當前狀態'
+  return isAdding.value ? t('statusModal.titleAddCustom') : t('statusModal.titleEdit')
 })
 
 const addCustomStatus = async () => {

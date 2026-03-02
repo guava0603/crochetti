@@ -41,6 +41,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { formatDateTimeNoSeconds } from '@/utils/dateTime'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -88,8 +89,7 @@ watch(() => props.show, (newVal) => {
 
 const formatRecordStart = (record) => {
   if (!record?.time_slots?.[0]?.start) return t('recordSelection.unknown')
-  const date = new Date(record.time_slots[0].start)
-  return date.toLocaleString()
+  return formatDateTimeNoSeconds(record.time_slots[0].start)
 }
 </script>
 

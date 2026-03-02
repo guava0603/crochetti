@@ -18,13 +18,16 @@
     </div>
 
     <div v-if="!projects || projects.length === 0" class="no-projects">
-      <p>No projects yet</p>
+      <p>{{ t('user.addRecord.noProjects') }}</p>
     </div>
   </div>
 </template>
 
 <script setup>
 import ProjectCard from '@/components/projects/ProjectCard.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n({ useScope: 'global' })
 
 defineProps({
   projects: {
@@ -47,10 +50,11 @@ const emit = defineEmits(['open', 'copy', 'share', 'delete'])
 <style scoped>
 .projects-section {
   display: flex;
+  flex-direction: column;
   flex: 1;
-  background: white;
   border-radius: 0;
   padding: 2rem;
+  padding-bottom: 7rem;
   margin: 0;
   box-shadow: none;
 }
@@ -58,7 +62,7 @@ const emit = defineEmits(['open', 'copy', 'share', 'delete'])
 .projects-grid {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
   margin-bottom: 2rem;
   width: 100%;
 }

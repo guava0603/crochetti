@@ -23,6 +23,21 @@
         ></textarea>
       </div>
 
+      <div class="form-group">
+        <label>{{ $t('addProject.info.imagesLabel') }}</label>
+        <ImageUploader
+          v-model="formData.image_files"
+          :max="3"
+          accept="image/*"
+          multiple
+          :button-text="$t('addProject.info.imagesLabel')"
+          :hint="$t('addProject.info.imagesHint', { max: 3 })"
+          :remove-text="$t('addProject.info.removeImage')"
+          :max-error-text="$t('addProject.info.errors.maxImages', { max: 3 })"
+          :alt-text-for-index="(i) => $t('addProject.info.imageAlt', { n: i + 1 })"
+        />
+      </div>
+
       <div v-if="error" class="error">
         {{ error }}
       </div>
@@ -39,6 +54,7 @@
 <script setup>
 import { ref, defineProps, defineEmits } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ImageUploader from '@/components/Input/ImageUploader.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -47,7 +63,8 @@ const props = defineProps({
     type: Object,
     default: () => ({
       name: '',
-      description: ''
+      description: '',
+      image_files: []
     })
   }
 })
@@ -56,7 +73,8 @@ const emit = defineEmits(['next'])
 
 const formData = ref({
   name: props.initialData.name || '',
-  description: props.initialData.description || ''
+  description: props.initialData.description || '',
+  image_files: Array.isArray(props.initialData.image_files) ? props.initialData.image_files : []
 })
 
 const error = ref(null)

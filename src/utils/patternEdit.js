@@ -18,7 +18,14 @@ import { calculateConsumeGenerate } from '@/utils/calculateConsumeGenerate.js'
 export function addStitchToPatternList(patternList, stitchOrPayload) {
   const list = Array.isArray(patternList) ? [...patternList] : []
 
-  const stitchId = typeof stitchOrPayload === 'number' ? stitchOrPayload : stitchOrPayload?.stitchId
+  const stitchId = typeof stitchOrPayload === 'number'
+    ? stitchOrPayload
+    : (stitchOrPayload?.stitchId ?? stitchOrPayload?.stitch_id)
+
+  const position = typeof stitchOrPayload === 'object'
+    ? String(stitchOrPayload?.position ?? '').trim().toUpperCase()
+    : ''
+
   const mode = typeof stitchOrPayload === 'object' && stitchOrPayload?.mode ? stitchOrPayload.mode : 'normal'
   if (stitchId === null || stitchId === undefined) return list
 
@@ -69,7 +76,9 @@ export function addStitchToPatternList(patternList, stitchOrPayload) {
 
     const targetNode = list.length > 0 ? list[list.length - 1] : null
     if (targetNode && targetNode.type === 'bundle' && (targetNode.consume || 1) === 1 && Array.isArray(targetNode.bundle)) {
-      targetNode.bundle.push({ type: 'stitch', stitch_id: stitchId })
+      const next = { type: 'stitch', stitch_id: stitchId }
+      if (position) next.position = position
+      targetNode.bundle.push(next)
       targetNode.generate = (targetNode.generate || 0) + stitchGenerate
       targetNode.consume = 1
       if (targetNode.count === undefined) targetNode.count = 1
@@ -78,7 +87,7 @@ export function addStitchToPatternList(patternList, stitchOrPayload) {
 
     list.push({
       type: 'bundle',
-      bundle: [{ type: 'stitch', stitch_id: stitchId }],
+      bundle: [{ type: 'stitch', stitch_id: stitchId, ...(position ? { position } : {}) }],
       consume: 1,
       generate: stitchGenerate,
       count: 1
@@ -90,12 +99,13 @@ export function addStitchToPatternList(patternList, stitchOrPayload) {
     const lastIndex = list.length - 1
     const last = list[lastIndex]
 
-    if (last?.type === 'stitch' && last.stitch_id === stitchId) {
+    const lastPos = typeof last?.position === 'string' ? last.position.trim().toUpperCase() : ''
+    if (last?.type === 'stitch' && last.stitch_id === stitchId && lastPos === position) {
       // Upgrade a plain stitch anchor into a compact pattern wrapper.
       const nextCount = (last.count || 1) + 1
       list[lastIndex] = {
         type: 'pattern',
-        pattern: [{ type: 'stitch', stitch_id: stitchId }],
+        pattern: [{ type: 'stitch', stitch_id: stitchId, ...(position ? { position } : {}) }],
         count: nextCount
       }
       return list
@@ -107,7 +117,8 @@ export function addStitchToPatternList(patternList, stitchOrPayload) {
       Array.isArray(last.pattern) &&
       last.pattern.length === 1 &&
       last.pattern[0]?.type === 'stitch' &&
-      last.pattern[0]?.stitch_id === stitchId
+      last.pattern[0]?.stitch_id === stitchId &&
+      (typeof last.pattern[0]?.position === 'string' ? last.pattern[0].position.trim().toUpperCase() : '') === position
     ) {
       const nextCount = (last.count || 1) + 1
       list[lastIndex] = { ...last, count: nextCount }
@@ -115,7 +126,9 @@ export function addStitchToPatternList(patternList, stitchOrPayload) {
     }
   }
 
-  list.push({ type: 'stitch', stitch_id: stitchId })
+  const next = { type: 'stitch', stitch_id: stitchId }
+  if (position) next.position = position
+  list.push(next)
   return list
 }
 

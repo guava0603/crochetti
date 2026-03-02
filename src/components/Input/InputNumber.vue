@@ -17,7 +17,7 @@
         ref="scrollRef"
         class="number-scroll no-scrollbar"
         role="listbox"
-        :aria-label="'Number picker'"
+        :aria-label="t('input.numberPicker')"
         @scroll.passive="handleScroll"
         @wheel.passive="markUserInteracted"
         @touchstart.passive="markUserInteracted"
@@ -41,6 +41,9 @@
 
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps({
   modelValue: {
@@ -217,7 +220,6 @@ watch(
   padding: 4px;
   background: #f8fafc;
   border-radius: 14px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   pointer-events: auto;
   z-index: 50;
   outline: none;

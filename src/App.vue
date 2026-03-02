@@ -16,6 +16,7 @@
 
   <RouterView />
 
+  <AchievementToastHost />
   <ToastHost />
 
   <GlobalConfirmationModal />
@@ -23,6 +24,7 @@
 
 <script setup>
 import GlobalConfirmationModal from '@/components/modals/GlobalConfirmationModal.vue'
+import AchievementToastHost from '@/components/ui/AchievementToastHost.vue'
 import ToastHost from '@/components/ui/ToastHost.vue'
 import { RouterView } from 'vue-router'
 </script>

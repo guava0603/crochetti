@@ -13,22 +13,43 @@
         />
         <span v-if="nIndex < node.pattern.length - 1" class="separator">, </span>
       </template>
-      <span class="pattern-count">] * {{ node.count }}</span>
+      <span class="pattern-count">
+        ]
+        <template v-if="patternCount > 1">
+          <template v-if="showZhRepeat">{{ t('crochet.display.patternRepeatSuffix', { count: patternCount }) }}</template>
+          <template v-else> * {{ patternCount }}</template>
+        </template>
+      </span>
     </span>
     <span v-else>
-      <CrochetStitch
+      <span
         v-if="compactInnerType === 'stitch'"
-        :stitch-id="node.pattern[0].stitch_id"
-        :count="node.count"
-      />
+        class="compact-stitch"
+        :class="{ clickable: tableType !== 'view' }"
+        @click.stop="handleCompactInnerClick"
+      >
+        <span v-if="(node.count || 1) > 1" class="compact-count">{{ node.count }}</span>
+        <span class="compact-inner" :class="{ selected: compactInnerSelected }">
+          <CrochetStitch
+            :stitch-id="node.pattern[0].stitch_id"
+            :position="node.pattern[0].position"
+            :count="1"
+          />
+        </span>
+      </span>
 
       <template v-else-if="compactInnerType === 'bundle'">
         <CrochetBundle
           :node="node.pattern[0]"
           :table-type="tableType"
           :level="level + 1"
+          :selection="handleSelection(0)"
+          @selection-change="(next) => handleChildSelectionChange(0, next)"
         />
-        <span v-if="(node.count || 1) > 1" class="pattern-count"> * {{ node.count }}</span>
+        <span v-if="patternCount > 1" class="pattern-count">
+          <template v-if="showZhRepeat">{{ t('crochet.display.patternRepeatSuffix', { count: patternCount }) }}</template>
+          <template v-else> * {{ patternCount }}</template>
+        </span>
       </template>
      </span>
   </span>
@@ -36,7 +57,10 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { createSelection, isInSelection } from '@/constants/selection.js'
+import { CROCHET_LANG } from '@/constants/crochetData.js'
+import { useCrochetLang } from '@/composables/useCrochetLang'
 import CrochetStitch from './CrochetStitch.vue'
 import CrochetBundle from './CrochetBundle.vue'
 import CrochetNode from './CrochetNode.vue'
@@ -61,6 +85,24 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['selection-change'])
+
+const { t } = useI18n({ useScope: 'global' })
+const { crochetLang } = useCrochetLang()
+
+const patternCount = computed(() => {
+  const count = props.node?.count
+  return typeof count === 'number' && Number.isFinite(count) ? count : 1
+})
+
+const showZhRepeat = computed(() => crochetLang.value === CROCHET_LANG.text_zh && patternCount.value > 1)
+
+const compactInnerSelected = computed(() => {
+  if (!props.selection || props.selection.length === 0) return false
+  const targetLevel = props.level + 1
+  if (props.selection.length - 1 !== targetLevel) return false
+  const levelRange = props.selection?.[targetLevel]
+  return isInSelection(levelRange, 0)
+})
 
 const compactInnerType = computed(() => {
   const list = props.node?.pattern
@@ -91,6 +133,11 @@ const handleChildSelectionChange = (nIndex, nextSelectionList) => {
   }
 }
 
+const handleCompactInnerClick = () => {
+  if (props.tableType === 'view') return
+  handleChildSelectionChange(0, [])
+}
+
 // selection-change is handled by CrochetNode; CrochetPattern only forwards.
 </script>
 
@@ -106,6 +153,27 @@ const handleChildSelectionChange = (nIndex, nextSelectionList) => {
 .pattern-count {
   color: #6b7280;
   font-weight: 600;
+}
+
+.compact-inner {
+  display: inline-block;
+  border-radius: 3px;
+  border-bottom: 2px solid transparent;
+  padding: 2px 2px 0;
+}
+
+.compact-stitch.clickable {
+  cursor: pointer;
+}
+
+.compact-count {
+  display: inline-block;
+  border-bottom: 2px solid transparent;
+}
+
+.compact-inner.selected {
+  background: #dbeafe;
+  border-color: #3b82f6;
 }
 
 </style>

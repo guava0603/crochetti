@@ -13,9 +13,36 @@ html.is-app #app {
   padding-bottom: var(--safe-area-bottom);
 }
 
+/* Hide scrollbar (still scrollable). Used by AddProjectView. */
+html.hide-scrollbar,
+body.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge legacy */
+}
+
+html.hide-scrollbar::-webkit-scrollbar,
+body.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Hide scrollbar for scrollable page content containers (still scrollable). */
+.page-content {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge legacy */
+  background: var(--color-surface-page);
+}
+
+.page-content::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* Layout helper: apply when a view uses <TopBanner fixed> */
 .page-content--with-top-banner {
-  padding-top: calc(6.5rem + var(--safe-area-top));
+  padding-top: var(--safe-area-top);
 }
 
 a,

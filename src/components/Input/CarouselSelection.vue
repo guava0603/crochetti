@@ -11,7 +11,7 @@
       :key="getKey(item, index)"
       :ref="setItemRef(index)"
       class="carousel-card"
-      :class="{ 'carousel-card--active': modelIndex === index }"
+        :class="{ 'carousel-card--active': modelIndex === index }"
       :style="getCardStyle(index)"
       role="tab"
       :aria-selected="modelIndex === index"
@@ -74,6 +74,14 @@ const emit = defineEmits(['update:modelValue', 'settle', 'click'])
 
 const carouselRef = ref(null)
 const itemRefs = ref([])
+const centerUpdateLockUntil = ref(0)
+
+const lockCenterUpdate = (ms = 400) => {
+  centerUpdateLockUntil.value = Date.now() + Math.max(0, Number(ms) || 0)
+}
+
+const isCenterUpdateLocked = () => Date.now() < centerUpdateLockUntil.value
+
 const setItemRef = (idx) => (el) => {
   if (!el) return
   itemRefs.value[idx] = el
@@ -127,6 +135,10 @@ const scrollToIndex = async (idx, behavior = 'smooth') => {
   const el = itemRefs.value[idx]
   if (!container || !el) return
 
+  // Prevent scroll-based center detection from overriding selection while we
+  // are performing a programmatic smooth scroll.
+  lockCenterUpdate(Math.max(250, props.settleDelay + 200))
+
   const rect = el.getBoundingClientRect()
   const viewportCenterX = window.innerWidth / 2
   const itemCenterX = rect.left + rect.width / 2
@@ -148,6 +160,7 @@ let rafId = null
 let settleTimer = null
 
 const updateSelectedByCenter = () => {
+  if (isCenterUpdateLocked()) return
   const items = itemRefs.value
   if (!items || items.length === 0) return
 
@@ -212,6 +225,7 @@ watch(
     if (next !== props.modelValue) emit('update:modelValue', next)
 
     if (props.centerOnModelChange) {
+      lockCenterUpdate(Math.max(250, props.settleDelay + 200))
       await scrollToIndex(next, getScrollBehavior('smooth'))
     }
   },
@@ -222,16 +236,14 @@ watch(
 <style scoped>
 .carousel {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 0.75rem;
   overflow-x: auto;
   scroll-behavior: smooth;
-  padding: 0.5rem max(0px, calc(50vw - 110px));
-  margin: 0.25rem 0 0.75rem;
+  padding: 0.5rem 50%;
+  margin: 0.25rem -2rem 0.75rem;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x mandatory;
-  scroll-padding-left: max(0px, calc(50vw - 110px));
-  scroll-padding-right: max(0px, calc(50vw - 110px));
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/old Edge */
 }

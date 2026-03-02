@@ -1,8 +1,24 @@
 <template>
-  <svg class="button-add" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="#42b983" stroke-width="1.6">
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 1.25C6.06294 1.25 1.25 6.06294 1.25 12C1.25 17.9371 6.06294 22.75 12 22.75C17.9371 22.75 22.75 17.9371 22.75 12C22.75 6.06294 17.9371 1.25 12 1.25ZM12.75 8C12.75 7.58579 12.4142 7.25 12 7.25C11.5858 7.25 11.25 7.58579 11.25 8V11.25H8C7.58579 11.25 7.25 11.5858 7.25 12C7.25 12.4142 7.58579 12.75 8 12.75H11.25V16C11.25 16.4142 11.5858 16.75 12 16.75C12.4142 16.75 12.75 16.4142 12.75 16V12.75H16C16.4142 12.75 16.75 12.4142 16.75 12C16.75 11.5858 16.4142 11.25 16 11.25H12.75V8Z" fill="#42b983"></path>
+  <svg
+    class="button-add"
+    :class="{ 'button-add--flat': type === 'flat' }"
+    viewBox="100 100 1000 1000"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="m600 99.984c275.95 0 500.02 224.06 500.02 500.02s-224.06 500.02-500.02 500.02-500.02-224.06-500.02-500.02 224.06-500.02 500.02-500.02zm-50.016 550.03v150c0 27.609 22.406 49.969 50.016 49.969s50.016-22.406 50.016-49.969v-150h150c27.609 0 49.969-22.406 49.969-50.016s-22.406-50.016-49.969-50.016h-150v-150c0-27.609-22.406-49.969-50.016-49.969s-50.016 22.406-50.016 49.969v150h-150c-27.609 0-49.969 22.406-49.969 50.016s22.406 50.016 49.969 50.016z" fill-rule="evenodd" />
   </svg>
 </template>
+
+<script setup>
+defineProps({
+  type: {
+    type: String,
+    default: 'default',
+    validator: (v) => ['default', 'flat'].includes(v)
+  }
+})
+</script>
 
 <style lang="css" scoped>
 .button-add {
@@ -10,5 +26,10 @@
   height: 64px;
   border-radius: 50%;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.20);
+  color: var(--color-icon-add);
+}
+
+.button-add.button-add--flat {
+  box-shadow: none;
 }
 </style>

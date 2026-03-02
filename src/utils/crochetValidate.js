@@ -5,11 +5,14 @@ import { getVariantStitchId } from '@/constants/crochetData'
 const getRepeatedStitchInfo = (node) => {
   if (!node || typeof node !== 'object') return null
 
+  const positionRaw = typeof node.position === 'string' ? node.position : ''
+  const position = typeof positionRaw === 'string' ? positionRaw.trim().toUpperCase() : ''
+
   if (node.type === 'stitch') {
     const stitchId = typeof node.stitch_id === 'number' ? node.stitch_id : null
     if (stitchId === null) return null
     const count = Number(node.count || 1)
-    return { stitchId, count: Number.isFinite(count) && count > 0 ? count : 1 }
+    return { stitchId, position, count: Number.isFinite(count) && count > 0 ? count : 1 }
   }
 
   if (node.type === 'pattern') {
@@ -18,12 +21,15 @@ const getRepeatedStitchInfo = (node) => {
     const only = inner[0]
     if (!only || only.type !== 'stitch' || typeof only.stitch_id !== 'number') return null
 
+    const onlyPosRaw = typeof only.position === 'string' ? only.position : ''
+    const onlyPosition = typeof onlyPosRaw === 'string' ? onlyPosRaw.trim().toUpperCase() : ''
+
     const repeat = Number(node.count || 1)
     const repeatSafe = Number.isFinite(repeat) && repeat > 0 ? repeat : 1
     const innerCount = Number(only.count || 1)
     const innerCountSafe = Number.isFinite(innerCount) && innerCount > 0 ? innerCount : 1
 
-    return { stitchId: only.stitch_id, count: repeatSafe * innerCountSafe }
+    return { stitchId: only.stitch_id, position: onlyPosition, count: repeatSafe * innerCountSafe }
   }
 
   return null
@@ -43,18 +49,81 @@ const collapseConsecutiveSameStitchesToPattern = (list) => {
 
     const last = out.length > 0 ? out[out.length - 1] : null
     const lastInfo = getRepeatedStitchInfo(last)
-    if (!lastInfo || lastInfo.stitchId !== info.stitchId) {
+    if (!lastInfo || lastInfo.stitchId !== info.stitchId || (lastInfo.position || '') !== (info.position || '')) {
       out.push(node)
       continue
     }
 
     // Merge into a compact pattern wrapper.
     const nextCount = lastInfo.count + info.count
+    const stitch = { type: 'stitch', stitch_id: info.stitchId }
+    if (info.position) stitch.position = info.position
+
     out[out.length - 1] = {
       type: 'pattern',
-      pattern: [{ type: 'stitch', stitch_id: info.stitchId }],
+      pattern: [stitch],
       count: nextCount
     }
+  }
+
+  return out
+}
+
+const cloneNode = (node) => {
+  if (!node || typeof node !== 'object') return node
+  return JSON.parse(JSON.stringify(node))
+}
+
+// Rule: if a bundle contains an inner bundle, flatten it.
+// Bundle.bundle is expected to only contain SimpleStitch nodes; nested bundles are treated as invalid
+// editor output / legacy data and are normalized into a single-level bundle.
+const flattenNestedBundles = (list) => {
+  const safe = Array.isArray(list) ? list : []
+  const out = []
+
+  for (const node of safe) {
+    if (node && typeof node === 'object' && node.type === 'bundle') {
+      const inner = Array.isArray(node.bundle) ? node.bundle : []
+      const count = Number(node.count || 1)
+      const repeat = Number.isFinite(count) && count > 0 ? Math.floor(count) : 1
+
+      // Inline inner bundle items; if inner bundle had count>1, repeat its content.
+      // (This can expand the list, but nested bundles are not expected in normal data.)
+      for (let i = 0; i < repeat; i += 1) {
+        for (const innerNode of inner) {
+          out.push(cloneNode(innerNode))
+        }
+      }
+      continue
+    }
+
+    out.push(node)
+  }
+
+  return out
+}
+
+// Rule: flatten a pattern wrapper if count is 1.
+// We do this in list context because it changes list length.
+// Conservatively skip labeled patterns to avoid losing the grouping label.
+const flattenCountOnePatterns = (list) => {
+  const safe = Array.isArray(list) ? list : []
+  const out = []
+
+  for (const node of safe) {
+    if (node && typeof node === 'object' && node.type === 'pattern') {
+      const count = Number(node.count || 1)
+      const repeat = Number.isFinite(count) && count > 0 ? Math.floor(count) : 1
+      const hasLabel = Boolean(node.label)
+      if (!hasLabel && repeat === 1) {
+        const inner = Array.isArray(node.pattern) ? node.pattern : []
+        for (const innerNode of inner) {
+          out.push(innerNode)
+        }
+        continue
+      }
+    }
+    out.push(node)
   }
 
   return out
@@ -75,7 +144,9 @@ function normalizeNode(node) {
 
   if (node.type === 'bundle') {
     const bundle = Array.isArray(node.bundle) ? node.bundle : []
-    const nextBundle = collapseConsecutiveSameStitchesToPattern(bundle.map(normalizeNode))
+    const normalizedChildren = bundle.map(normalizeNode)
+    const flattened = flattenNestedBundles(normalizedChildren)
+    const nextBundle = collapseConsecutiveSameStitchesToPattern(flattened)
 
     // Rule: bundle of two identical stitches in the same stitch
     // e.g. [X, X] -> V, [T, T] -> TV, [F, F] -> FV, [E, E] -> EV
@@ -89,12 +160,65 @@ function normalizeNode(node) {
         a?.type === 'stitch' &&
         b?.type === 'stitch' &&
         a.stitch_id === b.stitch_id &&
+        !a.position &&
+        !b.position &&
         baseIds.includes(a.stitch_id)
       ) {
         const variantId = getVariantStitchId(a.stitch_id, 'increase')
         if (variantId !== null && variantId !== undefined) {
-          return { type: 'stitch', stitch_id: variantId }
+          const label = node.label
+          const out = { type: 'stitch', stitch_id: variantId }
+          if (label) out.label = label
+          return out
         }
+      }
+    }
+
+    // Rule: bundle that only contains 2X / 2T / 2F / 2E should also translate
+    // to the increase variant (V / TV / FV / EV).
+    // This covers cases where the editor encodes "2X" as a single stitch node
+    // with count=2, or as a single-item pattern wrapper with count=2.
+    if (consume === 1 && count === 1 && nextBundle.length === 1) {
+      const only = nextBundle[0]
+      const info = getRepeatedStitchInfo(only)
+      const baseIds = [4, 7, 10, 13] // X, T, F, E
+
+      if (info && info.count === 2 && baseIds.includes(info.stitchId) && !info.position) {
+        const variantId = getVariantStitchId(info.stitchId, 'increase')
+        if (variantId !== null && variantId !== undefined) {
+          const label = node.label
+          const out = { type: 'stitch', stitch_id: variantId }
+          if (label) out.label = label
+          return out
+        }
+      }
+    }
+
+    // Rule: bundle that only contains one stitch can be simplified.
+    // (E) -> E
+    // (E) * 2 -> 2E (pattern wrapper)
+    // Only apply for consume=1 so we don't accidentally change semantics.
+    if (consume === 1 && nextBundle.length === 1) {
+      const only = nextBundle[0]
+      if (only?.type === 'stitch' && typeof only.stitch_id === 'number') {
+        const position = typeof only.position === 'string' ? only.position.trim().toUpperCase() : ''
+        const label = node.label
+        if (count > 1) {
+          const stitch = { type: 'stitch', stitch_id: only.stitch_id }
+          if (position) stitch.position = position
+          const out = {
+            type: 'pattern',
+            pattern: [stitch],
+            count
+          }
+          if (label) out.label = label
+          return out
+        }
+
+        const out = { type: 'stitch', stitch_id: only.stitch_id }
+        if (position) out.position = position
+        if (label) out.label = label
+        return out
       }
     }
 
@@ -109,7 +233,9 @@ function normalizeNode(node) {
   const patternA = Array.isArray(node.pattern) ? node.pattern : []
 
   // Normalize children first.
-  let nextPattern = collapseConsecutiveSameStitchesToPattern(patternA.map(normalizeNode))
+  let nextPattern = patternA.map(normalizeNode)
+  nextPattern = flattenCountOnePatterns(nextPattern)
+  nextPattern = collapseConsecutiveSameStitchesToPattern(nextPattern)
 
   // Merge consecutive single-item pattern wrappers.
   // Keep folding while the direct child is also a single-item pattern.
@@ -130,6 +256,7 @@ function normalizeNode(node) {
   }
 
   // After folding wrappers, collapse consecutive identical stitches again.
+  nextPattern = flattenCountOnePatterns(nextPattern)
   nextPattern = collapseConsecutiveSameStitchesToPattern(nextPattern)
 
   return {
@@ -147,7 +274,9 @@ function isCrochetNode(value) {
 
 function normalizeNodeList(list) {
   const safe = Array.isArray(list) ? list : []
-  return safe.map(normalizeNode)
+  const normalized = safe.map(normalizeNode)
+  const flattened = flattenCountOnePatterns(normalized)
+  return collapseConsecutiveSameStitchesToPattern(flattened)
 }
 
 /**

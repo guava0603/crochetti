@@ -114,9 +114,9 @@ function setActive(key) {
 }
 
 .tab__title--active {
-  border-top: 3px solid #1f6142;
-  background: white;
-  color: #0f5132;
+  border-top: 3px solid var(--color-warm-highlight-green);
+  font-weight: 900;
+  color: var(--color-warm-highlight-green);
 }
 
 .tab__title--disabled {

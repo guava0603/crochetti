@@ -8,8 +8,10 @@
     :confirm-class="state.confirmClass"
     :loading="state.loading"
     :loading-text="state.loadingText"
+    :choices="state.choices"
     @confirm="confirmConfirmation"
     @cancel="cancelConfirmation"
+    @choose="chooseConfirmation"
   />
 </template>
 
@@ -17,6 +19,7 @@
 import ConfirmationModal from './ConfirmationModal.vue'
 import {
   cancelConfirmation,
+  chooseConfirmation,
   confirmConfirmation,
   useConfirmationState
 } from '@/services/ui/confirmation'

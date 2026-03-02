@@ -37,10 +37,13 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputNumber from '@/components/Input/InputNumber.vue'
-import { getPatternItemDisplay } from '@/constants/crochetData.js'
+import { getPatternItemDisplayWithoutCount } from '@/constants/crochetData.js'
 import { getNodeSize, computeGenerateDone } from '@/utils/crochetPosition.js'
+import { useCrochetLang } from '@/composables/useCrochetLang'
 
 const { t } = useI18n({ useScope: 'global' })
+
+const { crochetLang } = useCrochetLang()
 
 const props = defineProps({
   selectionList: {
@@ -94,12 +97,22 @@ const getNodePath = (stitchList, selectionList) => {
 
 const pathNodes = computed(() => getNodePath(props.stitchList, props.selectionList))
 
+const pathLevels = computed(() => {
+  return pathNodes.value
+    .map((node) => ({
+      node,
+      size: getNodeSize(node),
+      label: getPatternItemDisplayWithoutCount(node, crochetLang.value)
+    }))
+    .filter((lvl) => lvl.size > 1)
+})
+
 const pathSizes = computed(() => {
-  return pathNodes.value.map(node => getNodeSize(node)).filter(size => size > 1)
+  return pathLevels.value.map((lvl) => lvl.size)
 })
 
 const pathLabels = computed(() => {
-  return pathNodes.value.map(node => getPatternItemDisplay(node))
+  return pathLevels.value.map((lvl) => lvl.label)
 })
 
 const selectionCounts = ref([])
@@ -131,6 +144,7 @@ const handleCancel = () => {
 
 <style scoped>
 .set-selection-position {
+  height: 35vh;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -151,6 +165,7 @@ const handleCancel = () => {
 .levels {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: 0.5rem;
 }
 

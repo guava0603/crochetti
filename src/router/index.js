@@ -6,6 +6,10 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      redirect: '/home',
+    },
+    {
+      path: '/home',
       name: 'home',
       component: HomeView,
     },
@@ -33,6 +37,11 @@ const router = createRouter({
       component: () => import('../views/DownloadDesignView.vue'),
     },
     {
+      path: '/project/:project_id/edit',
+      name: 'project-edit',
+      component: () => import('../views/EditProjectView.vue'),
+    },
+    {
       path: '/add-project',
       name: 'add-project',
       component: () => import('../views/AddProjectView.vue'),
@@ -50,6 +59,13 @@ const router = createRouter({
         params: to.params,
         query: { ...to.query, 'time-slots': '1' },
       }),
+    },
+
+    // Debug utilities
+    {
+      path: '/debug/achievement-toast',
+      name: 'debug-achievement-toast',
+      component: () => import('../views/DebugAchievementToastView.vue'),
     },
   ],
 })

@@ -18,6 +18,12 @@ function normalizeType(type) {
 }
 
 const CONFIRMATION_PRESETS = {
+  addProjectChooseComponentType: () => ({
+    title: t('confirmation.addProjectChooseComponentType.title'),
+    message: t('confirmation.addProjectChooseComponentType.message'),
+    cancelText: t('confirmation.actions.cancel')
+  }),
+
   addProjectUnexpectedGenerate: (params) => ({
     title: t('confirmation.addProjectUnexpectedGenerate.title'),
     message: t('confirmation.addProjectUnexpectedGenerate.message', { rows: params.rows }),
@@ -113,6 +119,84 @@ const CONFIRMATION_PRESETS = {
     loadingText: t('confirmation.syncProject.loadingText')
   }),
 
+  finishComponent: () => ({
+    title: t('confirmation.finishComponent.title'),
+    message: t('confirmation.finishComponent.message'),
+    confirmText: t('confirmation.finishComponent.confirmText'),
+    cancelText: t('confirmation.actions.cancel'),
+    confirmClass: 'btn-confirm'
+  }),
+
+  finishRecord: () => ({
+    title: t('confirmation.finishRecord.title'),
+    message: t('confirmation.finishRecord.message'),
+    confirmText: t('confirmation.finishRecord.confirmText'),
+    cancelText: t('confirmation.actions.cancel'),
+    confirmClass: 'btn-confirm'
+  }),
+
+  editResultAfterFinishRecord: () => ({
+    title: t('confirmation.editResultAfterFinishRecord.title'),
+    message: t('confirmation.editResultAfterFinishRecord.message'),
+    confirmText: t('confirmation.actions.yes'),
+    cancelText: t('confirmation.actions.no'),
+    confirmClass: 'btn-confirm'
+  }),
+
+  restartRecord: () => ({
+    title: t('confirmation.restartRecord.title'),
+    message: t('confirmation.restartRecord.message'),
+    confirmText: t('confirmation.restartRecord.confirmText'),
+    cancelText: t('confirmation.actions.cancel'),
+    confirmClass: 'btn-confirm-delete'
+  }),
+
+  startRecordingOnCompletedComponent: (params) => ({
+    title: t('confirmation.startRecordingOnCompletedComponent.title'),
+    message: t('confirmation.startRecordingOnCompletedComponent.message', {
+      name: params?.name || ''
+    }),
+    confirmText: t('confirmation.startRecordingOnCompletedComponent.confirmText'),
+    cancelText: t('confirmation.actions.cancel'),
+    confirmClass: 'btn-confirm'
+  }),
+
+  startRecordingNotFirstIncompleteComponent: (params) => ({
+    title: t('confirmation.startRecordingNotFirstIncompleteComponent.title'),
+    message: t('confirmation.startRecordingNotFirstIncompleteComponent.message', {
+      name: params?.name || '',
+      first: params?.first || ''
+    }),
+    confirmText: t('confirmation.startRecordingNotFirstIncompleteComponent.confirmText'),
+    cancelText: t('confirmation.actions.cancel'),
+    confirmClass: 'btn-confirm'
+  }),
+
+  endAtBeforeCurrent: (params) => ({
+    title: t('confirmation.endAtBeforeCurrent.title'),
+    message: t('confirmation.endAtBeforeCurrent.message', {
+      name: params?.name || '',
+      fromRow: params?.fromRow ?? '',
+      fromCrochet: params?.fromCrochet ?? '',
+      toRow: params?.toRow ?? '',
+      toCrochet: params?.toCrochet ?? ''
+    }),
+    confirmText: t('confirmation.endAtBeforeCurrent.confirmText'),
+    cancelText: t('confirmation.actions.cancel'),
+    confirmClass: 'btn-confirm'
+  }),
+
+  completeWholeRow: (params) => ({
+    title: t('confirmation.completeWholeRow.title'),
+    message: t('confirmation.completeWholeRow.message', {
+      name: params?.name || '',
+      row: params?.row ?? ''
+    }),
+    confirmText: t('confirmation.completeWholeRow.confirmText'),
+    cancelText: t('confirmation.completeWholeRow.cancelText'),
+    confirmClass: 'btn-confirm'
+  }),
+
   notice: (params) => ({
     title: params.title || t('confirmation.notice.title'),
     message: params.message || '',
@@ -159,6 +243,7 @@ const state = reactive({
   confirmText: DEFAULTS.confirmText,
   cancelText: DEFAULTS.cancelText,
   confirmClass: DEFAULTS.confirmClass,
+  choices: null,
   loading: DEFAULTS.loading,
   loadingText: DEFAULTS.loadingText
 })
@@ -166,11 +251,13 @@ const state = reactive({
 let pendingResolve = null
 let activeOnConfirm = null
 let activeOnCancel = null
+let activeChoices = null
 
 function cleanup() {
   pendingResolve = null
   activeOnConfirm = null
   activeOnCancel = null
+  activeChoices = null
 }
 
 function resolveAndClose(result) {
@@ -178,6 +265,7 @@ function resolveAndClose(result) {
   cleanup()
   state.show = false
   state.loading = false
+  state.choices = null
 }
 
 export function useConfirmationState() {
@@ -211,8 +299,60 @@ export function openConfirmation(options = {}) {
   state.confirmClass = presetOptions.confirmClass ?? DEFAULTS.confirmClass
   state.loadingText = presetOptions.loadingText ?? DEFAULTS.loadingText
   state.loading = Boolean(options.loading)
+  state.choices = null
+  activeChoices = null
 
   activeOnConfirm = typeof options.onConfirm === 'function' ? options.onConfirm : null
+  activeOnCancel = typeof options.onCancel === 'function' ? options.onCancel : null
+
+  state.show = true
+
+  return new Promise((resolve) => {
+    pendingResolve = resolve
+  })
+}
+
+function normalizeChoices(choices) {
+  const arr = Array.isArray(choices) ? choices : []
+  return arr
+    .map((c) => ({
+      id: c?.id != null ? String(c.id) : '',
+      label: c?.label != null ? String(c.label) : '',
+      class: c?.class ? String(c.class) : undefined
+    }))
+    .filter((c) => c.id && c.label)
+}
+
+/**
+ * Opens a global confirmation modal with multiple action choices.
+ * Resolves with the chosen choice id string, or null if canceled.
+ */
+export function openChoiceConfirmation(options = {}) {
+  const presetOptions = resolvePresetOptions(options.type)
+  const choices = normalizeChoices(options.choices)
+
+  // If one is already open, cancel it.
+  if (pendingResolve) {
+    try {
+      pendingResolve(null)
+    } catch {
+      // ignore
+    }
+    cleanup()
+  }
+
+  state.title = presetOptions.title ?? DEFAULTS.title
+  state.loading = Boolean(options.loading)
+
+  // confirm button is replaced by choices in the UI
+  state.confirmText = presetOptions.confirmText ?? DEFAULTS.confirmText
+  state.confirmClass = presetOptions.confirmClass ?? DEFAULTS.confirmClass
+
+  state.choices = choices
+  activeChoices = choices
+
+  // For choice modals, confirm callbacks are not used.
+  activeOnConfirm = null
   activeOnCancel = typeof options.onCancel === 'function' ? options.onCancel : null
 
   state.show = true
@@ -230,6 +370,9 @@ export async function confirmConfirmation() {
     return
   }
 
+  // If choices are active, ignore confirm button presses.
+  if (Array.isArray(activeChoices) && activeChoices.length) return
+
   if (!activeOnConfirm) {
     resolveAndClose(true)
     return
@@ -245,6 +388,21 @@ export async function confirmConfirmation() {
   }
 }
 
+export function chooseConfirmation(choiceId) {
+  if (!pendingResolve) {
+    state.show = false
+    state.loading = false
+    cleanup()
+    return
+  }
+
+  const id = String(choiceId || '')
+  const isValid = Array.isArray(activeChoices) && activeChoices.some((c) => c.id === id)
+  if (!isValid) return
+
+  resolveAndClose(id)
+}
+
 export function cancelConfirmation() {
   if (activeOnCancel) {
     try {
@@ -253,5 +411,6 @@ export function cancelConfirmation() {
       console.error('Confirmation onCancel failed:', error)
     }
   }
-  resolveAndClose(false)
+  const isChoice = Array.isArray(activeChoices) && activeChoices.length
+  resolveAndClose(isChoice ? null : false)
 }

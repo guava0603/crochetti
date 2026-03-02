@@ -16,7 +16,7 @@
         <div
           class="row-table-cell row-stitches"
           :class="rowStitchesClasses"
-          @click.stop="handleRowClick"
+          @click="handleRowStitchesClick"
         >
           <CrochetDisplay
             ref="crochetDisplayRef"
@@ -105,8 +105,11 @@ const rowStitchesClasses = computed(() => {
   }
 })
 
-const handleRowClick = () => {
+const handleRowStitchesClick = (event) => {
   if (props.tableType !== 'edit') return
+  if (event && typeof event.stopPropagation === 'function') {
+    event.stopPropagation()
+  }
   emit('edit-row', props.row.row_index)
 }
 
@@ -175,9 +178,9 @@ const updateNodeCount = (count) => {
   }
 }
 
-const changeSelectedStitch = (stitchId) => {
+const changeSelectedStitch = (payload) => {
   if (crochetDisplayRef.value && typeof crochetDisplayRef.value.changeSelectedStitch === 'function') {
-    crochetDisplayRef.value.changeSelectedStitch(stitchId)
+    crochetDisplayRef.value.changeSelectedStitch(payload)
   }
 }
 

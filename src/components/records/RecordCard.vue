@@ -3,165 +3,317 @@
     class="record-card"
     role="button"
     tabindex="0"
+    :data-completed="record?.is_completed ? '1' : '0'"
     @click="emit('open', record)"
     @keydown.enter.prevent="emit('open', record)"
   >
-    <div class="record-card__top">
-      <div class="record-card__title">{{ title }}</div>
+    <div class="record-card__mark" aria-hidden="true">
+      <ProgressRing
+        v-if="!record?.is_completed"
+        class="record-card__mark-ring"
+        :value="markPercent"
+      />
 
-      <div class="record-card__menu" @click.stop>
-        <MoreMenu :disabled="!isMyPage" :label="t('project.more')" :items="menuItems" />
-      </div>
+      <img
+        v-else
+        class="record-card__mark-icon"
+        :src="completeIconUrl"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
     </div>
 
-    <div v-if="meta" class="record-card__meta">{{ meta }}</div>
+    <div class="record-card__inner">
+      <div class="record-card__media">
+        <img
+          v-if="coverImageUrl"
+          class="record-card__image"
+          :src="coverImageUrl"
+          :alt="title"
+          loading="lazy"
+          decoding="async"
+        />
+
+        <div v-else class="record-card__media-placeholder" aria-hidden="true">
+          <img
+            class="record-card__default-image"
+            :src="defaultMediaUrl"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </div>
+
+      <div class="record-card__bottom">
+        <div class="record-card__title">{{ title }}</div>
+        <div v-if="timeText" class="record-card__time">{{ timeText }}</div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-import { auth } from '@/firebaseConfig'
-import MoreMenu from '@/components/buttons/MoreMenu.vue'
-import { deleteUserRecord } from '@/services/firestore/records'
-import { openConfirmation } from '@/services/ui/confirmation'
+import { formatDateTimeCompact } from '@/utils/dateTime'
+import { getRecordProgressPercent } from '@/utils/recordProgressGenerate'
+import ProgressRing from '@/components/ui/ProgressRing.vue'
 
 const props = defineProps({
   record: {
     type: Object,
     required: true
-  },
-  isMyPage: {
-    type: Boolean,
-    default: false
   }
 })
 
-const emit = defineEmits(['open', 'deleted'])
+const emit = defineEmits(['open'])
 
-const router = useRouter()
-const { t } = useI18n({ useScope: 'global' })
+const record = computed(() => props.record)
 
-const title = computed(() => props.record?.project_name || props.record?.projectName || 'Record')
+const title = computed(() => record.value?.project_name || record.value?.projectName || 'Record')
 
-const meta = computed(() => {
-  const latestMs = Number(props.record?.latest_start_ms)
-  if (Number.isFinite(latestMs) && latestMs > 0) {
-    const latest = new Date(latestMs)
+const completeIconUrl = '/assets/image/achievement/noun-complete-6294508-FFFFFF.svg'
+const defaultMediaUrl = '/assets/image/achievement/noun-crochet-5351977-FFFFFF.svg'
+
+const percentage = computed(() => {
+  const raw = record.value?.percentage
+  const n = (typeof raw === 'number')
+    ? raw
+    : (typeof raw === 'string' && raw.trim() !== '')
+        ? Number(raw)
+        : NaN
+
+  if (Number.isFinite(n)) return Math.max(0, Math.min(100, Math.round(n)))
+
+  if (record.value?.is_completed) return 100
+  if (Array.isArray(record.value?.component_list) && record.value.component_list.length) {
+    return getRecordProgressPercent(record.value)
+  }
+
+  return null
+})
+
+const markPercent = computed(() => {
+  // For incomplete cards, always show a ring.
+  if (record.value?.is_completed) return 100
+  return percentage.value == null ? 0 : percentage.value
+})
+
+const coverImageUrl = computed(() => {
+  if (!record.value?.is_completed) return ''
+  const images = Array.isArray(record.value?.images)
+    ? record.value.images
+    : Array.isArray(record.value?.result?.images)
+      ? record.value.result.images
+      : []
+
+  const first = images.find((u) => typeof u === 'string' && u.trim() !== '')
+  return first ? first.trim() : ''
+})
+
+const toMs = (input) => {
+  if (input == null) return null
+  if (typeof input === 'number' && Number.isFinite(input)) return input
+  if (input instanceof Date && !Number.isNaN(input.getTime())) return input.getTime()
+
+  if (typeof input === 'object' && typeof input.toMillis === 'function') {
     try {
-      return latest.toLocaleString()
+      const ms = input.toMillis()
+      return (typeof ms === 'number' && Number.isFinite(ms)) ? ms : null
     } catch {
-      return String(latest)
+      return null
     }
   }
 
-  const slots = Array.isArray(props.record?.time_slots) ? props.record.time_slots : []
-  const latest = slots
-    .map((s) => (s?.start ? new Date(s.start) : null))
-    .filter((d) => d && !Number.isNaN(d.getTime()))
-    .sort((a, b) => b.getTime() - a.getTime())[0]
-
-  if (!latest) return ''
-  try {
-    return latest.toLocaleString()
-  } catch {
-    return String(latest)
+  if (typeof input === 'string' && input.trim() !== '') {
+    const ms = new Date(input).getTime()
+    return Number.isNaN(ms) ? null : ms
   }
-})
 
-const menuItems = computed(() => {
-  return [
-    {
-      action: 'goToDesign',
-      label: t('record.goToDesign'),
-      disabled: !props.record?.project_id,
-      onSelect: () => goToDesign()
-    },
-    {
-      action: 'deleteRecord',
-      label: t('record.deleteRecord'),
-      danger: true,
-      onSelect: () => handleDelete()
-    }
-  ]
-})
-
-function goToDesign() {
-  const projectId = props.record?.project_id
-  if (!projectId) return
-  router.push(`/project/${projectId}`)
+  return null
 }
 
-async function handleDelete() {
-  if (!props.isMyPage) return
+const recordTimeMs = computed(() => {
+  const r = record.value
+  if (!r || typeof r !== 'object') return null
 
-  const uid = auth.currentUser?.uid
-  if (!uid) return
+  const directUpdated = toMs(r.updated_at) ?? toMs(r.updatedAt)
+  if (directUpdated != null) return directUpdated
 
-  const ok = await openConfirmation({
-    type: 'deleteRecord',
-    onConfirm: async () => {
-      await deleteUserRecord(uid, props.record.id)
-      emit('deleted', props.record)
-    }
-  })
+  const updatedMs = toMs(r.updated_at_ms) ?? toMs(r.updatedAtMs)
+  if (updatedMs != null) return updatedMs
 
-  return ok
-}
+  const latestStart = toMs(r.latest_start_ms)
+  if (latestStart != null) return latestStart
+
+  const slots = Array.isArray(r.time_slots) ? r.time_slots : []
+  if (slots.length) {
+    const latest = Math.max(
+      ...slots
+        .map((s) => toMs(s?.start))
+        .filter((n) => typeof n === 'number' && Number.isFinite(n))
+    )
+    if (Number.isFinite(latest) && latest > 0) return latest
+  }
+
+  return toMs(r.created_at) ?? toMs(r.createdAt)
+})
+
+const timeText = computed(() => {
+  const ms = recordTimeMs.value
+  if (ms == null) return ''
+  return formatDateTimeCompact(ms)
+})
 </script>
 
 <style scoped>
 .record-card {
+  --rc-bg: var(--color-white);
+  --rc-text: #5a524b;
+  --rc-sub: #9c948a;
+  --rc-accent-pink: rgba(232, 168, 156, 0.45);
+  --rc-border: rgba(90, 82, 75, 0.75);
+  --rc-mark-green: var(--color-warm-highlight-green);
+
+  --rc-mark-size: clamp(2.6rem, 9vw, 2.9rem);
+  --rc-mark-top: clamp(0.3rem, 1.2vw, 0.4rem);
+  --rc-mark-pad: clamp(0.3rem, 1.2vw, 0.4rem);
+
   position: relative;
-  z-index: 0;
   width: 100%;
   text-align: left;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: white;
-  border-radius: 12px;
-  padding: 1rem 1rem;
+  padding-top: calc(var(--rc-mark-size) * 0.56);
   cursor: pointer;
-  transition: transform 0.05s, box-shadow 0.15s, border-color 0.15s;
-}
+  -webkit-tap-highlight-color: transparent;
 
-.record-card:hover {
-  border-color: rgba(66, 185, 131, 0.35);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
-  z-index: 5;
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .record-card:active {
-  transform: translateY(1px);
+  transform: scale(0.97) rotate(-0.6deg);
 }
 
-.record-card:focus-within {
-  z-index: 5;
+.record-card:focus-visible {
+  outline: 0.125rem solid rgba(66, 185, 131, 0.55);
+  outline-offset: 0.125rem;
+  border-radius: 1.125rem;
 }
 
-.record-card__top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.record-card__menu {
-  flex: none;
+.record-card__mark {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: var(--rc-mark-top);
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--rc-mark-size);
+  height: var(--rc-mark-size);
+  border-radius: 999px;
+  background: var(--rc-bg);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+}
+
+.record-card[data-completed='1'] .record-card__mark {
+  background: var(--rc-mark-green);
+  padding: var(--rc-mark-pad);
+}
+
+.record-card__mark-ring {
+  display: block;
+}
+
+.record-card__mark-icon {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.record-card__inner {
+  position: relative;
+  z-index: 1;
+  background: var(--rc-bg);
+  border: 0.125rem solid var(--rc-border);
+  border-radius: 0.9375rem 1.5625rem 1.25rem 1.875rem / 1.5625rem 0.9375rem 1.875rem 1.25rem;
+  box-shadow: 0.25rem 0.375rem 1rem rgba(149, 133, 119, 0.12);
+  padding: 0.75rem 0.85rem;
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 0.6rem;
+}
+
+.record-card__media {
+  height: clamp(6.5rem, 22vw, 7.25rem);
+  width: 100%;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(226, 232, 206, 0.25);
+  border: 0.0625rem solid rgba(90, 82, 75, 0.18);
+}
+
+.record-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.record-card__media-placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: var(--color-surface-accent);
+}
+
+.record-card__default-image {
+  width: clamp(2.4rem, 10vw, 3.4rem);
+  height: clamp(2.4rem, 10vw, 3.4rem);
+  display: block;
+  opacity: 0.95;
+  filter: drop-shadow(0 0.15rem 0 rgba(0, 0, 0, 0.12));
+}
+
+.record-card__bottom {
+  min-height: 1.75rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto;
+  row-gap: 0.15rem;
+  align-content: end;
 }
 
 .record-card__title {
   font-weight: 900;
-  color: #111827;
-  margin-bottom: 0.35rem;
+  color: var(--rc-text);
+  margin: 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.record-card__meta {
-  color: #6b7280;
-  font-size: 0.875rem;
-  font-weight: 700;
+.record-card__time {
+  justify-self: end;
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 800;
+  color: var(--rc-sub);
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+
+
+@media (prefers-reduced-motion: reduce) {
+  .record-card {
+    transition: none;
+  }
+
+  .record-card:active {
+    transform: none;
+  }
 }
 </style>

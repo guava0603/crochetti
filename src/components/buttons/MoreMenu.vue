@@ -1,5 +1,10 @@
 <template>
-  <div ref="rootRef" class="more-menu" @keydown.esc.stop.prevent="close">
+  <div
+    ref="rootRef"
+    class="more-menu"
+    :class="{ 'more-menu--sm': type === 'sm' }"
+    @keydown.esc.stop.prevent="close"
+  >
     <button
       class="more-menu__button"
       type="button"
@@ -9,7 +14,9 @@
       @click="toggle"
     >
       <slot name="icon">
-        <span class="more-menu__icon" aria-hidden="true">⋯</span>
+        <span class="more-menu__icon" aria-hidden="true">
+          <ButtonSettingIcon />
+        </span>
       </slot>
       <span class="sr-only">{{ label }}</span>
     </button>
@@ -37,15 +44,23 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import ButtonSettingIcon from '@/components/buttons/svg/ButtonSetting.vue'
 
 const props = defineProps({
   disabled: { type: Boolean, default: false },
+  type: {
+    type: String,
+    default: 'md',
+    validator: (v) => ['md', 'sm'].includes(v)
+  },
   label: { type: String, default: 'More' },
   items: {
     type: Array,
     default: () => []
   }
 })
+
+const type = computed(() => props.type)
 
 const emit = defineEmits(['select'])
 
@@ -132,7 +147,7 @@ onUnmounted(() => {
 }
 
 .more-menu__button:hover {
-  background: #f3f4f6;
+  background: rgba(243, 244, 246, 0.98);
 }
 
 .more-menu__button:active {
@@ -145,17 +160,31 @@ onUnmounted(() => {
 }
 
 .more-menu__icon {
-  font-size: 1rem;
-  font-weight: 800;
-  line-height: 1;
-  transform: translateY(-1px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: #111827;
+}
+
+/* Flatten ButtonSettingIcon when used inside this button */
+.more-menu__icon :deep(.svg-button-block) {
+  width: 20px;
+  height: 20px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .more-menu__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   position: absolute;
   right: 0;
   top: calc(100% + 10px);
-  min-width: 180px;
+  min-width: 160px;
   padding: 0.35rem;
   border-radius: 12px;
   border: 1px solid rgba(0, 0, 0, 0.1);
@@ -164,12 +193,17 @@ onUnmounted(() => {
   z-index: 2000;
 }
 
+.more-menu--sm .more-menu__panel {
+  min-width: unset;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+}
+
 .more-menu__panel :deep(.more-menu__item) {
   display: flex;
-  width: 100%;
+  width: calc(100% - 1.5rem);
   text-align: left;
-  padding: 0.6rem 0.75rem;
-  border-radius: 10px;
+  padding: 0.6rem 0.2rem;
   border: none;
   background: transparent;
   color: #111827;
@@ -189,6 +223,7 @@ onUnmounted(() => {
 
 .more-menu__panel :deep(.more-menu__item--danger) {
   color: #b91c1c;
+  border-top: 1px solid #eaeaea;
 }
 
 .sr-only {

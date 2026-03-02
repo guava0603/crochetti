@@ -1,26 +1,19 @@
 <template>
   <div class="project-view">
-    <TopBanner
-      v-if="projectData"
-      fixed
-      :more-disabled="savingProject"
-      more-label="More"
-      :more-items="projectMoreItems"
-      @last-page="lastPage"
-    >
-      <template #title>
-        <span v-if="!isProjectEditing" class="top-banner__title-text">{{ projectData.name }}</span>
-        <input
-          v-else
-          v-model="draftProject.name"
-          class="project-name-input"
-          type="text"
-          autocomplete="off"
-          :placeholder="$t('project.namePlaceholder')"
-          @keydown.enter.prevent="confirmProjectEdit"
-        />
-      </template>
-    </TopBanner>
+    <div class="project-banner" role="banner">
+      <button
+        type="button"
+        class="project-banner__back"
+        :aria-label="$t('common.back')"
+        @click="lastPage"
+      >
+        <LastPage />
+      </button>
+
+      <div class="header-actions project-banner__actions">
+        <ButtonGroup :items="projectActionItems" />
+      </div>
+    </div>
 
     <div v-if="noticeMessage" class="notice" role="status" aria-live="polite">
       {{ noticeMessage }}
@@ -34,192 +27,386 @@
       {{ $t('project.noPermission') }}
     </div>
 
-    <div v-else-if="projectData" class="page-content page-content--with-top-banner">
-      <div class="header-actions">
-        <div
-          v-if="isProjectOwner"
-          class="mode-switch"
-          :title="isProjectEditing ? $t('project.editMode') : $t('project.viewMode')"
-        >
-          <span class="mode-switch__label">{{ isProjectEditing ? $t('project.editMode') : $t('project.viewMode') }}</span>
-          <label class="switch" aria-label="Toggle edit mode">
-            <input
-              type="checkbox"
-              :checked="isProjectEditing"
-              :disabled="savingProject"
-              @change="onModeToggle"
-            />
-            <span class="slider"></span>
-          </label>
-        </div>
-      </div>
+    <div
+      v-else-if="projectData"
+      class="page-content"
+      :class="{ 'page-content--banner-offset': !projectImages.length }"
+    >
+      <ImageGroup v-if="projectImages.length" :images="projectImages" class="project-image-carousel" />
 
-      <div class="project-description">
-        <textarea
-          v-if="isProjectEditing"
-          v-model="draftProject.description"
-          class="project-description-input"
-          rows="3"
-          :placeholder="$t('project.descriptionPlaceholder')"
-        />
-        <p v-else-if="projectData?.description" class="project-description-text">
-          {{ projectData.description }}
-        </p>
-      </div>
-
-      <div
-        v-if="isProjectOwner && isProjectEditing && draftProject"
-        class="visibility-switch"
-        :title="$t('project.visibility')"
+      <BottomSheetScroll
+        class="project-content"
+        :min-vh="40"
+        :max-vh="90"
+        :initial-vh="70"
+        :snap-on-first-gesture="true"
+        :style="{ '--bottom-sheet-max-width': '1200px', '--bottom-sheet-z': '55' }"
       >
-        <!-- <span class="visibility-switch__label">{{ $t('project.visibility') }}</span> -->
-        <span class="visibility-switch__state">
-          {{ draftProject.is_public ? $t('project.public') : $t('project.private') }}
-        </span>
-        <label class="switch" :aria-label="$t('project.visibility')">
-          <input
-            v-model="draftProject.is_public"
-            type="checkbox"
-            :disabled="savingProject"
-          />
-          <span class="slider"></span>
-        </label>
+        <template #header>
+          <div class="project-title-section">
+            <span>{{ projectData.name }}</span>
+          </div>
+        </template>
+
+        <div v-if="projectData?.description?.length > 0" class="project-description">
+          <p class="project-description-text">
+            {{ projectData.description }}
+          </p>
+        </div>
+
+        <section v-if="false" class="project-record-tracking" aria-label="record tracking">
+          <div class="project-record-tracking__header">
+            <span class="project-record-tracking__title">{{ t('project.recordTracking.title') }}</span>
+          </div>
+
+          <div class="project-record-tracking__lists">
+            <div class="project-record-tracking__list">
+              <div class="project-record-tracking__label">
+                {{ t('project.recordTracking.ongoing') }} ({{ projectRecordOngoingIds.length }})
+              </div>
+              <ul v-if="projectRecordOngoingIds.length" class="project-record-tracking__items">
+                <li
+                  v-for="rid in projectRecordOngoingIds"
+                  :key="`ongoing-${rid}`"
+                  class="project-record-tracking__item"
+                >
+                  {{ rid }}
+                </li>
+              </ul>
+              <div v-else class="project-record-tracking__empty">{{ t('project.recordTracking.empty') }}</div>
+            </div>
+
+            <div class="project-record-tracking__list">
+              <div class="project-record-tracking__label">
+                {{ t('project.recordTracking.completed') }} ({{ projectRecordCompletedIds.length }})
+              </div>
+              <ul v-if="projectRecordCompletedIds.length" class="project-record-tracking__items">
+                <li
+                  v-for="rid in projectRecordCompletedIds"
+                  :key="`completed-${rid}`"
+                  class="project-record-tracking__item"
+                >
+                  {{ rid }}
+                </li>
+              </ul>
+              <div v-else class="project-record-tracking__empty">{{ t('project.recordTracking.empty') }}</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Display each component -->
+        <div class="design-cards">
+          <CarouselWithDot
+            :items="componentList"
+            :aria-label="t('project.components')"
+            item-width="100%"
+            :item-key="(_c, i) => i"
+            :get-dot-variant="(item) => (item?.type === 'stitch' ? 'outline' : 'solid')"
+            class="component-card-carousel"
+          >
+            <template #default="{ item, index }">
+              <div
+                class="component-card-carousel__slide"
+                :ref="(el) => setComponentSlideEl(el, index)"
+                @click="(e) => handleComponentSlideClick(index, e)"
+              >
+                <ComponentCard
+                  :component="item"
+                  :component-list="componentList"
+                  :component-index="index"
+                />
+              </div>
+            </template>
+          </CarouselWithDot>
+        </div>
+      </BottomSheetScroll>
+
+      <div class="floating-play">
+        <PlayButton @click="handlePlayClick" />
       </div>
 
-      <!-- Display each component -->
-      <div class="design-cards">
-        <ComponentCard
-          v-for="(component, cIndex) in activeProject.component_list"
-          :key="cIndex"
-          :component="component"
-          :is-editing="isProjectEditing"
-          @remove="removeComponent(cIndex)"
-        >
-        </ComponentCard>
-      </div>
-
-      <!-- Add Component Buttons (only show when in project edit mode) -->
-      <div v-if="isProjectEditing" class="add-component-section">
-        <button type="button" @click="addComponentOfType('component')" class="btn-add-type">
-          + Component
-        </button>
-        <button type="button" @click="addComponentOfType('stitch')" class="btn-add-type">
-          + Stitch
-        </button>
-      </div>
-
-      <div v-if="isProjectEditing" class="bottom-actions" role="region" :aria-label="$t('project.confirmUpdate')">
-        <button
-          class="btn-save"
-          type="button"
-          :disabled="savingProject || !isProjectDirty"
-          @click="confirmProjectEdit"
-        >
-          {{ savingProject ? $t('project.saving') : $t('common.save') }}
-        </button>
-      </div>
+      <RecordSelectionModal
+        v-bind="recordModal"
+        @cancel="showRecordModal = false"
+        @resume="handleResumeRecord"
+        @start-new="handleStartNewRecord"
+      />
     </div>
 
-    <div v-if="!projectData">
+    <div v-else>
       <p>{{ $t('project.notFound') }}</p>
     </div>
-
-    <div v-else-if="!isProjectEditing" class="floating-play">
-      <PlayButton @click="handlePlayClick" />
-    </div>
-
-    <RecordSelectionModal
-      v-bind="recordModal"
-      @cancel="showRecordModal = false"
-      @resume="handleResumeRecord"
-      @start-new="handleStartNewRecord"
-    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onBeforeUnmount, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { auth } from '../firebaseConfig'
 import { onAuthStateChanged } from 'firebase/auth'
-import ComponentCard from '../components/cards/ComponentCard.vue'
+import ComponentCard from '../components/cards/ComponentCard.vue/index.vue'
 import PlayButton from '../components/buttons/PlayButton.vue'
-import TopBanner from '@/components/layout/TopBanner.vue'
+import LastPage from '../components/buttons/LastPage.vue'
+import ImageGroup from '@/components/Carousel/ImageGroup.vue'
+import CarouselWithDot from '@/components/Carousel/CarouselWithDot.vue'
+import ButtonGroup from '@/components/buttons/ButtonGroup.vue'
+import ButtonPrinter from '@/components/buttons/svg/ButtonPrinter.vue'
+import ButtonEdit from '@/components/buttons/svg/ButtonEdit.vue'
+import ButtonLink from '@/components/buttons/svg/ButtonLink.vue'
+import ButtonStar from '@/components/buttons/svg/ButtonStar.vue'
+import BottomSheetScroll from '@/components/layout/BottomSheetScroll.vue'
 import RecordSelectionModal from '../components/modals/RecordSelectionModal.vue'
 import { v4 as uuidv4 } from '@lukeed/uuid'
 import { normalizeComponentListForRecord } from '@/utils/componentInstances'
-import { fetchProject, updateProject } from '@/services/firestore/projects'
+import { addRecordToProjectOngoing, fetchProject } from '@/services/firestore/projects'
 import { listUserRecordsByProjectId, setUserRecord } from '@/services/firestore/records'
-import { isCurrentUser } from '@/services/firestore/user'
-import { openConfirmation } from '@/services/ui/confirmation'
+import {
+  isCurrentUser,
+  saveProjectToSaveList,
+  subscribeUserProfile,
+  unsaveProjectFromSaveList
+} from '@/services/firestore/user'
 import { openError } from '@/services/ui/notice'
+import { openToast } from '@/services/ui/toast'
+import { useAchievementStore } from '@/stores/achievementStore'
 
 const { t } = useI18n({ useScope: 'global' })
+
+const achievementStore = useAchievementStore()
 
 const route = useRoute()
 const router = useRouter()
 const projectId = ref(route.params.project_id)
 const projectData = ref(null)
-const draftProject = ref(null)
 const loading = ref(true)
 const permissionDenied = ref(false)
-const isProjectEditing = ref(false)
 const showRecordModal = ref(false)
 const existingRecords = ref([])
 
+const currentUserProfile = ref(null)
+let unsubscribeCurrentUserProfile = null
+
 const noticeMessage = ref('')
 let noticeTimer = null
-const savingProject = ref(false)
-
-const projectMoreItems = computed(() => {
-  return [
-    {
-      key: 'download-design',
-      label: 'download design',
-      disabled: isProjectEditing.value || !projectData.value,
-      onSelect: downloadDesign
-    }
-  ]
-})
-
-const downloadDesign = () => {
-  if (isProjectEditing.value) {
-    showNotice('Please switch to view mode to download.')
-    return
-  }
-
-  router.push({
-    name: 'project-download-design',
-    params: { project_id: projectId.value }
-  })
-}
 
 const isProjectOwner = computed(() => {
   const authorId = projectData.value?.authorId
   return isCurrentUser(authorId)
 })
 
-const activeProject = computed(() => {
-  return isProjectEditing.value ? (draftProject.value || { name: '', component_list: [] }) : (projectData.value || { name: '', component_list: [] })
+const isSavedByCurrentUser = computed(() => {
+  const uid = auth.currentUser?.uid
+  if (!uid) return false
+  const list = currentUserProfile.value?.save_project_list
+  if (!Array.isArray(list)) return false
+  return list.map(String).includes(String(projectId.value))
 })
 
-const isProjectDirty = computed(() => {
-  if (!isProjectEditing.value) return false
-  if (!draftProject.value || !projectData.value) return false
-  const a = JSON.stringify({
-    name: draftProject.value.name,
-    description: draftProject.value.description,
-    is_public: Boolean(draftProject.value.is_public),
-    component_list: draftProject.value.component_list
+const goEditProject = () => {
+  router.push({
+    name: 'project-edit',
+    params: { project_id: projectId.value }
   })
-  const b = JSON.stringify({
-    name: projectData.value.name,
-    description: projectData.value.description,
-    is_public: Boolean(projectData.value.is_public),
-    component_list: projectData.value.component_list
+}
+
+const projectActionItems = computed(() => {
+  if (isProjectOwner.value) {
+    return [
+      {
+        key: 'copy-link',
+        icon: ButtonLink,
+        ariaLabel: t('project.actions.copyProjectLink'),
+        onClick: copyProjectLink
+      },
+      {
+        key: 'download-design',
+        icon: ButtonPrinter,
+        ariaLabel: t('project.actions.downloadDesign'),
+        onClick: downloadDesign
+      },
+      {
+        key: 'edit-project',
+        icon: ButtonEdit,
+        ariaLabel: t('project.actions.editProject'),
+        onClick: goEditProject
+      }
+    ]
+  }
+
+  return [
+    {
+      key: 'copy-link',
+      icon: ButtonLink,
+      ariaLabel: t('project.actions.copyProjectLink'),
+      onClick: copyProjectLink
+    },
+    {
+      key: 'save-project',
+      icon: ButtonStar,
+      iconProps: { isSelected: isSavedByCurrentUser.value },
+      ariaLabel: isSavedByCurrentUser.value
+        ? t('project.actions.unsaveProject')
+        : t('project.actions.saveProject'),
+      onClick: toggleSaveProject
+    }
+  ]
+})
+
+const downloadDesign = () => {
+  router.push({
+    name: 'project-download-design',
+    params: { project_id: projectId.value }
   })
-  return a !== b
+}
+
+const copyProjectLink = async () => {
+  try {
+    const href = router.resolve({ path: `/project/${projectId.value}` }).href
+    const url = new URL(href, window.location.origin).toString()
+
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+      await navigator.clipboard.writeText(url)
+      openToast({ message: t('project.linkCopiedNotice') })
+      return
+    }
+
+    window.prompt(t('project.copyLinkPrompt'), url)
+  } catch (error) {
+    console.error('Error copying project link:', error)
+    openError({
+      title: t('common.error'),
+      message: t('project.errors.copyLinkFailed'),
+      confirmText: t('common.ok')
+    })
+  }
+}
+
+const toggleSaveProject = async () => {
+  const user = auth.currentUser
+  if (!user?.uid) {
+    openError({
+      title: t('common.error'),
+      message: t('auth.loginRequired'),
+      confirmText: t('common.ok')
+    })
+    return
+  }
+
+  const pid = String(projectId.value)
+  const prevProfile = currentUserProfile.value
+  const prevList = Array.isArray(prevProfile?.save_project_list)
+    ? prevProfile.save_project_list.map(String)
+    : []
+
+  try {
+    if (isSavedByCurrentUser.value) {
+      // Optimistic UI update
+      currentUserProfile.value = {
+        ...prevProfile,
+        save_project_list: prevList.filter((x) => x !== pid)
+      }
+
+      await unsaveProjectFromSaveList({
+        userId: user.uid,
+        projectId: projectId.value
+      })
+      openToast({ message: t('project.toasts.unsavedProject') })
+    } else {
+      // Optimistic UI update
+      currentUserProfile.value = {
+        ...prevProfile,
+        save_project_list: [...new Set([...prevList, pid])]
+      }
+
+      await saveProjectToSaveList({
+        userId: user.uid,
+        projectId: projectId.value
+      })
+      openToast({ message: t('project.toasts.savedProject') })
+    }
+  } catch (error) {
+    console.error('Error toggling saved project:', error)
+
+    // Revert optimistic update on failure
+    currentUserProfile.value = prevProfile
+
+    openError({
+      title: t('common.error'),
+      message: t('project.errors.updateSavedFailed'),
+      confirmText: t('common.ok')
+    })
+  }
+}
+
+const componentList = computed(() => {
+  const list = projectData.value?.component_list
+  return Array.isArray(list) ? list : []
+})
+
+const componentSlideEls = ref([])
+
+const setComponentSlideEl = (el, index) => {
+  if (!el) return
+  componentSlideEls.value[index] = el
+}
+
+const getScrollBehavior = (preferred = 'smooth') => {
+  try {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return 'auto'
+    }
+  } catch {
+    // ignore
+  }
+  return preferred
+}
+
+const scrollToComponentTable = async (index) => {
+  await nextTick()
+  const wrap = componentSlideEls.value?.[index]
+  if (!wrap || typeof wrap.querySelector !== 'function') return
+
+  const target =
+    wrap.querySelector?.('.crochet-table') ||
+    wrap.querySelector?.('table') ||
+    wrap
+
+  const banner = document.querySelector?.('.project-banner')
+  const offset = (banner?.offsetHeight || 0) + 8
+  const top = target.getBoundingClientRect().top + window.scrollY - offset
+
+  window.scrollTo({ top: Math.max(0, top), behavior: getScrollBehavior('smooth') })
+}
+
+const handleComponentSlideClick = async (index, event) => {
+  const target = event?.target
+  if (target?.closest?.('.crochet-table')) return
+  if (target?.closest?.('button, a, input, textarea, select, label')) return
+  await scrollToComponentTable(index)
+}
+
+const projectImages = computed(() => {
+  const p = projectData.value || {}
+  const images = Array.isArray(p.images) ? p.images : []
+  const urls = images
+    .filter((x) => typeof x === 'string')
+    .map((x) => x.trim())
+    .filter(Boolean)
+
+  if (urls.length) return urls
+  if (typeof p.image === 'string' && p.image.trim()) return [p.image.trim()]
+  return []
+})
+
+const projectRecordOngoingIds = computed(() => {
+  const list = projectData.value?.record?.ongoing_list
+  return Array.isArray(list) ? list.map(String).filter(Boolean) : []
+})
+
+const projectRecordCompletedIds = computed(() => {
+  const list = projectData.value?.record?.completed_list
+  return Array.isArray(list) ? list.map(String).filter(Boolean) : []
 })
 
 function showNotice(message) {
@@ -260,14 +447,24 @@ onMounted(async () => {
   try {
     await waitForAuthReady()
 
+    if (auth.currentUser?.uid) {
+      unsubscribeCurrentUserProfile = subscribeUserProfile({
+        userId: auth.currentUser.uid,
+        fallbackProfile: { save_project_list: [] },
+        onData: (profile) => {
+          currentUserProfile.value = profile
+        },
+        onError: (error) => {
+          console.error('Error listening to current user profile:', error)
+        }
+      })
+    }
+
     projectData.value = await fetchProject(projectId.value)
 
     if (!projectData.value) {
       console.error('Project not found')
     }
-
-    draftProject.value = null
-
     if (route.query?.copied === '1') {
       showNotice(t('project.copiedNotice'))
       const nextQuery = { ...route.query }
@@ -281,170 +478,13 @@ onMounted(async () => {
     loading.value = false
   }
 })
-// Project-level edit mode
-const startProjectEdit = () => {
-  isProjectEditing.value = true
-  draftProject.value = projectData.value ? JSON.parse(JSON.stringify(projectData.value)) : { name: '', description: '', component_list: [] }
-  if (!Object.prototype.hasOwnProperty.call(draftProject.value, 'description')) {
-    draftProject.value.description = ''
+
+onBeforeUnmount(() => {
+  if (typeof unsubscribeCurrentUserProfile === 'function') {
+    unsubscribeCurrentUserProfile()
+    unsubscribeCurrentUserProfile = null
   }
-}
-
-const cancelProjectEdit = () => {
-  isProjectEditing.value = false
-  draftProject.value = null
-}
-
-const confirmProjectEdit = async () => {
-  if (!draftProject.value) return
-  const nextName = String(draftProject.value?.name || '').trim()
-  if (!nextName) return
-
-  const normalizeStringList = (value) => {
-    if (Array.isArray(value)) return value.map((v) => String(v || '').trim())
-    const s = String(value || '').trim()
-    return s ? [s] : []
-  }
-
-  const uniqueNonEmpty = (list) => {
-    const seen = new Set()
-    const out = []
-    for (const raw of normalizeStringList(list)) {
-      const v = String(raw || '').trim()
-      if (!v) continue
-      if (seen.has(v)) continue
-      seen.add(v)
-      out.push(v)
-    }
-    return out
-  }
-
-  const normalizeProjectMaterialsInPlace = (componentList) => {
-    const list = Array.isArray(componentList) ? componentList : []
-    for (const component of list) {
-      const isPart = !component?.type || component?.type === 'component'
-      if (!isPart) continue
-
-      const legacyYarn = typeof component?.metadata?.yarn === 'string' ? component.metadata.yarn : ''
-      const legacyHook = typeof component?.metadata?.hook === 'string' ? component.metadata.hook : ''
-
-      const yarnValues = uniqueNonEmpty(component?.yarn?.length ? component.yarn : legacyYarn)
-      const hookValues = uniqueNonEmpty(component?.hook?.length ? component.hook : legacyHook)
-
-      component.yarn = yarnValues
-      component.hook = hookValues
-      if (!component.metadata || typeof component.metadata !== 'object') component.metadata = {}
-      component.metadata.yarn = yarnValues
-      component.metadata.hook = hookValues
-    }
-  }
-
-  savingProject.value = true
-  try {
-    draftProject.value.name = nextName
-    draftProject.value.description = String(draftProject.value?.description || '').trim()
-    normalizeProjectMaterialsInPlace(draftProject.value.component_list)
-    await updateProject(projectId.value, { ...draftProject.value })
-    projectData.value = JSON.parse(JSON.stringify(draftProject.value))
-    isProjectEditing.value = false
-    draftProject.value = null
-    showNotice(t('project.savedNotice'))
-  } catch (error) {
-    console.error('Error updating project:', error)
-    openError({
-      title: t('common.error'),
-      message: 'Failed to update project',
-      confirmText: t('common.ok')
-    })
-  } finally {
-    savingProject.value = false
-  }
-}
-
-
-function onModeToggle(e) {
-  const next = Boolean(e?.target?.checked)
-
-  if (next && !isProjectOwner.value) {
-    if (e?.target) e.target.checked = false
-    return
-  }
-
-  if (next) {
-    startProjectEdit()
-    return
-  }
-
-  if (isProjectDirty.value) {
-    const ok = window.confirm(t('project.discardConfirm'))
-    if (!ok) {
-      if (e?.target) e.target.checked = true
-      return
-    }
-  }
-
-  cancelProjectEdit()
-}
-
-
-// Component creation helpers
-const createPart = () => ({
-  type: 0,
-  row_list: [],
-  row_groups: [],
-  consume: 0,
-  generate: 0
 })
-
-const createComponent = (index, type = 'component') => {
-  const component = {
-    name: `${(draftProject.value?.name || projectData.value?.name || 'Project')} ${index + 1}`,
-    type: type,
-    count: 1,
-    yarn: [''],
-    hook: [''],
-    metadata: {
-      yarn: [],
-      hook: []
-    }
-  }
-
-  if (type === 'component') {
-    component.content = createPart()
-    component.notes = []
-  } else {
-    component.content = { text: '' }
-  }
-
-  return component
-}
-
-const addComponentOfType = async (type) => {
-  if (!isProjectEditing.value || !draftProject.value) return
-
-  const index = draftProject.value.component_list.length
-  const newComponent = createComponent(index, type)
-
-  // Add to draft only; saved by top-level confirm
-  draftProject.value.component_list.push(newComponent)
-}
-
-const removeComponent = async (cIndex) => {
-  if (!isProjectEditing.value || !draftProject.value) return
-  if (!Array.isArray(draftProject.value.component_list)) return
-
-  const component = draftProject.value.component_list?.[cIndex]
-  const name = String(component?.name || '').trim()
-
-  const displayName = name || `#${cIndex + 1}`
-
-  const ok = await openConfirmation({
-    type: { id: 'removeComponent', params: { name: displayName } }
-  })
-
-  if (!ok) return
-  draftProject.value.component_list.splice(cIndex, 1)
-}
 
 
 // Record tracking functions
@@ -508,11 +548,37 @@ const handleStartNewRecord = async () => {
     project_name: projectData.value.name,
     component_list: cList,
     time_slots: [],
-    self_defined_status: []
+    self_defined_status: [],
+    // Use client timestamp for immediate achievement evaluation.
+    created_at: new Date().toISOString()
   }
   // Save to Firestore
   try {
     await setUserRecord(user.uid, record_id, newRecord)
+
+    achievementStore.scanAndAwardNow(user.uid).catch((e) => {
+      console.warn('[achievements] scan after start record failed:', e)
+    })
+
+    try {
+      await addRecordToProjectOngoing(projectId.value, record_id)
+      if (projectData.value) {
+        const prev = projectData.value?.record || {}
+        const nextOngoing = Array.isArray(prev.ongoing_list) ? prev.ongoing_list.map(String) : []
+        if (!nextOngoing.includes(String(record_id))) {
+          projectData.value = {
+            ...projectData.value,
+            record: {
+              ...prev,
+              ongoing_list: [...nextOngoing, String(record_id)]
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('[project record tracking] failed to add ongoing record:', error)
+    }
+
     router.push(`/record/${record_id}`)
   } catch (error) {
     console.error('Error creating new record:', error)
@@ -525,36 +591,57 @@ const handleStartNewRecord = async () => {
 }
 
 const lastPage = () => {
+  router.go(-1)
   // user/:user_id
-  router.push({ name: 'user', params: { user_id: projectData.value?.authorId } })
+  // router.push({ name: 'user', params: { user_id: projectData.value?.authorId } })
 }
 </script>
 
 <style scoped>
 .project-view {
+  --project-banner-height: 8vh;
   max-width: 1200px;
   margin: 0 auto;
   padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+  height: 100vh;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-.bottom-actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 20;
+.project-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: calc(var(--project-banner-height) + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
   display: flex;
-  justify-content: flex-end;
   align-items: center;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-  padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  justify-content: space-between;
+  z-index: 100;
+  box-sizing: border-box;
+}
+
+.project-banner__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+
+.project-banner__actions {
+  display: inline-flex;
+  align-items: center;
 }
 
 .notice {
   position: sticky;
-  top: 0.75rem;
+  top: calc(var(--project-banner-height) + env(safe-area-inset-top) + 0.75rem);
   z-index: 50;
   margin-bottom: 1rem;
   padding: 0.75rem 1rem;
@@ -587,34 +674,66 @@ const lastPage = () => {
 }
 
 .page-content {
-  padding-left: 2rem;
-  padding-right: 2rem;
+  background: var(--color-surface-page);
+  height: 100%;
+  overflow: hidden;
+}
+
+.page-content--banner-offset {
+  padding-top: calc(var(--project-banner-height) * 1.5 + env(safe-area-inset-top));
+}
+
+.project-title-section {
+  display: block;
+  width: fit-content;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  padding: 0.5rem 1.5rem 0.1rem;
+  border-top-right-radius: 2.5rem;
+  background: var(--color-surface-sheet);
+}
+.project-title-section span {
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.project-contenrt-wrapper {
+  padding: 0 2rem;
 }
 
 .design-cards {
   display: block;
+  padding: 1rem;
+}
+
+.component-card-carousel {
+  margin-top: 0.25rem;
+}
+
+/* ProjectView: align the card/table with page padding */
+.component-card-carousel :deep(.carousel__row) {
+  padding-left: 0;
+  padding-right: 0;
+  gap: 0;
+  scroll-padding-left: 0;
+  scroll-padding-right: 0;
+}
+
+/* ProjectView: use dots only (no arrows) */
+.component-card-carousel :deep(.carousel__arrow) {
+  display: none;
+}
+
+.component-card-carousel__slide {
+  width: 100%;
 }
 
 .project-description {
   display: flex;
   justify-content: center;
   margin: 1.5rem 0;
-}
-
-.project-description-input {
-  width: min(680px, 100%);
-  padding: 0.75rem 0.85rem;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  font-size: 0.95rem;
-  line-height: 1.5;
-  resize: vertical;
-}
-
-.project-description-input:focus {
-  outline: none;
-  border-color: rgba(66, 185, 131, 0.9);
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.18);
+  padding: 0 2rem;
 }
 
 .project-description-text {
@@ -626,20 +745,55 @@ const lastPage = () => {
   white-space: pre-wrap;
 }
 
-.project-name-input {
-  width: min(680px, 100%);
-  font-size: 1.75rem;
-  font-weight: 700;
-  padding: 0.4rem 0.6rem;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  text-align: center;
+.project-record-tracking {
+  padding: 0 2rem;
 }
 
-.project-name-input:focus {
-  outline: none;
-  border-color: rgba(66, 185, 131, 0.9);
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.18);
+.project-record-tracking__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.project-record-tracking__title {
+  font-weight: 900;
+  color: #111827;
+}
+
+.project-record-tracking__lists {
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.project-record-tracking__list {
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  background: #fff;
+}
+
+.project-record-tracking__label {
+  font-weight: 800;
+  color: #374151;
+}
+
+.project-record-tracking__items {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.project-record-tracking__item {
+  color: #6b7280;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.project-record-tracking__empty {
+  margin-top: 0.4rem;
+  color: #9ca3af;
+  font-size: 0.9rem;
 }
 
 .header-actions {
@@ -647,6 +801,7 @@ const lastPage = () => {
   gap: 1rem;
   align-items: center;
   justify-content: flex-end;
+  position: relative;
 }
 
 .floating-play {
@@ -656,199 +811,9 @@ const lastPage = () => {
   z-index: 60;
 }
 
-.visibility-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 1rem;
-}
-
-.visibility-switch__label {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #374151;
-  white-space: nowrap;
-}
-
-.visibility-switch__state {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #111827;
-  white-space: nowrap;
-}
-
-.mode-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-left: 0.25rem;
-}
-
-.mode-switch__label {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #374151;
-  white-space: nowrap;
-}
-
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 26px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  inset: 0;
-  background-color: #d1d5db;
-  transition: 0.18s;
-  border-radius: 999px;
-}
-
-.slider:before {
-  position: absolute;
-  content: '';
-  height: 20px;
-  width: 20px;
-  left: 3px;
-  top: 3px;
-  background-color: white;
-  transition: 0.18s;
-  border-radius: 999px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
-}
-
-.switch input:checked + .slider {
-  background-color: #42b983;
-}
-
-.switch input:checked + .slider:before {
-  transform: translateX(18px);
-}
-
-.switch input:disabled + .slider {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-copy {
-  border: 1px solid rgba(66, 185, 131, 0.35);
-  background: rgba(66, 185, 131, 0.12);
-  color: #0f5132;
-  border-radius: 10px;
-  padding: 0.55rem 0.95rem;
-  font-size: 0.9rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.05s, opacity 0.15s;
-  white-space: nowrap;
-}
-
-.btn-copy:hover {
-  background: rgba(66, 185, 131, 0.18);
-}
-
-.btn-copy:active {
-  transform: translateY(1px);
-}
-
-.btn-copy:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.btn-save {
-  background: #42b983;
-  color: white;
-  border: none;
-  padding: 0.625rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.2s, opacity 0.2s;
-}
-
-.btn-save:hover {
-  background: #3aa876;
-}
-
-.btn-save:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-delete {
-  background: #dc2626;
-  color: white;
-  border: none;
-  padding: 0.625rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-delete:hover {
-  background: #b91c1c;
-}
-
-.btn-cancel {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  padding: 0.625rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-cancel:hover {
-  background: #f3f4f6;
-}
-
 :deep(.row-list-vertical) {
   /* background: white; */
   /* padding: 1rem; */
   border-radius: 6px;
-}
-
-.add-component-section {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  padding: 1.5rem;
-  background: #f9fafb;
-  border: 2px dashed #d1d5db;
-  border-radius: 8px;
-  justify-content: center;
-}
-
-.btn-add-type {
-  background: white;
-  color: #42b983;
-  padding: 0.75rem 1.5rem;
-  border: 2px solid #42b983;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-add-type:hover {
-  background: #42b983;
-  color: white;
 }
 </style>

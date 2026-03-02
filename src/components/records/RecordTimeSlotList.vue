@@ -47,6 +47,7 @@ import { auth } from '@/firebaseConfig'
 import { fetchUserRecord } from '@/services/firestore/records'
 import { originalStatuses } from '@/constants/status.js'
 import { useRecordContext } from '@/composables/recordContext'
+import { formatStartHourLabel, getStartHourKey } from '@/utils/dateTime'
 
 const route = useRoute()
 const router = useRouter()
@@ -67,32 +68,11 @@ const timeSlots = computed(() => {
   return Array.isArray(slots) ? slots : []
 })
 
-const getStartHourKey = (slot) => {
-  const iso = slot?.start
-  if (!iso) return '__unknown__'
+const getSlotStartHourKey = (slot) => getStartHourKey(slot?.start, { unknown: '__unknown__' })
 
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '__unknown__'
-
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  const hour = String(d.getHours()).padStart(2, '0')
-  return `${y}-${m}-${day} ${hour}`
-}
-
-const formatStartHourLabel = (slot) => {
-  const iso = slot?.start
-  if (!iso) return t('record.unknownTime')
-
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return t('record.unknownTime')
-
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  const hour = String(d.getHours()).padStart(2, '0')
-  return `${y}/${m}/${day} ${hour}:00`
+const formatSlotStartHourLabel = (slot) => {
+  if (!slot?.start) return t('record.unknownTime')
+  return formatStartHourLabel(slot.start, { unknown: t('record.unknownTime') })
 }
 
 const startTimeGroups = computed(() => {
@@ -101,12 +81,12 @@ const startTimeGroups = computed(() => {
 
   for (let index = 0; index < timeSlots.value.length; index++) {
     const slot = timeSlots.value[index]
-    const key = getStartHourKey(slot)
+    const key = getSlotStartHourKey(slot)
 
     if (!byKey.has(key)) {
       const group = {
         key,
-        label: formatStartHourLabel(slot),
+        label: formatSlotStartHourLabel(slot),
         items: []
       }
       byKey.set(key, group)

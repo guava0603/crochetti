@@ -87,6 +87,7 @@ import { openConfirmation } from '@/services/ui/confirmation'
 import { openError } from '@/services/ui/notice'
 import { originalStatuses } from '@/constants/status.js'
 import { useRecordContext } from '@/composables/recordContext'
+import { datetimeLocalToIso, isoToDatetimeLocal } from '@/utils/dateTime'
 
 import UpdateStatus from '@/components/modals/UpdateStatus.vue'
 import ButtonDelete from '@/components/buttons/ButtonDelete.vue'
@@ -254,27 +255,8 @@ const statusLabel = computed(() => {
 
 const statusNoteDisplay = computed(() => String(draftStatusNote.value || '').trim())
 
-const toDatetimeLocal = (iso) => {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-
-  const pad2 = (n) => String(n).padStart(2, '0')
-  const y = d.getFullYear()
-  const m = pad2(d.getMonth() + 1)
-  const day = pad2(d.getDate())
-  const hh = pad2(d.getHours())
-  const mm = pad2(d.getMinutes())
-  const ss = pad2(d.getSeconds())
-  return `${y}-${m}-${day}T${hh}:${mm}:${ss}`
-}
-
-const fromDatetimeLocal = (localStr) => {
-  if (!localStr) return null
-  const ms = new Date(localStr).getTime()
-  if (!Number.isFinite(ms)) return null
-  return new Date(ms).toISOString()
-}
+const toDatetimeLocal = (iso) => isoToDatetimeLocal(iso)
+const fromDatetimeLocal = (localStr) => datetimeLocalToIso(localStr)
 
 const openStatusModal = () => {
   modalStatusId.value = draftStatusId.value

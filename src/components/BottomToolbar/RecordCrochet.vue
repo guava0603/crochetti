@@ -32,6 +32,8 @@
 <script setup>
 import { computed } from 'vue'
 import { getNodePerRepeatGenerate, getNodeTotalGenerate } from '@/utils/crochetGenerate.js'
+import { BasicStitch, getStitchDisplayText } from '@/constants/crochetData.js'
+import { useCrochetLang } from '@/composables/useCrochetLang'
 
 const props = defineProps({
   componentName: {
@@ -49,6 +51,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['confirm', 'cancel'])
+
+const { crochetLang } = useCrochetLang()
 
 const getCrochetNumber = computed(() => {
   if (!props.row || !props.endAt) return null
@@ -109,13 +113,14 @@ const nodeSymbol = computed(() => {
   if (!node) return ''
   if (node.type === 'stitch') {
     const stitch = BasicStitch[node.stitch_id]
-    return stitch?.symbol_jp || ''
+    return getStitchDisplayText(stitch, crochetLang.value)
   }
   if (node.type === 'pattern') {
     return node.pattern.map(item => {
       const stitch = BasicStitch[item.stitch_id]
       if (!stitch) return ''
-      return item.count > 1 ? `${item.count}${stitch.symbol_jp}` : stitch.symbol_jp
+      const text = getStitchDisplayText(stitch, crochetLang.value)
+      return item.count > 1 ? `${item.count}${text}` : text
     }).join(', ')
   }
   return ''
@@ -127,7 +132,7 @@ const stitchSymbol = computed(() => {
   if (!node || node.type !== 'pattern') return ''
   const item = node.pattern[getCrochetNumber.value.stitch_index]
   const stitch = BasicStitch[item.stitch_id]
-  return stitch?.symbol_jp || ''
+  return getStitchDisplayText(stitch, crochetLang.value)
 })
 
 const handleConfirm = () => {

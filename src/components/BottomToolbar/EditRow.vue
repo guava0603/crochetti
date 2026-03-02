@@ -10,6 +10,7 @@
             {{ t('toolbar.editRow.rowLabel', { n: props.rowIndex }) }}
           </template>
         </div>
+
         <button
           v-if="!isGroupMode"
           type="button"

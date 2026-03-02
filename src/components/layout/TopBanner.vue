@@ -14,13 +14,7 @@
 
       <div class="top-banner__side top-banner__side--right" @click.stop>
         <slot name="right">
-          <MoreMenu
-            v-if="showMore"
-            :disabled="moreDisabled"
-            :label="moreLabel"
-            :items="moreItems"
-          />
-          <div v-else class="top-banner__placeholder" />
+          <div class="top-banner__placeholder" />
         </slot>
       </div>
     </div>
@@ -29,19 +23,12 @@
 
 <script setup>
 import LastPage from '@/components/buttons/LastPage.vue'
-import MoreMenu from '@/components/buttons/MoreMenu.vue'
 
 defineProps({
   title: { type: String, default: '' },
   fixed: { type: Boolean, default: false },
   showBack: { type: Boolean, default: true },
-  showMore: { type: Boolean, default: true },
-  moreDisabled: { type: Boolean, default: false },
-  moreLabel: { type: String, default: 'More' },
-  moreItems: {
-    type: Array,
-    default: () => []
-  }
+  // Right side content is controlled purely by the `right` slot.
 })
 
 defineEmits(['last-page'])

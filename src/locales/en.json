@@ -7,10 +7,16 @@
   },
   "common": {
     "cancel": "Cancel",
+    "back": "Back",
     "confirm": "Confirm",
+    "search": "Search",
     "ok": "OK",
+    "remove": "Remove",
     "notice": "Notice",
+      "addMenuAria": "Add",
     "error": "Error",
+    "action": "Action",
+    "actions": "Actions",
     "copy": "Copy",
     "delete": "Delete",
     "rows": "Rows",
@@ -22,6 +28,7 @@
     "save": "Save",
     "saving": "Saving…",
     "loading": "Loading...",
+    "unknown": "Unknown",
     "repeatDo": "Repeat ",
     "rowUnit": " rows",
     "repeatRowGroup": "Repeat these {n} rows for {m} groups",
@@ -29,6 +36,65 @@
     "timeUnitMinute": "m",
     "timeUnitHour": "h",
     "timeUnitDay": "d"
+  },
+  "achievement": {
+    "toast": {
+      "kicker": "New badge"
+    },
+    "checkNow": "Check for new badges",
+    "checkNowNone": "No new badges found.",
+    "checkNowFound": "{n} new badge(s) earned!",
+    "sectionTitle": "Badges",
+    "empty": "No achievements yet",
+    "categories": {
+      "projects": "Projects",
+      "time": "Time",
+      "special": "Special"
+    },
+    "catalog": {
+      "projects_1": {
+        "name": "First Project",
+        "description": "Create your first design."
+      },
+      "projects_5": {
+        "name": "Project Starter",
+        "description": "Create 5 designs."
+      },
+      "projects_50": {
+        "name": "Project Collector",
+        "description": "Create 50 designs."
+      },
+      "time_1h": {
+        "name": "One Cozy Hour",
+        "description": "Accumulate 1 hour of recording time."
+      },
+      "time_10h": {
+        "name": "Steady Hands",
+        "description": "Accumulate 10 hours of recording time."
+      },
+      "time_50h": {
+        "name": "Time Weaver",
+        "description": "Accumulate 50 hours of recording time."
+      },
+      "special_same_project_5_in_day": {
+        "name": "Same Project Sprint",
+        "description": "Complete 5 records of the same project in one day."
+      },
+      "special_start_record_with_10_ongoing": {
+        "name": "Juggler",
+        "description": "Start a new record when you already have 10 ongoing records."
+      },
+      "special_5_projects_1_days": {
+        "name": "Five-in-Five",
+        "description": "Complete 5 different projects within 5 days."
+      }
+    },
+    "cabinet": {
+      "title": "Achievement Cabinet",
+      "earnedAt": "Earned",
+      "notEarned": "Locked"
+    },
+    "more": "More"
   },
   "confirmation": {
     "defaults": {
@@ -42,7 +108,13 @@
       "confirm": "Confirm",
       "delete": "Delete",
       "ok": "OK",
+      "yes": "Yes",
+      "no": "No",
       "submit": "Submit"
+    },
+    "addProjectChooseComponentType": {
+      "title": "Add",
+      "message": "What would you like to add?"
     },
     "addProjectUnexpectedGenerate": {
       "title": "Submit anyway?",
@@ -98,6 +170,46 @@
       "confirmText": "Confirm",
       "loadingText": "Syncing…"
     },
+    "finishComponent": {
+      "title": "Complete this component?",
+      "message": "Mark this component as completed and move to the next one?",
+      "confirmText": "Complete"
+    },
+    "finishRecord": {
+      "title": "Complete this record?",
+      "message": "All components are completed. Mark this entire record as completed?",
+      "confirmText": "Complete"
+    },
+    "editResultAfterFinishRecord": {
+      "title": "Add photos or thoughts?",
+      "message": "Do you want to update the photos or write any thoughts about your piece?"
+    },
+    "restartRecord": {
+      "title": "Restart this record?",
+      "message": "This will mark the record as not completed and reset all components to unfinished. Continue?",
+      "confirmText": "Restart"
+    },
+    "startRecordingOnCompletedComponent": {
+      "title": "Start on a completed component?",
+      "message": "\"{name}\" is marked as completed. Start recording on it anyway?",
+      "confirmText": "Start"
+    },
+    "startRecordingNotFirstIncompleteComponent": {
+      "title": "Not the first unfinished component",
+      "message": "You are starting from \"{name}\", but the first unfinished component is \"{first}\". Start anyway?",
+      "confirmText": "Start"
+    },
+    "endAtBeforeCurrent": {
+      "title": "Move progress backwards?",
+      "message": "You are moving the progress marker backwards for \"{name}\".\n\nCurrent: Row {fromRow}, {fromCrochet}\nNew: Row {toRow}, {toCrochet}\n\nContinue?",
+      "confirmText": "Move"
+    },
+    "completeWholeRow": {
+      "title": "Complete this row?",
+      "message": "Mark Row {row} as completed for \"{name}\" (move the marker to the end of the row)?",
+      "confirmText": "Complete row",
+      "cancelText": "Not yet"
+    },
     "notice": {
       "title": "Notice"
     },
@@ -112,6 +224,21 @@
         "sameStitch": "Into same stitch"
       },
       "custom": "Custom",
+      "position": {
+        "title": "Position",
+        "ariaLabel": "Stitch position",
+        "hint": "Tap the selected option again to clear",
+        "FL": "Front loop",
+        "BL": "Back loop",
+        "FP": "Front post",
+        "BP": "Back post"
+      },
+      "positionJp": {
+        "FL": "前半目",
+        "BL": "後半目",
+        "FP": "表引き上げ",
+        "BP": "裏引き上げ"
+      },
       "adjust": {
         "increase": "Increase",
         "decrease": "Decrease"
@@ -129,6 +256,9 @@
       "rowCount": "Rows",
       "rowLabel": "Row {n}",
       "selectMultipleRows": "Select multiple rows",
+      "crochetLang": "Crochet display",
+      "crochetLangSymbolJp": "JP symbols",
+      "crochetLangTextZh": "中文",
       "copyRow": "Copy row",
       "deleteRow": "Delete row",
       "countLockedInGroup": "Row count can't be changed in a group",
@@ -208,6 +338,15 @@
       "yarnPlaceholder": "brand / color / count......",
       "hookPlaceholder": "Hook size (e.g. 3.5mm)"
     },
+    "componentImage": {
+      "uploadLabel": "Upload image",
+      "uploading": "Uploading…",
+      "uploadFailed": "Upload failed. Please try again.",
+      "imageAlt": "Image {n}"
+    },
+    "stitchCard": {
+      "seamPartsLabel": "Seam parts:"
+    },
     "castOn": {
       "magicRing": "Magic ring",
       "chainRing": "Chain ring",
@@ -218,6 +357,30 @@
     "copyLink": "Copy link",
     "linkCopiedNotice": "Link copied",
     "copyLinkPrompt": "Copy this link:",
+    "components": "Components",
+    "recordTracking": {
+      "title": "Records",
+      "ongoing": "Ongoing records",
+      "completed": "Completed records",
+      "empty": "None"
+    },
+    "actions": {
+      "downloadDesign": "Download design",
+      "editProject": "Edit project",
+      "copyProjectLink": "Copy project link",
+      "saveProject": "Save project",
+      "unsaveProject": "Remove from saved"
+    },
+    "toasts": {
+      "savedProject": "Saved",
+      "unsavedProject": "Removed from saved designs"
+    },
+    "errors": {
+      "copyLinkFailed": "Failed to copy link",
+      "updateSavedFailed": "Failed to update saved designs",
+      "shareLinkFailed": "Failed to share link",
+      "copyProjectFailed": "Failed to copy project. Please try again."
+    },
     "removeComponentAction": "Delete component",
     "confirmUpdate": "Confirm",
     "viewMode": "View",
@@ -232,6 +395,19 @@
   },
   "record": {
     "record": "Record",
+    "startAt": "Start at:",
+    "goToProject": "Go to project",
+    "watchResult": "Watch result",
+    "modifyResult": "Edit result",
+    "recordDetails": "Details",
+    "restartRecord": "Restart record",
+    "finishComponent": "Complete component",
+    "completed": "Completed",
+    "notCompleted": "Not completed",
+    "noRecords": "No records.",
+    "noRecordsYet": "No records yet.",
+    "noCompletedRecords": "No completed records yet.",
+    "noNotCompletedRecords": "No unfinished records.",
     "recording": "Recording",
     "result": "Result",
     "viewReport": "View report",
@@ -240,6 +416,8 @@
     "pause": "Pause",
     "pauseRecording": "Pause recording",
     "centeredPosition": "Row {row}, stitch {stitch}",
+    "selectedPosition": "Row {row}, stitch {stitch}",
+    "componentFallbackName": "Component {n}",
     "syncProject": "Sync Project",
     "syncing": "Syncing…",
     "syncSuccessNotice": "Project synced.",
@@ -266,6 +444,19 @@
     "unknownTime": "Unknown"
   },
   "recordResult": {
+    "editResultTitle": "Edit result",
+    "imagesLabel": "Photos (max 3)",
+    "thoughtLabel": "Thoughts",
+    "thoughtPlaceholder": "Write something about your piece…",
+    "noImagesYet": "No photos yet.",
+    "noThoughtYet": "No thoughts yet.",
+    "myPieceTitle": "Result",
+    "imageAlt": "Photo {n}",
+    "newImageAlt": "New photo {n}",
+    "imagesMaxReached": "You’ve reached the maximum of {max} photos.",
+    "maxImagesError": "You can upload up to {max} images.",
+    "saveFailed": "Failed to save result. Please try again.",
+    "fileTooLarge": "Image is too large. Please upload an image smaller than {max}MB.",
     "title": "The one who kept you company while finishing this piece is...",
     "spanLine": "Spanning {span}",
     "effortLine": "After {effort} of effort",
@@ -277,7 +468,6 @@
     "durationDay": "{n} day",
     "durationJoiner": " ",
     "topStatus": "Top status",
-    "totalDuration": "The journey in {duration}",
     "slotCount": "Slots",
     "nextStatuses": "You also...",
     "slotCountShort": "{n} slots",
@@ -294,13 +484,45 @@
   "auth": {
     "loginRequired": "Please login to continue.",
     "login": "Sign in",
-    "logout": "Logout"
+    "logout": "Logout",
+    "logoutFailed": "Failed to logout. Please try again."
   },
   "user": {
     "title": "Profile",
+    "myPageBadge": "My page",
+    "fansCount": "Fans: {count}",
+    "followingListTitle": "Following",
+    "followingListEmpty": "Not following anyone yet.",
+    "followed": "Followed.",
+    "unfollowed": "Unfollowed.",
+    "followFailed": "Failed to follow. Please try again.",
+    "unfollowFailed": "Failed to unfollow. Please try again.",
+    "tabs": {
+      "savedDesigns": "Saved designs"
+    },
+    "loading": "Loading user data...",
+    "notFoundTitle": "User not found",
+    "notFoundMessage": "The user you're looking for doesn't exist.",
+    "anonymous": "Anonymous User",
     "fab": {
       "addProject": "Add project",
-      "addRecord": "Add record"
+      "addRecord": "Add record",
+      "searchUser": "Search user"
+    },
+    "moreMenu": {
+      "copyUserId": "Copy user ID",
+      "userIdCopied": "User ID copied",
+      "copyUserIdPrompt": "Copy this user ID:",
+      "copyUserIdFailed": "Failed to copy user ID. Please try again."
+    },
+    "searchUser": {
+      "title": "Find a user",
+      "message": "Enter a user ID to open their profile.",
+      "userIdLabel": "User ID",
+      "userIdPlaceholder": "e.g. abc123...",
+      "errors": {
+        "userIdRequired": "Please enter a user ID."
+      }
     },
     "addRecord": {
       "title": "Start a record",
@@ -340,7 +562,15 @@
     },
     "profile": {
       "name": "Name",
-      "avatarUrl": "Avatar URL"
+      "avatarUrl": "Upload avatar"
+    },
+    "profileSettingsModal": {
+      "title": "Profile settings",
+      "nameLabel": "Name",
+      "avatarLabel": "Upload avatar",
+      "avatarPlaceholder": "https://...",
+      "avatarAlt": "Avatar {n}",
+      "avatarUploadFailed": "Failed to upload avatar. Please try again."
     }
   },
   "addProject": {
@@ -362,17 +592,28 @@
       "projectNamePlaceholder": "Enter project name",
       "descriptionLabel": "Description",
       "descriptionPlaceholder": "Enter project description (optional)",
+      "imagesLabel": "Images (optional)",
+      "imagesHint": "Upload up to {max} images",
+      "removeImage": "Remove",
+      "imageAlt": "Project image {n}",
       "errors": {
-        "projectNameRequired": "Project name is required"
+        "projectNameRequired": "Project name is required",
+        "maxImages": "You can upload up to {max} images."
       }
     },
     "design": {
       "makePublic": "Public",
+      "stepCounter": "Step ({n}/{m})",
+      "stitchDefaultName": "Stitch ({n})",
       "componentsTitle": "Components",
       "componentsAria": "Components",
       "submitBarAria": "Submit project",
+      "addMenuAria": "Add",
       "addComponent": "+ Component",
       "addStitch": "+ Stitch",
+      "relatedComponentsLabel": "Related components",
+      "relatedComponentsPlaceholder": "Select a component",
+      "stitchNotesPlaceholder": "Enter notes",
       "creating": "Creating...",
       "createProject": "Create Project",
       "errors": {
@@ -391,10 +632,48 @@
     "slack": "Slacking off",
     "spareTime": "Spare time"
   },
+  "statusModal": {
+    "titleEdit": "Edit current status",
+    "titleAddCustom": "Add custom category",
+    "selectCategoryPlaceholder": "Select a category",
+    "notePlaceholder": "Select or add a note",
+    "newCategoryPlaceholder": "Enter a new category name",
+    "customGroupLabel": "Custom",
+    "addCustomOption": "Add"
+  },
+  "carousel": {
+    "previous": "Previous",
+    "next": "Next",
+    "goToItem": "Go to item {n}"
+  },
+  "image": {
+    "openImage": "Open image",
+    "images": "Images",
+    "goToImage": "Go to image {n}",
+    "projectImages": "Project images",
+    "existingImages": "Existing images",
+    "uploadedImages": "Uploaded images"
+  },
+  "input": {
+    "numberPicker": "Number picker"
+  },
   "crochet": {
     "deleteSelectedPattern": "Delete this pattern",
     "deleteSelectedBundle": "Delete this bundle stitch",
     "deleteSelectedStitch": "Delete this stitch",
+    "positionPrefix": {
+      "FL": "挑前半針",
+      "BL": "挑後半針",
+      "FP": "內鉤",
+      "BP": "外鉤"
+    },
+    "display": {
+      "bundleRepeat": "Work {items}, repeat {count} stitches in the same stitch",
+      "bundleRepeatPrefix": "Work ",
+      "bundleRepeatSuffix": ", repeat {count} stitches in the same stitch",
+      "patternRepeat": "{items} repeat {count} groups",
+      "patternRepeatSuffix": " repeat {count} groups"
+    },
     "stitches": {
       "slipStitch": "Slip stitch",
       "chain": "Chain",

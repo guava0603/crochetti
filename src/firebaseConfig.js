@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { getStorage } from "firebase/storage";
 // 1. 改用 initializeAuth 以便自定義環境設定
 import {
   initializeAuth,
@@ -43,6 +44,8 @@ if (Capacitor.isNativePlatform()) {
 }
 
 export const auth = authInstance;
+
+export const storage = getStorage(app);
 
 // 3. ⚠️ 重要：暫時移除 getAnalytics(app)
 // Analytics 在 iOS Webview 中常會觸發 CORS 錯誤導致白屏

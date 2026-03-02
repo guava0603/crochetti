@@ -8,8 +8,16 @@
         :key="itemKey ? itemKey(item, idx) : idx"
         :class="rowClass"
       >
+        <SelectionInput
+          v-if="inputType === 'dropdown'"
+          :model-value="getTextValue(item)"
+          :placeholder="placeholder"
+          :options="options"
+          @update:modelValue="(v) => updateTextAt(idx, v)"
+        />
+
         <SelectionInputCombineList
-          v-if="inputType === 'selection'"
+          v-else-if="inputType === 'selection'"
           :model-value="getTextValue(item)"
           :placeholder="placeholder"
           :suggestions="suggestions"
@@ -44,6 +52,7 @@
 import { computed } from 'vue'
 import AddNew from '@/components/buttons/AddNew.vue'
 import ButtonDelete from '@/components/buttons/ButtonDelete.vue'
+import SelectionInput from '@/components/tools/SelectionInput.vue'
 import SelectionInputCombineList from '@/components/Input/SelectionInputCombineList.vue'
 
 const props = defineProps({
@@ -59,7 +68,7 @@ const props = defineProps({
   inputType: {
     type: String,
     default: 'selection',
-    validator: (v) => ['selection', 'textarea'].includes(v)
+    validator: (v) => ['selection', 'textarea', 'dropdown'].includes(v)
   },
   label: {
     type: String,
@@ -74,6 +83,10 @@ const props = defineProps({
     default: ''
   },
   suggestions: {
+    type: Array,
+    default: () => []
+  },
+  options: {
     type: Array,
     default: () => []
   },

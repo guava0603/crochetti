@@ -4,13 +4,13 @@
       <div v-if="show" class="modal-overlay" @click="handleCancel">
         <div class="modal-container" @click.stop>
           <div class="modal-header">
-            <h2>{{ title }}</h2>
+            <h2>{{ computedTitle }}</h2>
             <button class="close-button" type="button" @click="handleCancel">×</button>
           </div>
 
           <div class="modal-body">
             <div class="field">
-              <label class="label" for="profile-name">{{ nameLabel }}</label>
+              <label class="label" for="profile-name">{{ computedNameLabel }}</label>
               <input
                 id="profile-name"
                 v-model="draftName"
@@ -21,23 +21,28 @@
             </div>
 
             <div class="field">
-              <label class="label" for="profile-avatar">{{ avatarLabel }}</label>
-              <input
-                id="profile-avatar"
-                v-model="draftAvatar"
-                class="input"
-                type="url"
-                autocomplete="url"
-                placeholder="https://..."
-              />
+              <label class="label" for="profile-avatar">{{ computedAvatarLabel }}</label>
+              <div id="profile-avatar" class="profile-avatar-uploader">
+                <ImageUploader
+                  v-model="draftAvatarFiles"
+                  :max="1"
+                  accept="image/*"
+                  :multiple="false"
+                  :disabled="saving"
+                  :button-text="computedAvatarLabel"
+                  :remove-text="t('addProject.info.removeImage')"
+                  :max-error-text="t('addProject.info.errors.maxImages', { max: 1 })"
+                  :alt-text-for-index="(i) => t('user.profileSettingsModal.avatarAlt', { n: i + 1 })"
+                />
+              </div>
             </div>
 
             <div class="actions">
               <button class="btn-secondary" type="button" :disabled="saving" @click="handleCancel">
-                {{ cancelText }}
+                {{ computedCancelText }}
               </button>
               <button class="btn-primary" type="button" :disabled="saving" @click="handleSave">
-                {{ saving ? savingText : saveText }}
+                {{ saving ? computedSavingText : computedSaveText }}
               </button>
             </div>
           </div>
@@ -49,34 +54,44 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import ImageUploader from '@/components/Input/ImageUploader.vue'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps({
   show: { type: Boolean, required: true },
   profile: { type: Object, default: null },
   saving: { type: Boolean, default: false },
 
-  title: { type: String, default: 'Profile settings' },
-  nameLabel: { type: String, default: 'Name' },
-  avatarLabel: { type: String, default: 'Avatar URL' },
-  cancelText: { type: String, default: 'Cancel' },
-  saveText: { type: String, default: 'Save' },
-  savingText: { type: String, default: 'Saving…' }
+  title: { type: String, default: '' },
+  nameLabel: { type: String, default: '' },
+  avatarLabel: { type: String, default: '' },
+  cancelText: { type: String, default: '' },
+  saveText: { type: String, default: '' },
+  savingText: { type: String, default: '' }
 })
 
 const emit = defineEmits(['close', 'save'])
 
 const draftName = ref('')
-const draftAvatar = ref('')
+const draftAvatarFiles = ref([])
+
+const computedTitle = computed(() => props.title || t('user.profileSettingsModal.title'))
+const computedNameLabel = computed(() => props.nameLabel || t('user.profileSettingsModal.nameLabel'))
+const computedAvatarLabel = computed(() => props.avatarLabel || t('user.profileSettingsModal.avatarLabel'))
+const computedCancelText = computed(() => props.cancelText || t('common.cancel'))
+const computedSaveText = computed(() => props.saveText || t('common.save'))
+const computedSavingText = computed(() => props.savingText || t('common.saving'))
 
 const initialName = computed(() => String(props.profile?.name || '').trim())
-const initialAvatar = computed(() => String(props.profile?.avatar || '').trim())
 
 watch(
   () => [props.show, props.profile],
   () => {
     if (!props.show) return
     draftName.value = initialName.value
-    draftAvatar.value = initialAvatar.value
+    draftAvatarFiles.value = []
   },
   { immediate: true }
 )
@@ -88,7 +103,7 @@ function handleCancel() {
 function handleSave() {
   emit('save', {
     name: String(draftName.value || '').trim(),
-    avatar: String(draftAvatar.value || '').trim() || null
+    avatar_files: Array.isArray(draftAvatarFiles.value) ? draftAvatarFiles.value : []
   })
 }
 </script>
@@ -174,6 +189,10 @@ function handleSave() {
   padding: 0.6rem 0.75rem;
   font-weight: 700;
   color: #111827;
+}
+
+.profile-avatar-uploader {
+  width: 100%;
 }
 
 .actions {

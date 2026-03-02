@@ -8,6 +8,7 @@
   flex-direction: column;
   margin-top: 1rem;
   overflow: visible;
+  border: 1px solid var(--color-border-warm);
 }
 
 .crochet-table .row-container {
@@ -97,9 +98,9 @@
 .crochet-table .row-number {
   justify-content: center;
   font-variant-numeric: tabular-nums;
-  color: #111827;
-  background: #f9fafb;
-  border-right: 1px solid #e5e7eb;
+  color: var(--color-font-dark);
+  background: var(--color-surface-sheet);
+  border-right: 1px solid var(--color-border-warm);
 }
 
 .crochet-table .row-stitches {
@@ -118,7 +119,9 @@
 .crochet-table .row-generate {
   justify-content: center;
   font-variant-numeric: tabular-nums;
-  border-left: 1px solid #e5e7eb;
+  color: var(--color-font-light);
+  background: var(--color-surface-sheet);
+  border-left: 1px solid var(--color-border-warm);
 }
 
 .crochet-table .row-generate.valid {
@@ -137,7 +140,7 @@
 }
 
 .crochet-table .row-generate.view-mode {
-  background: #f3f4f6 !important;
+  background: var(--color-surface-sheet) !important;
   color: #6b7280 !important;
 }
 
@@ -163,7 +166,7 @@
   height: 100%;
   transition: all 0.2s;
   overflow: visible;
-  border: 1px solid #e0e0e0;
+  border: 0.5px solid var(--color-border-warm);
 }
 
 .crochet-table .row-card.clickable:hover {

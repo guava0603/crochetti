@@ -27,16 +27,41 @@
   --color-background-soft: var(--vt-c-white-soft);
   --color-background-mute: var(--vt-c-white-mute);
 
+  /* Warm surface theme */
+  --color-surface-sheet: rgb(254, 247, 239);
+  --color-surface-page: rgb(239, 228, 214);
+  --color-border-warm: rgb(197, 189, 172);
+  --color-surface-accent: rgb(233, 227, 213);
+
+  --color-warm-brown: #8A7650;
+  --color-white: #ffffff;
+  --color-warm-highlight-green: #8E977D;
+  --color-warm-highlight-green-light: #C5D89D;
+  --color-font-invisible: rgba(17, 24, 39, 0.58);
+  --color-highlight-yellow: #FFD150;
+
   --color-border: var(--vt-c-divider-light-2);
   --color-border-hover: var(--vt-c-divider-light-1);
 
   --color-heading: var(--vt-c-text-light-1);
   --color-text: var(--vt-c-text-light-1);
 
+  --color-icon-base: #4b5563;
+  --color-icon-add: rgb(224, 157, 127);
+
+  --color-font-light: var(--color-icon-base);
+  --color-font-dark: #111827;
+
   --section-gap: 160px;
 
   --safe-area-top: 0px;
   --safe-area-bottom: 0px;
+
+  /* Achievement tier colors */
+  --tier-brown: #6e5034;
+  --tier-silver: #c7c7c7;
+  --tier-gold: #F2B50B;
+  --tier-special: #458B73;
 }
 
 html.is-app {

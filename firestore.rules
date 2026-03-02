@@ -6,15 +6,104 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function projectOwnerId(data) {
+      return (data.authorId != null && data.authorId is string)
+        ? data.authorId
+        : ((data.author_id != null && data.author_id is string) ? data.author_id : '');
+    }
+
+    function isProjectOwner(data) {
+      return signedIn() && projectOwnerId(data) == request.auth.uid;
+    }
+
+    function isProjectPublic(data) {
+      return (data.is_public == true) || (data.isPublic == true);
+    }
+
+    function asList(x) {
+      return x is list ? x : [];
+    }
+
+    function onlyChangesFanList() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['fan_list']);
+    }
+
+    function isAddingSelfToFanList() {
+      return request.resource.data.fan_list is list
+        && asList(request.resource.data.fan_list).hasAny([request.auth.uid])
+        && !asList(resource.data.fan_list).hasAny([request.auth.uid])
+        && asList(request.resource.data.fan_list).hasAll(asList(resource.data.fan_list))
+        && asList(request.resource.data.fan_list).size() == asList(resource.data.fan_list).size() + 1;
+    }
+
+    function isRemovingSelfFromFanList() {
+      return request.resource.data.fan_list is list
+        && !asList(request.resource.data.fan_list).hasAny([request.auth.uid])
+        && asList(resource.data.fan_list).hasAny([request.auth.uid])
+        && asList(resource.data.fan_list).hasAll(asList(request.resource.data.fan_list))
+        && asList(request.resource.data.fan_list).size() == asList(resource.data.fan_list).size() - 1;
+    }
+
+    function isNoopFanListUpdate() {
+      return request.resource.data.fan_list is list
+        && asList(request.resource.data.fan_list) == asList(resource.data.fan_list);
+    }
+
+    function onlyFanListOnCreate() {
+      return request.resource.data.keys().hasOnly(['fan_list'])
+        && request.resource.data.fan_list is list
+        && asList(request.resource.data.fan_list).size() == 1
+        && asList(request.resource.data.fan_list).hasAny([request.auth.uid]);
+    }
+
+    function asMap(x) {
+      return x is map ? x : {};
+    }
+
+    function isValidPublicRecordResult(r) {
+      return r is map
+        && r.keys().hasOnly(['images', 'thought'])
+        && (r.thought is string || r.thought == null)
+        && (r.images is list || r.images == null)
+        && (r.images == null || r.images.size() <= 3);
+    }
+
+    function isValidPublicRecordSummary() {
+      return request.resource.data.keys().hasOnly(['project_id', 'project_name', 'result'])
+        && request.resource.data.project_id is string
+        && request.resource.data.project_name is string
+        && (
+          request.resource.data.result == null
+          || isValidPublicRecordResult(request.resource.data.result)
+        );
+    }
+
+    // Allow signed-in users to update ONLY project record tracking lists on public projects.
+    // This is used to maintain:
+    // - record.ongoing_list
+    // - record.completed_list
+    function onlyChangesProjectRecordLists() {
+      return isProjectPublic(resource.data)
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['record', 'updated_at'])
+        && asMap(request.resource.data.record).diff(asMap(resource.data.record)).changedKeys().hasOnly(['ongoing_list', 'completed_list']);
+    }
+
     // Projects are readable if public or owner; writable only by owner.
     match /projects/{projectId} {
-      allow read: if resource.data.is_public == true
-        || (signedIn() && resource.data.authorId == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update: if signedIn()
-        && resource.data.authorId == request.auth.uid
-        && request.resource.data.authorId == resource.data.authorId;
-      allow delete: if signedIn() && resource.data.authorId == request.auth.uid;
+      allow read: if isProjectPublic(resource.data)
+        || isProjectOwner(resource.data);
+      allow create: if signedIn() && projectOwnerId(request.resource.data) == request.auth.uid;
+      allow update: if signedIn() && (
+        (
+          isProjectOwner(resource.data)
+          && projectOwnerId(request.resource.data) == projectOwnerId(resource.data)
+        )
+        || (
+          !isProjectOwner(resource.data)
+          && onlyChangesProjectRecordLists()
+        )
+      );
+      allow delete: if isProjectOwner(resource.data);
     }
 
     // Time records are private to the owner.
@@ -22,10 +111,72 @@ service cloud.firestore {
       allow read, write: if signedIn() && request.auth.uid == uid;
     }
 
-    // Public profile (for user pages), writable only by the owner.
-    match /artifacts/{appId}/users/{uid}/profile/{docId} {
+    // Achievement publish list (global).
+    // Readable by anyone; writable only by server/admin (default deny).
+    match /achievements/{achievementId} {
       allow read: if true;
-      allow write: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Per-user earned achievements.
+    // Readable by anyone to support public "achievement cabinet" on user pages.
+    // Writable only by the owner (client-side awarding writes here).
+    match /users/{uid}/earnedAchievements/{achievementId} {
+      allow read: if true;
+      allow create, update, delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Per-user achievement scan state.
+    // This stores the last time the client checked for newly published achievements.
+    match /users/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['lastAchievementCheck', 'lastAchievementVersionSeen']);
+
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).changedKeys()
+          .hasOnly(['lastAchievementCheck', 'lastAchievementVersionSeen']);
+
+      allow delete: if false;
+    }
+
+    // Public profile (for user pages).
+    // - Readable by anyone.
+    // - Writable by the owner.
+    // - For follow/unfollow, signed-in users may update ONLY `fan_list` on other users,
+    //   and ONLY by adding/removing their own uid.
+    match /artifacts/{appId}/users/{uid}/profile/info {
+      allow read: if true;
+
+      allow create: if signedIn() && (
+        request.auth.uid == uid
+        || (request.auth.uid != uid && onlyFanListOnCreate())
+      );
+
+      allow delete: if signedIn() && request.auth.uid == uid;
+
+      allow update: if signedIn() && (
+        request.auth.uid == uid
+        || (
+          request.auth.uid != uid
+          && onlyChangesFanList()
+          && (isAddingSelfToFanList() || isRemovingSelfFromFanList() || isNoopFanListUpdate())
+        )
+      );
+    }
+
+    // Public per-user record summaries.
+    // These are safe, denormalized views of a user's records intended for public user pages.
+    // Only the owner can write; anyone can read.
+    match /artifacts/{appId}/users/{uid}/records/{recordId} {
+      allow read: if true;
+      allow delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && isValidPublicRecordSummary();
     }
 
     // Default deny.

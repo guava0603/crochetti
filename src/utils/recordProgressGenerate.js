@@ -149,7 +149,55 @@ export const getComponentGeneratedBeforeRowIndex = (component, targetRowIndex) =
   return generated
 }
 
+export const getLastEndAtForComponent = (component) => {
+  const rows = Array.isArray(component?.content?.row_list) ? component.content.row_list : []
+  const groups = Array.isArray(component?.content?.row_groups) ? component.content.row_groups : []
+
+  const getRepeatCountForGroup = (groupIndex) => {
+    const group = groups.find((g) => g && g.index === groupIndex)
+    return Math.max(1, Number(group?.repeat_count || 1))
+  }
+
+  const getRowGenerate = (row) => Math.max(0, Number(row?.content?.generate ?? row?.generate ?? 0))
+
+  let totalRowIndex = 0
+  let lastRow = null
+
+  let i = 0
+  while (i < rows.length) {
+    const groupIndex = rows[i]?.group_index
+    if (groupIndex === undefined || groupIndex === null) {
+      const count = Math.max(1, Number(rows[i]?.count || 1))
+      totalRowIndex += count
+      lastRow = rows[i]
+      i += 1
+      continue
+    }
+
+    let j = i
+    while (j < rows.length && rows[j]?.group_index === groupIndex) j += 1
+    const segment = rows.slice(i, j)
+    const repeatCount = getRepeatCountForGroup(groupIndex)
+
+    for (let r = 0; r < repeatCount; r += 1) {
+      for (const row of segment) {
+        const count = Math.max(1, Number(row?.count || 1))
+        totalRowIndex += count
+        lastRow = row
+      }
+    }
+
+    i = j
+  }
+
+  const row_index = Math.max(1, totalRowIndex)
+  const baseGenerate = getRowGenerate(lastRow)
+  const crochet_count = clampCrochetCount(baseGenerate, baseGenerate)
+  return { row_index, crochet_count }
+}
+
 export const getComponentProgressPercent = (component) => {
+  if (component?.is_completed === true) return 100
   if (!component?.end_at) return 0
 
   const totalGenerates = getComponentTotalGeneratesExpanded(component)
@@ -163,4 +211,40 @@ export const getComponentProgressPercent = (component) => {
 
   const currentGenerated = Math.min(totalGenerates, Math.max(0, Number(before || 0) + Number(within || 0)))
   return Math.round(currentGenerated * 100 / totalGenerates)
+}
+
+export const getComponentIsCompleted = (component) => {
+  if (component?.is_completed === true) return true
+  if (!component?.end_at) return false
+
+  const totalGenerates = getComponentTotalGeneratesExpanded(component)
+  if (!Number.isFinite(totalGenerates) || totalGenerates <= 0) return false
+
+  const endAt = component.end_at
+  const before = getComponentGeneratedBeforeRowIndex(component, endAt?.row_index)
+  const baseRow = findRowWithRepeated(component.content?.row_list, component.content?.row_groups, endAt?.row_index)
+  const baseGenerate = Number(baseRow?.content?.generate ?? baseRow?.generate ?? 0)
+  const within = clampCrochetCount(endAt?.crochet_count, baseGenerate)
+
+  const currentGenerated = Math.min(totalGenerates, Math.max(0, Number(before || 0) + Number(within || 0)))
+  return currentGenerated >= totalGenerates
+}
+
+export const getRecordProgressPercent = (record) => {
+  const list = Array.isArray(record?.component_list) ? record.component_list : []
+  if (!list.length) return 0
+
+  let sum = 0
+  let count = 0
+  for (const c of list) {
+    const p = getComponentProgressPercent(c)
+    if (!Number.isFinite(p)) continue
+    sum += p
+    count += 1
+  }
+
+  if (count <= 0) return 0
+  const avg = sum / count
+  if (!Number.isFinite(avg)) return 0
+  return Math.max(0, Math.min(100, Math.round(avg)))
 }

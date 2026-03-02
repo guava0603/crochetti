@@ -14,11 +14,15 @@
 
     <div v-else-if="projectData" class="content">
       <div class="header">
-        <LastPage />
+        <LastPage @click="backToProject" />
         <div class="header-actions">
-          <button type="button" class="btn-download" :disabled="downloading" @click="downloadDesign">
-            {{ downloading ? 'downloading…' : 'download' }}
-          </button>
+          <div
+            class="btn-download"
+            :disabled="downloading"
+            @click="downloadDesign"
+          >
+            <ButtonPrinter />
+          </div>
         </div>
       </div>
 
@@ -59,14 +63,17 @@
 
 <script setup>
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { auth } from '@/firebaseConfig'
 import { onAuthStateChanged } from 'firebase/auth'
 import LastPage from '@/components/buttons/LastPage.vue'
+import ButtonPrinter from '@/components/buttons/svg/ButtonPrinter.vue'
 import { fetchProject } from '@/services/firestore/projects'
 import { getPatternItemDisplay } from '@/constants/crochetData.js'
+import { useCrochetLang } from '@/composables/useCrochetLang'
 
 const route = useRoute()
+const router = useRouter()
 const projectId = ref(route.params.project_id)
 
 const loading = ref(true)
@@ -75,6 +82,8 @@ const projectData = ref(null)
 
 const captureRef = ref(null)
 const downloading = ref(false)
+
+const { crochetLang } = useCrochetLang()
 
 const noticeMessage = ref('')
 let noticeTimer = null
@@ -90,7 +99,7 @@ function showNotice(message) {
 const getRowStitchesText = (row) => {
   const list = row?.content?.stitch_node_list
   if (!Array.isArray(list) || list.length === 0) return ''
-  return list.map(getPatternItemDisplay).join(', ')
+  return list.map((node) => getPatternItemDisplay(node, crochetLang.value)).join(', ')
 }
 
 const getRowRepeatCount = (row) => {
@@ -112,6 +121,10 @@ const sanitizeFileName = (name) => {
     .replace(/[\\/:*?"<>|]+/g, '_')
     .replace(/\s+/g, ' ')
     .slice(0, 120)
+}
+
+const backToProject = () => {
+  router.go(-1)
 }
 
 const downloadDesign = async () => {
@@ -190,6 +203,16 @@ onMounted(async () => {
   margin-bottom: 1.25rem;
 }
 
+.header__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -214,14 +237,36 @@ onMounted(async () => {
 }
 
 .btn-download {
-  background: #111827;
-  color: white;
-  border: none;
-  padding: 0.55rem 0.9rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  background: rgba(17, 24, 39, 0.04);
+  color: #111827;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+
+.btn-download :deep(.button-printer) {
+  cursor: inherit;
+  color: currentColor;
+}
+
+.btn-download:hover:not(:disabled) {
+  background: rgba(17, 24, 39, 0.08);
+  border-color: rgba(17, 24, 39, 0.18);
+}
+
+.btn-download:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-download:focus-visible {
+  outline: 2px solid rgba(66, 185, 131, 0.55);
+  outline-offset: 2px;
 }
 
 .btn-download:disabled {
@@ -303,7 +348,7 @@ onMounted(async () => {
 }
 
 .cell-stitches {
-  color: #4b5563;
+  color: var(--color-icon-base);
 }
 
 .cell-generate {

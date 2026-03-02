@@ -42,3 +42,35 @@ npm run build
 ```sh
 npm run lint
 ```
+
+## Achievements (Firestore Catalog)
+
+This app expects a global achievements catalog in Firestore at collection `achievements`.
+Clients are read-only for this catalog (by rules), so the collection is created/updated by Firebase Functions.
+
+### 1) Deploy Functions
+
+```sh
+firebase deploy --only functions
+```
+
+### 2) Set maintenance key
+
+In Firestore, create this document:
+
+- Path: `_maintenance/achievements`
+- Field: `backfillKey` (string)
+
+### 3) Sync catalog from code -> Firestore
+
+Call the HTTP function (replace placeholders):
+
+```sh
+curl -X POST "https://us-central1-<YOUR_PROJECT_ID>.cloudfunctions.net/syncAchievementsFromCodeHttp?key=<BACKFILL_KEY>&force=true"
+```
+
+After this, you should see the `achievements` collection appear in Firestore.
+
+Notes:
+- `force=true` bumps `publishedDate` so existing users will run a retroactive scan on next login.
+- There is also a daily scheduled sync that keeps the catalog aligned with code.

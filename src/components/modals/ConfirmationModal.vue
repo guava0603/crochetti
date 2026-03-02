@@ -12,7 +12,21 @@
         >
           {{ cancelText }}
         </button>
+
+        <template v-if="Array.isArray(choices) && choices.length">
+          <button
+            v-for="choice in choices"
+            :key="choice?.id"
+            @click="$emit('choose', choice?.id)"
+            :class="choice?.class || 'btn-confirm'"
+            type="button"
+            :disabled="loading"
+          >
+            {{ choice?.label }}
+          </button>
+        </template>
         <button
+          v-else
           @click="$emit('confirm')"
           :class="confirmClass"
           type="button"
@@ -58,10 +72,14 @@ defineProps({
   loadingText: {
     type: String,
     default: 'Processing...'
+  },
+  choices: {
+    type: Array,
+    default: null
   }
 })
 
-defineEmits(['confirm', 'cancel'])
+defineEmits(['confirm', 'cancel', 'choose'])
 </script>
 
 <style scoped>
@@ -97,6 +115,7 @@ defineEmits(['confirm', 'cancel'])
   margin: 0 0 1.5rem 0;
   color: #6b7280;
   line-height: 1.5;
+  white-space: pre-line;
 }
 
 .modal-actions {

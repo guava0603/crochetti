@@ -39,7 +39,11 @@ export const calculateConsumeGenerateCore = (input, repeatCount = 1, basicStitch
       if (node.type === 'bundle') {
         const count = node.count || 1
         totalConsume += (node.consume || 1) * count
-        totalGenerate += (node.generate || 0) * count
+        // IMPORTANT: bundle.generate can be stale during draft edits (e.g. when we patch node.bundle
+        // without re-running CrochetDisplay's recalc). Always derive generate from the current bundle list.
+        const nested = calcList(node.bundle || [], 1)
+        const perBundleGenerate = Number.isFinite(nested.generate) ? nested.generate : 0
+        totalGenerate += perBundleGenerate * count
         return
       }
 

@@ -6,12 +6,18 @@
 
 <script setup>
 import { computed } from 'vue'
-import { BasicStitch } from '@/constants/crochetData.js'
+import { useI18n } from 'vue-i18n'
+import { BasicStitch, getStitchDisplayText } from '@/constants/crochetData.js'
+import { useCrochetLang } from '@/composables/useCrochetLang'
 
 const props = defineProps({
   stitchId: {
     type: Number,
     required: true
+  },
+  position: {
+    type: String,
+    default: ''
   },
   count: {
     type: Number,
@@ -19,10 +25,32 @@ const props = defineProps({
   }
 })
 
+const { crochetLang } = useCrochetLang()
+const { t } = useI18n({ useScope: 'global' })
+
 const displayText = computed(() => {
   const stitch = BasicStitch[props.stitchId]
   if (!stitch) return ''
-  return props.count > 1 ? `${props.count}${stitch.symbol_jp}` : stitch.symbol_jp
+  const text = getStitchDisplayText(stitch, crochetLang.value)
+
+  const pos = typeof props.position === 'string' ? props.position.trim().toUpperCase() : ''
+  const hasPos = Boolean(pos)
+
+  if (!hasPos) {
+    return props.count > 1 ? `${props.count}${text}` : text
+  }
+
+  // Position prefix: symbol_jp => FLX/FPF..., text_zh => 內鉤長針/挑前半針短針...
+  const decorated = (() => {
+    if (crochetLang.value !== 1) return `${pos}${text}`
+
+    const key = `crochet.positionPrefix.${pos}`
+    const translated = t(key)
+    const prefix = translated === key ? pos : translated
+    return `${prefix}${text}`
+  })()
+
+  return props.count > 1 ? `${props.count}${decorated}` : decorated
 })
 
 </script>

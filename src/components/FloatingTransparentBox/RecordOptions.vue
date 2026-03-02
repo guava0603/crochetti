@@ -1,12 +1,12 @@
 <template>
   <div>
     <div :class="['top-overlay-box', { 'is-idle': !isRecording }]">
-      <div v-if="isRecording && centeredComponentName && centeredComponentEndAt" class="centered-component-info-bar">
-        <div class="centered-component-name">
-          {{ centeredComponentName }}
+      <div v-if="isRecording && selectedComponentName && selectedComponentEndAt" class="selected-component-info-bar">
+        <div class="selected-component-name">
+          {{ selectedComponentName }}
         </div>
-        <div class="centered-component-info">
-          {{ t('record.centeredPosition', { row: centeredComponentEndAt.row_index, stitch: centeredComponentEndAt.crochet_count }) }}
+        <div class="selected-component-info">
+          {{ t('record.selectedPosition', { row: selectedComponentEndAt.row_index, stitch: selectedComponentEndAt.crochet_count }) }}
         </div>
       </div>
       <div class="top-overlay-content">
@@ -38,7 +38,7 @@
               </div>
               <button
                 class="edit-status-btn"
-                @click="openModal"
+                @click="openStatusModal"
                 :title="t('record.editStatus')"
                 :aria-label="t('record.editStatus')"
               >
@@ -49,15 +49,9 @@
           </div>
         </div>
       </div>
-      <button
-        type="button"
-        class="btn-result"
-        :aria-label="t('record.result')"
-        :title="t('record.result')"
-        @click="goResultSharing"
-      >
-        <ButtonResultIcon />
-      </button>
+      <div class="btn-finish" @click="finishComponent">
+        <ButtonFinishIcon />
+      </div>
     </div>
   </div>
 </template>
@@ -65,41 +59,49 @@
 <script setup>
 import { computed, ref, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-  import { useRoute, useRouter } from 'vue-router'
 import PlayButton from '@/components/buttons/PlayButton.vue'
 import RecordPauseButton from '@/components/buttons/RecordPauseButton.vue'
-import ButtonResultIcon from '@/components/buttons/svg/ButtonResult.vue'
+import ButtonFinishIcon from '@/components/buttons/svg/ButtonFinish.vue'
 const { t } = useI18n({ useScope: 'global' })
-  const route = useRoute()
-  const router = useRouter()
 const props = defineProps({
-  isRecording: {
-    type: Boolean,
+  context: {
+    type: Object,
     required: true
   },
-  currentTimeSlot: {
+  actions: {
     type: Object,
-    default: () => ({ start: null, end: null })
-  },
-  currentStatusId: [Number, String],
-  currentStatusNote: {
-    type: String,
-    default: ''
-  },
-  originalStatuses: Array,
-  selfDefinedStatuses: Array,
-  startRecording: Function,
-  pauseRecording: Function,
-  openModal: Function,
-  centeredComponentName: {
-    type: String,
-    default: ''
-  },
-  centeredComponentEndAt: {
-    type: Object,
-    default: null
+    required: true
   }
 })
+
+const isRecording = computed(() => Boolean(props.context?.recording?.isRecording))
+
+const timeSlot = computed(() => {
+  const slot = props.context?.recording?.timeSlot ?? props.context?.recording?.currentTimeSlot
+  return slot || null
+})
+
+// Selected component info (preferred). Fallback to legacy `centered` for compatibility.
+const selectedComponentName = computed(() => String(props.context?.selected?.name || props.context?.centered?.name || ''))
+const selectedComponentEndAt = computed(() => props.context?.selected?.endAt || props.context?.centered?.endAt || null)
+
+const statusId = computed(() => Number(props.context?.status?.id))
+const statusNote = computed(() => String(props.context?.status?.note || '').trim())
+
+const originalStatuses = computed(() => {
+  const list = props.context?.status?.originalStatuses ?? props.context?.status?.original
+  return Array.isArray(list) ? list : []
+})
+
+const selfDefinedStatuses = computed(() => {
+  const list = props.context?.status?.selfDefinedStatuses ?? props.context?.status?.selfDefined
+  return Array.isArray(list) ? list : []
+})
+
+const startRecording = () => props.actions?.startRecording?.()
+const pauseRecording = () => props.actions?.pauseRecording?.()
+const openStatusModal = () => props.actions?.openStatusModal?.()
+const finishComponent = () => props.actions?.finishComponent?.()
 
 // Returns { parts: [{value, label}], type: 'second'|'minute-second'|'hour-minute'|'day-hour', raw: ms }
 const formatDurationParts = (ms) => {
@@ -135,7 +137,7 @@ const formatDurationParts = (ms) => {
 const now = ref(Date.now())
 let timer = null
 
-watch(() => props.isRecording, (val) => {
+watch(() => isRecording.value, (val) => {
   if (val) {
     timer = setInterval(() => {
       now.value = Date.now()
@@ -151,46 +153,38 @@ onUnmounted(() => {
 })
 
 const formattedConsumingTimeParts = computed(() => {
-  if (!props.currentTimeSlot || !props.currentTimeSlot.start) {
+  if (!timeSlot.value || !timeSlot.value.start) {
     return { parts: [{ value: 0, label: t('common.timeUnitSecond') }], type: 'second', raw: 0 }
   }
-  const { start, end } = props.currentTimeSlot
+  const { start, end } = timeSlot.value
   const endTime = end ? new Date(end) : new Date(now.value)
   const duration = Math.max(0, Math.floor(endTime - new Date(start)))
   return formatDurationParts(duration)
 })
 
 const currentStatus = computed(() => {
-  const statusId = Number(props.currentStatusId)
+  const id = statusId.value
 
-  const original = (props.originalStatuses || []).find(s => Number(s?.id) === statusId)
+  const original = (originalStatuses.value || []).find(s => Number(s?.id) === id)
   if (original) {
     return original?.nameKey ? t(original.nameKey) : (original?.name ?? '')
   }
 
-  const custom = (props.selfDefinedStatuses || []).find(s => Number(s?.id) === statusId)
+  const custom = (selfDefinedStatuses.value || []).find(s => Number(s?.id) === id)
   if (custom) {
     return custom?.name ?? ''
   }
 
   // fallback to the first original status (id:0) if present
-  const idle = (props.originalStatuses || []).find(s => Number(s?.id) === 0)
+  const idle = (originalStatuses.value || []).find(s => Number(s?.id) === 0)
   if (idle) return idle?.nameKey ? t(idle.nameKey) : (idle?.name ?? '')
 
   return ''
 })
 
 const currentStatusNoteDisplay = computed(() => {
-  return String(props.currentStatusNote || '').trim()
+  return statusNote.value
 })
-
-const goResultSharing = () => {
-  router.push({
-    name: 'record',
-    params: { record_id: route.params.record_id },
-    query: { 'result-sharing': '1' }
-  })
-}
 </script>
 
 <style scoped>
@@ -346,40 +340,17 @@ const goResultSharing = () => {
   border-color: #42b983;
   box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.1);
 }
-.time-part {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-}
-.time-display {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 0.2em;
-}
-.time-value {
-  font-size: 2.2rem;
-  font-weight: 800;
-}
-.time-label {
-  font-size: 0.5em;
-  font-weight: 600;
-  vertical-align: super;
-  margin-left: 0.1em;
-  opacity: 0.7;
-}
-
-.centered-component-info-bar {
+.centered-component-info-bar,
+.selected-component-info-bar {
   position: absolute;
   top: -1.5rem;
   right: 1.5rem;
-  text-align:center;
-
+  text-align: center;
   display: flex;
   flex-direction: row;
 }
-.centered-component-info-bar > * {
+.centered-component-info-bar > *,
+.selected-component-info-bar > * {
   margin-left: 0.8rem;
   padding: 0.3rem 0.5rem;
   color: #9CAB84;
@@ -387,10 +358,12 @@ const goResultSharing = () => {
   border-radius: 1rem;
   border: 1px solid #C5D89D;
 }
-.centered-component-name {
+.centered-component-name,
+.selected-component-name {
   font-weight:600;
 }
-.centered-component-info {
+.centered-component-info,
+.selected-component-info {
   font-weight:600;
 }
 
@@ -398,19 +371,23 @@ const goResultSharing = () => {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
   max-width: 100%;
   white-space: normal;
   text-overflow: ellipsis;
 }
 
-.btn-result {
+.btn-finish {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: absolute;
-  right: -4rem;
-  bottom: 0.2rem;
+  left: 3rem;
+  top: 0.5rem;
   z-index: 130;
-  padding: 0;
-  border: none;
-  background: transparent;
+  border-radius: 50%;
+  padding: 0.3rem;
+  background-color: #f0f0f0;
 }
 </style>

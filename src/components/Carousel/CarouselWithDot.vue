@@ -6,38 +6,22 @@
         :key="`dot-${i}`"
         type="button"
         class="carousel__dot"
-        :class="{ 'is-active': i === activeIndex }"
-        :aria-label="`Go to item ${i + 1}`"
+        :class="{
+          'is-active': i === activeIndex,
+          'carousel__dot--outline': dotVariantFor(items[i], i) === 'outline'
+        }"
+        :aria-label="t('carousel.goToItem', { n: i + 1 })"
         :aria-current="i === activeIndex ? 'true' : undefined"
         @click="scrollToIndex(i)"
       />
     </div>
 
     <div class="carousel__viewport">
-      <button
-        v-if="showPrevArrow"
-        type="button"
-        class="carousel__arrow carousel__arrow--left"
-        aria-label="Previous"
-        @click="scrollToIndex(activeIndex - 1)"
-      >
-        ‹
-      </button>
-      <button
-        v-if="showNextArrow"
-        type="button"
-        class="carousel__arrow carousel__arrow--right"
-        aria-label="Next"
-        @click="scrollToIndex(activeIndex + 1)"
-      >
-        ›
-      </button>
-
       <div
         ref="rowEl"
         class="carousel__row"
+        :class="{ 'carousel__row--no-gesture': disableGesture }"
         role="region"
-        :aria-label="ariaLabel"
         @scroll.passive="handleScroll"
       >
         <div
@@ -56,15 +40,16 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n({ useScope: 'global' })
+
+const emit = defineEmits(['active-index-change'])
 
 const props = defineProps({
   items: {
     type: Array,
     default: () => []
-  },
-  ariaLabel: {
-    type: String,
-    default: ''
   },
   itemKey: {
     type: [Function, String],
@@ -81,6 +66,14 @@ const props = defineProps({
   bleedX: {
     type: String,
     default: '2rem'
+  },
+  getDotVariant: {
+    type: Function,
+    default: null
+  },
+  disableGesture: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -89,9 +82,6 @@ const itemEls = ref([])
 const activeIndex = ref(0)
 
 const count = computed(() => (Array.isArray(props.items) ? props.items.length : 0))
-
-const showPrevArrow = computed(() => count.value > 1 && activeIndex.value > 0)
-const showNextArrow = computed(() => count.value > 1 && activeIndex.value < count.value - 1)
 
 const bleedStyle = computed(() => {
   if (!props.bleed) return {}
@@ -109,11 +99,19 @@ function setItemEl(el, index) {
   itemEls.value[index] = el
 }
 
+function dotVariantFor(item, index) {
+  if (typeof props.getDotVariant === 'function') {
+    const v = props.getDotVariant(item, index)
+    return v === 'outline' ? 'outline' : 'solid'
+  }
+  return 'solid'
+}
+
 function updateActiveIndexFromScroll() {
   const row = rowEl.value
   if (!row) return
 
-  const left = row.scrollLeft
+  const viewportCenterX = row.scrollLeft + row.clientWidth / 2
   const els = Array.isArray(itemEls.value) ? itemEls.value : []
 
   let bestIndex = 0
@@ -122,7 +120,8 @@ function updateActiveIndexFromScroll() {
   for (let i = 0; i < els.length; i += 1) {
     const el = els[i]
     if (!el) continue
-    const dist = Math.abs(el.offsetLeft - left)
+    const itemCenterX = el.offsetLeft + el.clientWidth / 2
+    const dist = Math.abs(itemCenterX - viewportCenterX)
     if (dist < bestDist) {
       bestDist = dist
       bestIndex = i
@@ -141,23 +140,66 @@ function handleScroll() {
   })
 }
 
+let lastTouch = null
+
+const handleTouchStart = (e) => {
+  if (!props.disableGesture) return
+  const t = e?.touches?.[0]
+  if (!t) return
+  lastTouch = { x: t.clientX, y: t.clientY }
+}
+
+const handleTouchMove = (e) => {
+  if (!props.disableGesture) return
+  const t = e?.touches?.[0]
+  if (!t || !lastTouch) return
+  const dx = t.clientX - lastTouch.x
+  const dy = t.clientY - lastTouch.y
+
+  // If user is attempting a horizontal swipe, block it so only dots/arrows can change slides.
+  if (Math.abs(dx) > Math.abs(dy) + 2) {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+}
+
+const handleTouchEnd = () => {
+  lastTouch = null
+}
+
+const handleWheel = (e) => {
+  if (!props.disableGesture) return
+  const dx = Math.abs(Number(e?.deltaX || 0))
+  const dy = Math.abs(Number(e?.deltaY || 0))
+  const isHorizontal = dx > dy + 1 || e?.shiftKey
+  if (!isHorizontal) return
+  e.preventDefault()
+  e.stopPropagation()
+}
+
 async function scrollToIndex(index) {
   const max = Math.max(0, count.value - 1)
   const target = Math.min(max, Math.max(0, Number(index)))
 
   await nextTick()
 
+  const row = rowEl.value
   const el = itemEls.value?.[target]
-  if (el && typeof el.scrollIntoView === 'function') {
-    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' })
+  if (row && el && typeof row.scrollTo === 'function') {
+    const itemCenterX = el.offsetLeft + el.clientWidth / 2
+    const desiredLeft = itemCenterX - row.clientWidth / 2
+    const maxLeft = Math.max(0, row.scrollWidth - row.clientWidth)
+    const left = Math.max(0, Math.min(maxLeft, desiredLeft))
+    row.scrollTo({ left, behavior: 'smooth' })
     activeIndex.value = target
     return
   }
 
-  const row = rowEl.value
-  if (row && typeof row.scrollTo === 'function') {
-    row.scrollTo({ left: row.clientWidth * target, behavior: 'smooth' })
+  // Fallback
+  if (el && typeof el.scrollIntoView === 'function') {
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
     activeIndex.value = target
+    return
   }
 }
 
@@ -176,11 +218,30 @@ function handleResize() {
 onMounted(() => {
   window.addEventListener('resize', handleResize)
   nextTick(() => updateActiveIndexFromScroll())
+
+  const row = rowEl.value
+  if (row) {
+    row.addEventListener('wheel', handleWheel, { passive: false })
+    row.addEventListener('touchstart', handleTouchStart, { passive: true })
+    row.addEventListener('touchmove', handleTouchMove, { passive: false })
+    row.addEventListener('touchend', handleTouchEnd, { passive: true })
+    row.addEventListener('touchcancel', handleTouchEnd, { passive: true })
+  }
+
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
   if (scrollRaf) cancelAnimationFrame(scrollRaf)
+
+  const row = rowEl.value
+  if (row) {
+    row.removeEventListener('wheel', handleWheel)
+    row.removeEventListener('touchstart', handleTouchStart)
+    row.removeEventListener('touchmove', handleTouchMove)
+    row.removeEventListener('touchend', handleTouchEnd)
+    row.removeEventListener('touchcancel', handleTouchEnd)
+  }
 })
 
 watch(
@@ -194,9 +255,17 @@ watch(
   }
 )
 
+watch(
+  () => activeIndex.value,
+  (index) => {
+    emit('active-index-change', index)
+  }
+)
+
 defineExpose({
   scrollToIndex,
-  scrollToEnd
+  scrollToEnd,
+	getActiveIndex: () => activeIndex.value
 })
 </script>
 
@@ -217,48 +286,28 @@ defineExpose({
   height: 8px;
   border-radius: 999px;
   border: none;
+  box-sizing: border-box;
   padding: 0;
-  background: rgba(107, 114, 128, 0.35);
+  background: var(--color-border-warm);
   cursor: pointer;
 }
 
 .carousel__dot.is-active {
-  background: #42b983;
+  background: var(--color-warm-brown);
+}
+
+.carousel__dot.carousel__dot--outline {
+  background: transparent;
+  border: 2px solid var(--color-border-warm);
+}
+
+.carousel__dot.carousel__dot--outline.is-active {
+  background: transparent;
+  border-color: var(--color-warm-brown);
 }
 
 .carousel__viewport {
   position: relative;
-}
-
-.carousel__arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
-  color: #111827;
-  font-size: 22px;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 5;
-}
-
-.carousel__arrow--left {
-  left: 8px;
-}
-
-.carousel__arrow--right {
-  right: 8px;
-}
-
-.carousel__arrow:active {
-  transform: translateY(-50%) scale(0.96);
 }
 
 .carousel__row {
@@ -268,7 +317,7 @@ defineExpose({
   gap: 1rem;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 0.5rem 10px 1rem;
+  padding: 1.2rem 10px 0;
   scroll-snap-type: x proximity;
   scroll-padding-left: 5%;
   scroll-padding-right: 5%;
@@ -279,6 +328,10 @@ defineExpose({
   -ms-overflow-style: none; /* IE/Edge legacy */
 }
 
+.carousel__row--no-gesture {
+  touch-action: pan-y;
+}
+
 .carousel__row::-webkit-scrollbar {
   display: none;
   width: 0;
@@ -287,6 +340,6 @@ defineExpose({
 
 .carousel__item {
   flex: 0 0 auto;
-  scroll-snap-align: start;
+  scroll-snap-align: center;
 }
 </style>

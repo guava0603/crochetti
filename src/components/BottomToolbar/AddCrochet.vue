@@ -1,12 +1,16 @@
 <template>
   <div class="add-crochet">
-    <div>
+    <div class="add-crochet__body">
       <CrochetList
         :disabled="disabled"
+        :preset-stitch-id="presetStitchId"
+        :preset-position="presetPosition"
+        :default-position="defaultPosition"
         :stitches="stitchesForList"
         :enabled-stitch-ids="null"
         :show-custom-button="showCustomButton"
         @stitch-click="handleCrochetClick"
+        @position-change="handlePositionChange"
         @custom-click="openBundleWizard"
       />
     </div>
@@ -26,7 +30,7 @@
               class="wizard-stitch-button"
               @click="addStitchToBundle(crochet.index)"
             >
-              {{ crochet.symbol_jp }}
+              {{ getStitchDisplayText(crochet, crochetLang) }}
             </button>
           </div>
         </div>
@@ -79,22 +83,37 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { BasicStitch, BasicStitchGeneral } from '@/constants/crochetData'
+import { BasicStitch, BasicStitchGeneral, getStitchDisplayText } from '@/constants/crochetData'
 import { calculateConsumeGenerate } from '@/utils/calculateConsumeGenerate.js'
 import InputNumber from '@/components/Input/InputNumber.vue'
 import CrochetDisplay from '@/components/CrochetTable/Crochet/CrochetDisplay.vue'
 import CrochetList from './CrochetList.vue'
+import { useCrochetLang } from '@/composables/useCrochetLang'
 
 const { t } = useI18n({ useScope: 'global' })
+
+const { crochetLang } = useCrochetLang()
 
 const props = defineProps({
   disabled: {
     type: Boolean,
     default: false
+  },
+  presetStitchId: {
+    type: Number,
+    default: null
+  },
+  presetPosition: {
+    type: String,
+    default: ''
+  },
+  defaultPosition: {
+    type: String,
+    default: ''
   }
 })
 
-const emit = defineEmits(['add-crochet', 'add-bundle'])
+const emit = defineEmits(['add-crochet', 'add-bundle', 'position-change'])
 
 // mode: 'normal' => append stitches as usual
 // mode: 'same-stitch' => append into a top-level bundle (consume must be 1)
@@ -106,12 +125,24 @@ const stitchesForList = computed(() => {
 const showCustomButton = computed(() => true)
 
 
-const handleCrochetClick = (crochetIndex) => {
+const handleCrochetClick = (payload) => {
+  const stitchId = typeof payload === 'number'
+    ? payload
+    : (payload?.stitchId ?? payload?.stitch_id)
+  if (stitchId === null || stitchId === undefined) return
+
+  const position = typeof payload === 'object' ? String(payload?.position ?? '') : ''
+
   if (mode.value === 'same-stitch') {
-    emit('add-crochet', { stitchId: crochetIndex, mode: 'same-stitch' })
+    emit('add-crochet', { stitchId, position, mode: 'same-stitch' })
     return
   }
-  emit('add-crochet', { stitchId: crochetIndex, mode: 'normal' })
+
+  emit('add-crochet', { stitchId, position, mode: 'normal' })
+}
+
+const handlePositionChange = (pos) => {
+  emit('position-change', pos)
 }
 
 const showBundleWizard = ref(false)
@@ -157,6 +188,22 @@ const confirmBundle = () => {
 </script>
 
 <style scoped>
+.add-crochet {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.add-crochet__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
 h4 {
   margin: 0 0 0.75rem 0;
   font-size: 0.875rem;

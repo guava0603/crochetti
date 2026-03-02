@@ -123,8 +123,12 @@ const handleChildSelectionChange = (rootIndex, nextSelectionList) => {
     const safeChild = Array.isArray(nextSelectionList) ? nextSelectionList : []
     next = [createSelection(rootIndex, rootIndex), ...safeChild]
 
+    // Record table: never toggle-off selection (avoid unselect), but still
+    // re-emit the selection so the toolbar can open again.
     if (isSameSinglePath(selectionList.value, next)) {
-      next = []
+      selectionList.value = next
+      emitSelectionChange()
+      return
     }
   }
   selectionList.value = next
@@ -198,6 +202,42 @@ const cleanupEmptyParents = (pathStack) => {
   }
 }
 
+const isSelectionValidForRootList = (selection, rootList) => {
+  const safeSelection = Array.isArray(selection) ? selection : []
+  let currentList = Array.isArray(rootList) ? rootList : []
+
+  if (safeSelection.length === 0) return true
+
+  for (let i = 0; i < safeSelection.length; i += 1) {
+    const sel = safeSelection[i]
+    if (!sel || sel.start === null || sel.start === undefined || sel.end === null || sel.end === undefined) {
+      return false
+    }
+
+    const start = Math.min(sel.start, sel.end)
+    const end = Math.max(sel.start, sel.end)
+    if (start < 0 || end >= currentList.length) return false
+
+    if (i === safeSelection.length - 1) {
+      return true
+    }
+
+    const node = currentList[sel.start]
+    if (!node) return false
+    if (node.type === 'pattern') {
+      currentList = Array.isArray(node.pattern) ? node.pattern : []
+      continue
+    }
+    if (node.type === 'bundle') {
+      currentList = Array.isArray(node.bundle) ? node.bundle : []
+      continue
+    }
+    return false
+  }
+
+  return true
+}
+
 const flattenPatternIfNeeded = (currentList, selectedIndex, patternNode, pathStack) => {
   if (!patternNode || patternNode.type !== 'pattern') return false
   const repeat = patternNode.count || 1
@@ -232,9 +272,10 @@ const updateNodeCount = (newCount) => {
     removedSelected = true
   } else {
     if (selectedNode.type === 'stitch') {
+      const pos = typeof selectedNode.position === 'string' ? selectedNode.position : undefined
       const patternNode = {
         type: 'pattern',
-        pattern: [{ type: 'stitch', stitch_id: selectedNode.stitch_id }],
+        pattern: [{ type: 'stitch', stitch_id: selectedNode.stitch_id, ...(pos ? { position: pos } : {}) }],
         count: Math.max(2, newCount)
       }
       const stats = calculateConsumeGenerate(patternNode.pattern, patternNode.count)
@@ -267,7 +308,7 @@ const updateNodeCount = (newCount) => {
 // Selection is owned by CrochetDisplay.
 
 const addStitch = (payload) => {
-  const stitchId = typeof payload === 'number' ? payload : payload?.stitchId
+  const stitchId = typeof payload === 'number' ? payload : (payload?.stitchId ?? payload?.stitch_id)
   if (stitchId === null || stitchId === undefined) return
 
   const nextList = addStitchToPatternList(props.stitchNodeList, payload)
@@ -294,7 +335,17 @@ const deleteSelected = () => {
     currentList.splice(start, end - start + 1)
     cleanupEmptyParents(pathStack)
     recalcAncestorPatterns(pathStack)
+
+
+    // Selection pointed to a deleted range; move selection to parent and ensure it's still valid.
+    let nextSelection = Array.isArray(selectionList.value) ? selectionList.value.slice(0, -1) : []
+    while (nextSelection.length > 0 && !isSelectionValidForRootList(nextSelection, rowContent)) {
+      nextSelection = nextSelection.slice(0, -1)
+    }
+    selectionList.value = nextSelection
+
     emitUpdatedRow(rowContent)
+    emitSelectionChange()
     return
   }
 
@@ -304,7 +355,16 @@ const deleteSelected = () => {
   currentList.splice(selectedIndex, 1)
   cleanupEmptyParents(pathStack)
   recalcAncestorPatterns(pathStack)
+
+  // Selection pointed to a deleted leaf; move selection to parent and ensure it's still valid.
+  let nextSelection = Array.isArray(selectionList.value) ? selectionList.value.slice(0, -1) : []
+  while (nextSelection.length > 0 && !isSelectionValidForRootList(nextSelection, rowContent)) {
+    nextSelection = nextSelection.slice(0, -1)
+  }
+  selectionList.value = nextSelection
+
   emitUpdatedRow(rowContent)
+  emitSelectionChange()
 }
 
 const createPatternFromRange = (repeatCount = 1) => {
@@ -358,7 +418,15 @@ const createPatternFromWholeRow = (repeatCount = 1) => {
   emitUpdatedRow([newPattern])
 }
 
-const changeSelectedStitch = (stitchId) => {
+const changeSelectedStitch = (payload) => {
+  const stitchId = typeof payload === 'number'
+    ? payload
+    : (payload?.stitchId ?? payload?.stitch_id)
+  if (stitchId === null || stitchId === undefined) return
+
+  const positionRaw = typeof payload === 'object' ? String(payload?.position ?? '') : ''
+  const position = typeof positionRaw === 'string' ? positionRaw.trim().toUpperCase() : ''
+
   const selectionInfo = getSelectionInfo()
   if (!selectionInfo) return
 
@@ -376,6 +444,8 @@ const changeSelectedStitch = (stitchId) => {
   }
 
   selectedNode.stitch_id = stitchId
+  if (position) selectedNode.position = position
+  else delete selectedNode.position
   recalcAncestorPatterns(pathStack)
   emitUpdatedRow(rowContent)
 }

@@ -2,7 +2,6 @@
   <div class="add-project-view">
     <TopBanner
       :title="$t('addProject.title')"
-      :show-more="false"
       @last-page="$router.back()"
     />
 
@@ -38,12 +37,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { auth } from '../firebaseConfig'
-import { createProject } from '@/services/firestore/projects'
+import { auth, storage } from '../firebaseConfig'
+import { createProject, updateProject } from '@/services/firestore/projects'
 import { openError } from '@/services/ui/notice'
+import { useAchievementStore } from '@/stores/achievementStore'
+import { v4 as uuidv4 } from '@lukeed/uuid'
+import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
 import AddProjectInfo from '../components/AddProject/AddProjectInfo.vue'
 import AddProjectDesign from '../components/AddProject/AddProjectDesign.vue'
 import TopBanner from '@/components/layout/TopBanner.vue'
@@ -51,12 +53,27 @@ import TopBanner from '@/components/layout/TopBanner.vue'
 const { t } = useI18n({ useScope: 'global' })
 
 const router = useRouter()
+const achievementStore = useAchievementStore()
 const currentStep = ref(1)
 const basicInfo = ref({
   name: '',
-  description: ''
+  description: '',
+  image_files: []
 })
 const designData = ref(null)
+
+const SCROLLBAR_HIDDEN_CLASS = 'hide-scrollbar'
+
+if (typeof document !== 'undefined') {
+  document.documentElement.classList.add(SCROLLBAR_HIDDEN_CLASS)
+  document.body?.classList?.add?.(SCROLLBAR_HIDDEN_CLASS)
+}
+
+onUnmounted(() => {
+  if (typeof document === 'undefined') return
+  document.documentElement.classList.remove(SCROLLBAR_HIDDEN_CLASS)
+  document.body?.classList?.remove?.(SCROLLBAR_HIDDEN_CLASS)
+})
 
 const handleNextStep = (data) => {
   basicInfo.value = data
@@ -66,6 +83,51 @@ const handleNextStep = (data) => {
 const handleBackStep = (data) => {
   designData.value = data
   currentStep.value = 1
+}
+
+function normalizeEmptyNotesForSaveInPlace(componentList) {
+  const list = Array.isArray(componentList) ? componentList : []
+  for (const c of list) {
+    if (!c || typeof c !== 'object') continue
+    if (!('notes' in c)) continue
+
+    const notes = c.notes
+
+    if (Array.isArray(notes)) {
+      const hasObjectNotes = notes.some(
+        (n) => n && typeof n === 'object' && 'description' in n
+      )
+
+      if (hasObjectNotes) {
+        const cleaned = notes
+          .map((n) => {
+            if (typeof n === 'string') return { description: n }
+            return n
+          })
+          .map((n) => ({
+            ...n,
+            description: String(n?.description ?? '').trim()
+          }))
+          .filter((n) => n.description)
+
+        if (cleaned.length) c.notes = cleaned
+        else delete c.notes
+      } else {
+        const cleaned = notes
+          .map((n) => String(n ?? '').trim())
+          .filter(Boolean)
+
+        if (cleaned.length) c.notes = cleaned
+        else delete c.notes
+      }
+    } else if (typeof notes === 'string') {
+      const cleaned = notes.trim()
+      if (cleaned) c.notes = [cleaned]
+      else delete c.notes
+    } else {
+      delete c.notes
+    }
+  }
 }
 
 const handleSubmit = async (data) => {
@@ -80,16 +142,46 @@ const handleSubmit = async (data) => {
       return
     }
 
+    const imageFiles = Array.isArray(basicInfo.value?.image_files)
+      ? basicInfo.value.image_files.filter((f) => f instanceof File).slice(0, 3)
+      : []
+
+    const componentList = Array.isArray(data.component_list)
+      ? data.component_list.map((c) => (c && typeof c === 'object' ? { ...c } : c))
+      : []
+
+    normalizeEmptyNotesForSaveInPlace(componentList)
+
     const projectData = {
       name: basicInfo.value.name,
       description: basicInfo.value.description,
-      component_list: data.component_list,
+      component_list: componentList,
       is_public: data.is_public,
       authorId: user.uid,
       createdAt: new Date().toISOString()
     }
 
     const projectId = await createProject(projectData)
+    await achievementStore.scanAndAwardNow(user.uid)
+
+    if (imageFiles.length) {
+      try {
+        const urls = []
+        for (const file of imageFiles) {
+          const contentType = file.type || 'image/jpeg'
+          const ext = String(contentType).split('/')[1] || 'jpg'
+          const path = `projects/${projectId}/images/${uuidv4()}.${ext}`
+          const objRef = storageRef(storage, path)
+          await uploadBytes(objRef, file, { contentType })
+          urls.push(await getDownloadURL(objRef))
+        }
+
+        await updateProject(projectId, { images: urls })
+      } catch (error) {
+        console.warn('Failed to upload project images:', error)
+        // Project is created; continue navigation.
+      }
+    }
 
     // Navigate to project page
     router.push(`/project/${projectId}`)
@@ -122,7 +214,8 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 3rem;
+  margin-top: 1rem;;
+  margin-bottom: 1.5rem;
   gap: 1rem;
 }
 
@@ -222,7 +315,6 @@ h1 {
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
-  margin-top: 2rem;
 }
 
 :deep(.btn-primary) {

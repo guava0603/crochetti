@@ -6,31 +6,31 @@
       class="step-form"
       :style="stepFormStyle"
     >
-      <div class="form-section">
-
-        <div class="form-group">
-          <label>
-            <input type="checkbox" v-model="projectData.is_public" />
-            {{ $t('addProject.design.makePublic') }}
-          </label>
-        </div>
-      </div>
-
       <!-- Components -->
       <div class="form-section">
         <div class="section-header">
           <h3>{{ $t('addProject.design.componentsTitle') }}</h3>
+          <div class="section-header__right">
+          <span class="section-header__right-label">{{ $t('project.public') }}</span>
+          <label class="switch" :aria-label="$t('project.public')">
+            <input type="checkbox" v-model="projectData.is_public" />
+            <span class="slider" aria-hidden="true"></span>
+          </label>
+          </div>
         </div>
 
         <CarouselWithDot
           ref="carouselEl"
           :items="projectData.component_list"
           :aria-label="$t('addProject.design.componentsAria')"
+          :get-dot-variant="(item) => (item?.type === 'stitch' ? 'outline' : 'solid')"
           bleed
         >
           <template #default="{ item, index }">
             <ComponentCard
               :component="item"
+              :component-list="projectData.component_list"
+              :component-index="index"
               :is-editing="true"
               @remove="removeComponent(index)"
             />
@@ -39,14 +39,26 @@
 
         <!-- Add Component Type Selector -->
         <div class="add-component-selector">
-          <button type="button" @click="addComponentOfType('component')" class="btn-add-type">
-            {{ $t('addProject.design.addComponent') }}
-          </button>
-          <button type="button" @click="addComponentOfType('stitch')" class="btn-add-type">
-            {{ $t('addProject.design.addStitch') }}
+          <button
+            type="button"
+            class="add-component-selector__button"
+            :aria-label="$t('addProject.design.addMenuAria')"
+            @click="handleAddComponent"
+          >
+            <ButtonAdd type="flat" />
           </button>
         </div>
       </div>
+
+      <OptionSelectModal
+        :show="showAddTypeSelector"
+        :title="$t('addProject.design.addMenuAria')"
+        :message="$t('confirmation.addProjectChooseComponentType.message')"
+        :options="addTypeOptions"
+        :cancel-text="$t('confirmation.actions.cancel')"
+        @cancel="closeAddTypeSelector"
+        @select="selectAddType"
+      />
 
       <div v-if="error" class="error">
         {{ error }}
@@ -64,7 +76,7 @@
           {{ $t('addProject.common.back') }}
         </button>
         <button type="button" @click="handleSubmit" :disabled="loading || !canSubmit" class="btn-primary">
-          {{ loading ? $t('addProject.design.creating') : $t('addProject.design.createProject') }}
+          {{ loading ? (submittingText || $t('addProject.design.creating')) : (submitText || $t('addProject.design.createProject')) }}
         </button>
       </div>
     </div>
@@ -74,9 +86,12 @@
 <script setup>
 import { ref, defineProps, defineEmits, nextTick, computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import ComponentCard from '../cards/ComponentCard.vue'
+import { v4 as uuidv4 } from '@lukeed/uuid'
+import ComponentCard from '../cards/ComponentCard.vue/index.vue'
 import CarouselWithDot from '@/components/Carousel/CarouselWithDot.vue'
 import { openConfirmation } from '@/services/ui/confirmation'
+import ButtonAdd from '@/components/buttons/svg/ButtonAdd.vue'
+import OptionSelectModal from '@/components/modals/OptionSelectModal.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -88,6 +103,14 @@ const props = defineProps({
   initialData: {
     type: Object,
     default: null
+  },
+  submitText: {
+    type: String,
+    default: ''
+  },
+  submittingText: {
+    type: String,
+    default: ''
   }
 })
 
@@ -99,6 +122,7 @@ const error = ref(null)
 const carouselEl = ref(null)
 const bottomToolbarEl = ref(null)
 const bottomToolbarHeight = ref(0)
+
 
 const stepFormStyle = computed(() => {
   if (!bottomToolbarHeight.value) return {}
@@ -134,10 +158,29 @@ onBeforeUnmount(() => {
   bottomToolbarResizeObserver = null
 })
 
-async function scrollToLatestCard() {
+async function scrollToCard(index) {
   await nextTick()
-  const lastIndex = projectData.value.component_list.length - 1
-  carouselEl.value?.scrollToIndex?.(lastIndex)
+  const list = Array.isArray(projectData.value.component_list) ? projectData.value.component_list : []
+  const max = Math.max(0, list.length - 1)
+  const target = Math.min(max, Math.max(0, Number(index)))
+  carouselEl.value?.scrollToIndex?.(target)
+}
+
+function capturePageScroll() {
+  if (typeof document === 'undefined') return null
+  const el = document.scrollingElement || document.documentElement || document.body
+  if (!el) return null
+  return { el, top: el.scrollTop }
+}
+
+function restorePageScroll(state) {
+  if (!state) return
+  const el = state.el
+  if (!el) return
+  const top = Number(state.top)
+  const safeTop = Number.isFinite(top) ? top : 0
+  const maxTop = Math.max(0, (el.scrollHeight || 0) - (el.clientHeight || 0))
+  el.scrollTop = Math.min(maxTop, Math.max(0, safeTop))
 }
 
 // Initialize project data
@@ -145,6 +188,27 @@ const projectData = ref(props.initialData || {
   component_list: [],
   is_public: false
 })
+
+function ensureComponentIdsAndStitchFieldsInPlace(componentList) {
+  const list = Array.isArray(componentList) ? componentList : []
+  for (const c of list) {
+    if (!c || typeof c !== 'object') continue
+    if (!c.id) c.id = uuidv4()
+
+    if (c.type === 'stitch') {
+      if (!Array.isArray(c.related_component_ids)) c.related_component_ids = []
+      if (c.related_component_ids.length === 0) c.related_component_ids.push('')
+
+      if (!Array.isArray(c.notes)) c.notes = []
+      c.notes = c.notes
+        .filter((n) => n != null)
+        .map((n) => (typeof n === 'string' ? n : String(n?.description ?? '')))
+      if (c.notes.length === 0) c.notes.push('')
+    }
+  }
+}
+
+ensureComponentIdsAndStitchFieldsInPlace(projectData.value.component_list)
 
 // Create default structures
 const createPart = () => ({
@@ -157,6 +221,7 @@ const createPart = () => ({
 
 const createComponent = (index, type = 'component') => {
   const component = {
+    id: uuidv4(),
     name: `${props.projectName} ${index + 1}`,
     type: type,
     count: 1,
@@ -172,19 +237,75 @@ const createComponent = (index, type = 'component') => {
     component.content = createPart()
   } else {
     component.content = { text: '' }
+    component.related_component_ids = ['']
+    component.notes = ['']
   }
 
   return component
 }
 
+function countStitchesUpToIndex(list, indexInclusive) {
+  const arr = Array.isArray(list) ? list : []
+  const max = Math.min(arr.length - 1, Math.max(0, Number(indexInclusive)))
+  let count = 0
+  for (let i = 0; i <= max; i += 1) {
+    if (arr[i]?.type === 'stitch') count += 1
+  }
+  return count
+}
+
 // Component management
 const addComponentOfType = async (type, options = {}) => {
   const { scrollToLatest = true } = options
-  const index = projectData.value.component_list.length
-  projectData.value.component_list.push(createComponent(index, type))
+  const scrollState = capturePageScroll()
+  const list = Array.isArray(projectData.value.component_list) ? projectData.value.component_list : []
+  ensureComponentIdsAndStitchFieldsInPlace(list)
+  const currentIndexRaw = carouselEl.value?.getActiveIndex?.()
+  const currentIndex = Number.isFinite(Number(currentIndexRaw)) ? Number(currentIndexRaw) : list.length - 1
+  const insertAt = Math.min(list.length, Math.max(0, currentIndex + 1))
+
+  const next = createComponent(list.length, type)
+  if (type === 'stitch') {
+    const n = countStitchesUpToIndex(list, insertAt) + 1
+    next.name = t('addProject.design.stitchDefaultName', { n })
+  }
+
+  list.splice(insertAt, 0, next)
+  projectData.value.component_list = list
 
   if (scrollToLatest) {
-    await scrollToLatestCard()
+    await scrollToCard(insertAt)
+  }
+
+  // Some browsers/WebViews may scroll the page when DOM updates or when the carousel scrolls.
+  // Restore the previous vertical scroll position so the user's y-position doesn't jump.
+  await nextTick()
+  if (scrollState) {
+    requestAnimationFrame(() => restorePageScroll(scrollState))
+  }
+}
+
+async function handleAddComponent() {
+  showAddTypeSelector.value = true
+}
+
+const showAddTypeSelector = ref(false)
+
+const addTypeOptions = computed(() => {
+  return [
+    { id: 'component', label: t('addProject.design.addComponent') },
+    { id: 'stitch', label: t('addProject.design.addStitch') }
+  ]
+})
+
+function closeAddTypeSelector() {
+  showAddTypeSelector.value = false
+}
+
+async function selectAddType(type) {
+  closeAddTypeSelector()
+  if (type === 'component' || type === 'stitch') {
+    await addComponentOfType(type)
   }
 }
 
@@ -346,8 +467,8 @@ if (projectData.value.component_list.length === 0) {
 
 
 .form-section {
-  margin-bottom: 2rem;
-  padding-bottom: 2rem;
+  /* margin-bottom: 2rem;
+  padding-bottom: 2rem; */
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -366,27 +487,92 @@ if (projectData.value.component_list.length === 0) {
   margin: 0;
 }
 
+.section-header__right {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.6rem;
+	user-select: none;
+}
+
+.section-header__right-label {
+	font-size: 0.9rem;
+	font-weight: 800;
+	color: #374151;
+	white-space: nowrap;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #d1d5db;
+  transition: 0.18s;
+  border-radius: 999px;
+}
+
+.slider:before {
+  position: absolute;
+  content: '';
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  top: 3px;
+  background-color: white;
+  transition: 0.18s;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+.switch input:checked + .slider {
+  background-color: #42b983;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(18px);
+}
+
+.switch input:disabled + .slider {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .add-component-selector {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-  margin-top: 1rem;
+  justify-content: center;
 }
 
-.btn-add-type {
-  padding: 0.5rem 1rem;
-  background: white;
-  color: #42b983;
-  border: 1px dashed #42b983;
-  border-radius: 4px;
-  font-size: 0.875rem;
+.add-component-selector__button {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  border: none;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
-.btn-add-type:hover {
-  background: #f0fdf4;
-  border-style: solid;
+.add-component-selector__button:hover {
+  background: transparent;
+}
+
+.add-component-selector__button:active {
+  transform: translateY(1px);
 }
 
 .button-group-fixed {
@@ -394,7 +580,7 @@ if (projectData.value.component_list.length === 0) {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 20;
+  z-index: 100;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(10px);
   border-top: 1px solid rgba(229, 231, 235, 0.9);
@@ -409,5 +595,21 @@ if (projectData.value.component_list.length === 0) {
 
 :deep(.button-group-fixed__inner.button-group) {
   margin-top: 0;
+}
+
+/* Carousel arrows: fix to viewport so they stay at screen edges */
+:deep(.carousel__arrow) {
+  position: fixed;
+  top: 50vh;
+  transform: translateY(-50%);
+  z-index: 30;
+}
+
+:deep(.carousel__arrow--left) {
+  left: calc(10px + env(safe-area-inset-left));
+}
+
+:deep(.carousel__arrow--right) {
+  right: calc(10px + env(safe-area-inset-right));
 }
 </style>
