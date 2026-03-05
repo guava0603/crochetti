@@ -209,8 +209,8 @@ watch(
 }
 
 .image-carousel__thumb.is-active {
-  border-color: rgba(66, 185, 131, 0.9);
-  box-shadow: 0 0 0 1px rgba(66, 185, 131, 0.25);
+  border-color: rgb(var(--color-icon-add-rgb) / 0.9);
+  box-shadow: 0 0 0 1px rgb(var(--color-icon-add-rgb) / 0.25);
 }
 
 .image-carousel__thumb-img {

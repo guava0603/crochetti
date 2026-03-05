@@ -236,6 +236,11 @@ export async function listUserRecordSummaries(uid) {
 
     const percentage = clampPercent(data?.percentage) ?? getRecordProgressPercent(data)
 
+    const updatedAtRaw = data?.updated_at
+    const updatedAtMs = updatedAtRaw && typeof updatedAtRaw?.toMillis === 'function'
+      ? updatedAtRaw.toMillis()
+      : (updatedAtRaw ? new Date(updatedAtRaw).getTime() : NaN)
+
     const imagesRaw = Array.isArray(data?.images)
       ? data.images
       : Array.isArray(data?.result?.images)
@@ -249,12 +254,18 @@ export async function listUserRecordSummaries(uid) {
       project_id: data?.project_id ? String(data.project_id) : '',
       project_name: String(data?.project_name || data?.projectName || ''),
       latest_start_ms: latestMs,
+      updated_at_ms: Number.isFinite(updatedAtMs) ? updatedAtMs : 0,
       percentage,
       is_completed: Boolean(data?.is_completed),
       images: firstImage ? [String(firstImage).trim()] : []
     }
   })
 
-  records.sort((a, b) => (b.latest_start_ms || 0) - (a.latest_start_ms || 0))
+  // Sort by last update time (fallback to latest time slot start).
+  records.sort((a, b) => {
+    const aKey = Number(a?.updated_at_ms || 0) || Number(a?.latest_start_ms || 0) || 0
+    const bKey = Number(b?.updated_at_ms || 0) || Number(b?.latest_start_ms || 0) || 0
+    return bKey - aKey
+  })
   return records
 }

@@ -146,17 +146,17 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.75rem;
+  padding: 0.6rem;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border-radius: 8px;
   background: white;
   cursor: pointer;
 }
 
 .selection-input__trigger:focus {
   outline: none;
-  border-color: #42b983;
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.1);
+  border-color: var(--color-icon-add);
+  box-shadow: 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.1);
 }
 
 .selection-input__trigger:disabled {
@@ -226,6 +226,6 @@ onUnmounted(() => {
 }
 
 .selection-input__option.is-selected {
-  background: rgba(66, 185, 131, 0.12);
+  background: rgb(var(--color-icon-add-rgb) / 0.12);
 }
 </style>

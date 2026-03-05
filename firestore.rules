@@ -179,6 +179,38 @@ service cloud.firestore {
         && isValidPublicRecordSummary();
     }
 
+    // Wish Pool submissions.
+    // - Create: signed-in users, only for themselves.
+    // - Read/Update/Delete: default deny (handled by admins/server if needed).
+    match /wishes/{wishId} {
+      allow read: if false;
+      allow update, delete: if false;
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'description',
+          'user_id',
+          'created_at',
+          'updated_at',
+          'status',
+          'is_completed',
+          'reply',
+          'email'
+        ])
+        && request.resource.data.user_id is string
+        && request.resource.data.user_id == request.auth.uid
+        && request.resource.data.description is string
+        && request.resource.data.description.size() > 0
+        && request.resource.data.description.size() <= 20000
+        && request.resource.data.status is string
+        && request.resource.data.is_completed is bool
+        && request.resource.data.reply is string
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 320
+        && request.resource.data.created_at is timestamp
+        && request.resource.data.updated_at is timestamp;
+    }
+
     // Default deny.
     match /{document=**} {
       allow read, write: if false;

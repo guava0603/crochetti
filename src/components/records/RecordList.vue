@@ -37,6 +37,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import RecordCard from '@/components/records/RecordCard.vue'
 import FilterGroup from '@/components/ui/FilterGroup.vue'
+import { toMs } from '@/utils/toMs'
 
 const props = defineProps({
   records: {
@@ -63,28 +64,6 @@ const filterOptions = [
 ]
 
 const filterValue = ref(['completed', 'ongoing'])
-
-const toMs = (input) => {
-  if (input == null) return null
-  if (typeof input === 'number' && Number.isFinite(input)) return input
-  if (input instanceof Date && !Number.isNaN(input.getTime())) return input.getTime()
-
-  // Firestore Timestamp-like: { toMillis() }
-  if (typeof input === 'object' && typeof input.toMillis === 'function') {
-    try {
-      const ms = input.toMillis()
-      return (typeof ms === 'number' && Number.isFinite(ms)) ? ms : null
-    } catch {
-      return null
-    }
-  }
-
-  if (typeof input === 'string' && input.trim() !== '') {
-    const ms = new Date(input).getTime()
-    return Number.isNaN(ms) ? null : ms
-  }
-  return null
-}
 
 const getRecordUpdatedMs = (r) => {
   if (!r || typeof r !== 'object') return 0
@@ -159,6 +138,7 @@ const visibleRecords = computed(() => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .records-hint {

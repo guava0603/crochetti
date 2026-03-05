@@ -93,7 +93,7 @@ defineEmits(['confirm', 'cancel', 'choose'])
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 2000;
 }
 
 .modal-content {
@@ -141,7 +141,7 @@ defineEmits(['confirm', 'cancel', 'choose'])
 }
 
 .btn-confirm-delete {
-  background: #dc2626;
+  background: var(--color-warning);
   color: white;
   border: none;
   padding: 0.625rem 1.25rem;
@@ -162,7 +162,7 @@ defineEmits(['confirm', 'cancel', 'choose'])
 }
 
 .btn-confirm {
-  background: #42b983;
+  background: var(--color-icon-add);
   color: white;
   border: none;
   padding: 0.625rem 1.25rem;

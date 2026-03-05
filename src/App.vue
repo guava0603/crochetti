@@ -16,17 +16,42 @@
 
   <RouterView />
 
+  <!-- Bottom-left floating dock (RecordOptions + WishFab) -->
+  <div class="bottom-left-dock">
+    <div id="bottom-left-dock-before" class="bottom-left-dock__before" />
+    <WishFab v-if="showWishFab" @click="openWishPool" />
+  </div>
+
   <AchievementToastHost />
   <ToastHost />
+  <ErrorHost />
+
+  <GlobalHelpModal />
 
   <GlobalConfirmationModal />
 </template>
 
 <script setup>
 import GlobalConfirmationModal from '@/components/modals/GlobalConfirmationModal.vue'
+import GlobalHelpModal from '@/components/modals/GlobalHelpModal.vue'
 import AchievementToastHost from '@/components/ui/AchievementToastHost.vue'
 import ToastHost from '@/components/ui/ToastHost.vue'
-import { RouterView } from 'vue-router'
+import ErrorHost from '@/components/ui/ErrorHost.vue'
+import WishFab from '@/components/Wish/WishFab.vue'
+import { computed } from 'vue'
+import { RouterView, useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
+
+const showWishFab = computed(() => {
+  const name = route.name
+  return name !== 'add-project' && name !== 'project-edit' && name !== 'wish-pool'
+})
+
+function openWishPool() {
+  router.push({ name: 'wish-pool' })
+}
 </script>
 
 <style scoped>

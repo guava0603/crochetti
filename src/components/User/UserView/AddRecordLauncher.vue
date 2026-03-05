@@ -20,18 +20,16 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { v4 as uuidv4 } from '@lukeed/uuid'
 
 import ButtonAddIcon from '@/components/buttons/svg/ButtonAdd.vue'
 import AddRecordFromUserModal from '@/components/modals/AddRecordFromUserModal.vue'
 
 import { auth } from '@/firebaseConfig'
-import { addRecordToProjectOngoing, createProject, fetchProject } from '@/services/firestore/projects'
-import { setUserRecord } from '@/services/firestore/records'
+import { createProject, fetchProject } from '@/services/firestore/projects'
 import { createPattern, createRow, updateRowStats } from '@/constants/crochetData'
-import { normalizeComponentListForRecord } from '@/utils/componentInstances'
 import { openError } from '@/services/ui/notice'
 import { useAchievementStore } from '@/stores/achievementStore'
+import { startRecordForProject } from '@/services/records/startRecordForProject'
 
 const props = defineProps({
   activeTab: {
@@ -85,7 +83,7 @@ const handleGoAddProject = async () => {
   await router.push('/add-project')
 }
 
-const startRecordForProject = async (projectId, projectName, componentList) => {
+const startRecordAndNavigate = async (projectId, projectName, componentList) => {
   const user = auth.currentUser
   if (!user) {
     openError({
@@ -96,18 +94,12 @@ const startRecordForProject = async (projectId, projectName, componentList) => {
     return
   }
 
-  const record_id = uuidv4()
-  const newRecord = {
-    project_id: String(projectId),
-    project_name: String(projectName || ''),
-    component_list: normalizeComponentListForRecord(componentList),
-    time_slots: [],
-    self_defined_status: [],
-    // Use client timestamp for immediate achievement evaluation.
-    created_at: new Date().toISOString()
-  }
-
-  await setUserRecord(user.uid, record_id, newRecord)
+  const { recordId } = await startRecordForProject({
+    uid: user.uid,
+    projectId,
+    projectName,
+    componentList
+  })
 
   // Grant achievements immediately when the user fulfills goals (e.g. starting a
   // record with many ongoing records).
@@ -115,14 +107,7 @@ const startRecordForProject = async (projectId, projectName, componentList) => {
     console.warn('[achievements] scan after start record failed:', e)
   })
 
-  try {
-    await addRecordToProjectOngoing(projectId, record_id)
-  } catch (error) {
-    // Non-blocking (may fail for private projects / rules).
-    console.warn('[project record tracking] failed to add ongoing record:', error)
-  }
-
-  await router.push(`/record/${record_id}`)
+  await router.push(`/record/${recordId}`)
 }
 
 const handleStartRecordFromProject = async (projectId) => {
@@ -148,7 +133,7 @@ const handleStartRecordFromProject = async (projectId) => {
     }
 
     showAddRecordModal.value = false
-    await startRecordForProject(projectId, project?.name || '', project.component_list)
+    await startRecordAndNavigate(projectId, project?.name || '', project.component_list)
   } catch (error) {
     console.error('Error starting record:', error)
     openError({
@@ -233,7 +218,7 @@ const handleQuickAddProjectAndStartRecord = async ({ name, description, rowCount
     })
 
     showAddRecordModal.value = false
-    await startRecordForProject(projectId, safeName, component_list)
+    await startRecordAndNavigate(projectId, safeName, component_list)
   } catch (error) {
     console.error('Error quick-adding project and starting record:', error)
     openError({
@@ -246,20 +231,3 @@ const handleQuickAddProjectAndStartRecord = async ({ name, description, rowCount
   }
 }
 </script>
-
-<style scoped>
-.user-fab {
-  position: fixed;
-  right: 36px;
-  bottom: calc(36px + env(safe-area-inset-bottom));
-  z-index: 1100;
-  border: none;
-  background: white;
-  padding: 0;
-  cursor: pointer;
-}
-
-.user-fab:active {
-  transform: translateY(1px);
-}
-</style>

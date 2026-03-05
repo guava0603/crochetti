@@ -1,5 +1,13 @@
 <template>
 	<div class="crochet-table crochet-table--record row-list-vertical">
+		<div class="row-container row-container--header" @click.stop>
+			<div class="row-table row-table--header">
+				<div class="row-table-cell row-number">{{ t('crochetTable.header.rowNumber') }}</div>
+				<div class="row-table-cell row-stitches">{{ t('crochetTable.header.stitch') }}</div>
+				<div class="row-table-cell row-generate">{{ t('crochetTable.header.totalStitches') }}</div>
+			</div>
+		</div>
+
 		<div
 			v-for="(row, idx) in visibleRows"
 			:key="row.row_index"
@@ -35,12 +43,15 @@
 
 <script setup>
 import { computed, ref, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import CrochetRow from './Crochet/CrochetRow.vue'
 import CrochetNode from './Crochet/CrochetNode.vue'
 import BottomToolbar from '@/components/BottomToolbar/BottomToolbar.vue'
 import SetSelectionPosition from '@/components/BottomToolbar/SetSelectionPosition.vue'
 import { isRowContainerGroupedStart } from '@/utils/crochetTable.js'
 import { openConfirmation } from '@/services/ui/confirmation'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps({
 	modelValue: {
@@ -334,7 +345,7 @@ const getPreviousGenerate = (rowIndex) => {
 }
 
 .crochet-table--record :deep(.row-table) {
-	grid-template-columns: 44px 1fr 44px;
+	grid-template-columns: 56px 1fr 72px;
 }
 
 .crochet-table--record :deep(.row-number) {

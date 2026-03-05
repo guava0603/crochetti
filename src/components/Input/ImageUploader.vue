@@ -208,9 +208,9 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--color-border-warm);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--color-surface-page);
   color: #111827;
   cursor: pointer;
   font-weight: 600;
@@ -242,19 +242,22 @@ onBeforeUnmount(() => {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.75);
+  overflow: hidden;
 }
 
 .image-preview {
   width: 100%;
   height: 100%;
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border-warm);
 }
 
 .image-preview-item--empty {
   border-radius: 10px;
-  border: 1px dashed #cbd5e1;
-  background: #f8fafc;
+  border: 1px dashed var(--color-border-warm);
+  background: rgba(255, 255, 255, 0.75);
 }
 
 .image-preview-upload {

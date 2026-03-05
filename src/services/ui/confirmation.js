@@ -18,6 +18,22 @@ function normalizeType(type) {
 }
 
 const CONFIRMATION_PRESETS = {
+  quickStartAnonymous: () => ({
+    title: t('confirmation.quickStartAnonymous.title'),
+    message: t('confirmation.quickStartAnonymous.message'),
+    confirmText: t('confirmation.quickStartAnonymous.confirmText'),
+    cancelText: t('confirmation.actions.cancel'),
+    confirmClass: 'btn-confirm'
+  }),
+
+  discardChanges: () => ({
+    title: t('confirmation.discardChanges.title'),
+    message: t('confirmation.discardChanges.message'),
+    confirmText: t('confirmation.discardChanges.confirmText'),
+    cancelText: t('confirmation.actions.cancel'),
+    confirmClass: 'btn-confirm-delete'
+  }),
+
   addProjectChooseComponentType: () => ({
     title: t('confirmation.addProjectChooseComponentType.title'),
     message: t('confirmation.addProjectChooseComponentType.message'),

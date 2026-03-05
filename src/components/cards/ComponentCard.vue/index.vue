@@ -4,15 +4,33 @@
       {{ t('addProject.design.stepCounter', { n: stepBadgeN, m: stepBadgeM }) }}
     </div>
 
+    <ButtonDelete
+      v-if="isEditing"
+      class="component-remove-btn"
+      :text="t('project.removeComponentAction')"
+      :type="{ id: 'removeComponent', params: { name: component?.name || '' } }"
+      @click="$emit('remove')"
+    />
+
     <div class="card-header">
-      <div class="card-title-row">
+      <div class="card-actions">
+        <slot name="actions"></slot>
+      </div>
+    </div>
+
+    <div class="component-card-subsection component-card-subsection--first">
+      <div class="subsection-header">
+        <h5>{{ isPartComponent(component) ? t('project.componentNameLabel') : t('project.stitchNameLabel') }}</h5>
+      </div>
+
+      <div class="component-name-row">
         <input
           v-if="isEditing"
           v-model="component.name"
           class="component-text component-title-row__name"
           type="text"
         />
-        <h4 v-else class="component-title-row__name">{{ component.name }}</h4>
+        <div v-else class="component-name-display component-title-row__name">{{ component.name }}</div>
 
         <div
           v-if="isPartComponent(component)"
@@ -33,16 +51,14 @@
           </div>
         </div>
       </div>
-
-      <div class="card-actions">
-        <slot name="actions"></slot>
-      </div>
     </div>
 
     <ComponentCardComponent
       v-if="isPartComponent(component)"
       :component="component"
       :is-editing="isEditing"
+      :help-topic-id="helpTopicId"
+      :help-topic-ids="helpTopicIds"
     />
     <ComponentCardStitch
       v-else
@@ -52,14 +68,6 @@
       :component-index="componentIndex"
     />
 
-    <div v-if="isEditing" class="subsection">
-      <ButtonDelete
-        class="component-remove-btn"
-        :text="t('project.removeComponentAction')"
-        :type="{ id: 'removeComponent', params: { name: component?.name || '' } }"
-        @click="$emit('remove')"
-      />
-    </div>
   </div>
 </template>
 
@@ -100,6 +108,14 @@ const props = defineProps({
   showEditActions: {
     type: Boolean,
     default: true
+  },
+  helpTopicId: {
+    type: String,
+    default: ''
+  },
+  helpTopicIds: {
+    type: Object,
+    default: null
   }
 })
 
@@ -107,6 +123,8 @@ const component = computed(() => props.component)
 const componentList = computed(() => props.componentList)
 const componentIndex = computed(() => props.componentIndex)
 const isEditing = computed(() => props.isEditing)
+const helpTopicId = computed(() => props.helpTopicId)
+const helpTopicIds = computed(() => props.helpTopicIds)
 
 function isPartComponent(c) {
   return !c?.type || c?.type === 'component'
@@ -147,10 +165,9 @@ const showStepBadge = computed(() => {
 <style scoped>
 .component-card {
   background: var(--color-surface-page);
-  border: 1px solid var(--color-border-warm);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 1.5rem;
-  margin-bottom: 1.5rem;
   position: relative;
 }
 
@@ -169,7 +186,7 @@ const showStepBadge = computed(() => {
 
 .card-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 1rem;
 }
@@ -180,24 +197,46 @@ const showStepBadge = computed(() => {
   align-items: center;
 }
 
-.card-title-row {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  grid-template-columns: minmax(0, 1fr) 110px;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.card-header h4 {
-  margin: 0;
-  color: #111827;
-}
-
 .component-title-row__name {
   min-width: 0;
   flex: 1;
   font-weight: 700;
+}
+
+.component-name-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.component-card-subsection {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-hover);
+}
+
+.component-card-subsection--first {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.subsection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.subsection-header h5 {
+  margin: 0;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.component-name-display {
+  color: #111827;
+  font-size: 1.05rem;
 }
 
 .component-title-row__cast-on {
@@ -210,9 +249,8 @@ const showStepBadge = computed(() => {
   justify-content: center;
   padding: 0.35rem 0.6rem;
   border-radius: 999px;
-  border: 2px solid var(--color-warm-brown);
-  background: var(--color-white);
-  color: var(--color-warm-brown);
+  background: var(--color-warm-brown);
+  color: var(--color-white);
   font-size: 0.8rem;
   font-weight: 900;
   line-height: 1.2;
@@ -232,24 +270,17 @@ const showStepBadge = computed(() => {
 
 .component-text:focus {
   outline: none;
-  border-color: #42b983;
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.12);
+  border-color: var(--color-icon-add);
+  box-shadow: 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.12);
 }
 
-.subsection {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-:deep(.component-remove-btn) {
-  min-width: 84px;
-  height: 32px;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
+:deep(.btn-delete.component-remove-btn) {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border-radius: 8px;
 }
 </style>

@@ -1,4 +1,28 @@
 /* color palette from <https://github.com/vuejs/theme> */
+@font-face {
+  font-family: 'GlowSansTC';
+  src: url('/assets/fonts/GlowSansTC-Normal-v0.93/GlowSansTC-Normal-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'GlowSansTC';
+  src: url('/assets/fonts/GlowSansTC-Normal-v0.93/GlowSansTC-Normal-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'GlowSansTC';
+  src: url('/assets/fonts/GlowSansTC-Normal-v0.93/GlowSansTC-Normal-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --vt-c-white: #ffffff;
   --vt-c-white-soft: #f8f8f8;
@@ -28,8 +52,8 @@
   --color-background-mute: var(--vt-c-white-mute);
 
   /* Warm surface theme */
-  --color-surface-sheet: rgb(254, 247, 239);
-  --color-surface-page: rgb(239, 228, 214);
+  --color-surface-sheet: rgb(239, 228, 214);
+  --color-surface-page: rgb(254, 247, 239);
   --color-border-warm: rgb(197, 189, 172);
   --color-surface-accent: rgb(233, 227, 213);
 
@@ -40,6 +64,10 @@
   --color-font-invisible: rgba(17, 24, 39, 0.58);
   --color-highlight-yellow: #FFD150;
 
+  /* Warning / destructive */
+  --color-warning-rgb: 255 70 70;
+  --color-warning: #FF4646;
+
   --color-border: var(--vt-c-divider-light-2);
   --color-border-hover: var(--vt-c-divider-light-1);
 
@@ -47,7 +75,12 @@
   --color-text: var(--vt-c-text-light-1);
 
   --color-icon-base: #4b5563;
-  --color-icon-add: rgb(224, 157, 127);
+  --color-icon-add-rgb: 224 157 127;
+  --color-icon-add: rgb(var(--color-icon-add-rgb));
+  --color-icon-add-light: rgb(236, 208, 176);
+
+  /* Primary action color (legacy name kept for compatibility) */
+  --color-buton-add: var(--color-icon-add);
 
   --color-font-light: var(--color-icon-base);
   --color-font-dark: #111827;
@@ -56,6 +89,10 @@
 
   --safe-area-top: 0px;
   --safe-area-bottom: 0px;
+
+  --safe-viewport-height: calc(100vh - var(--safe-area-top) - var(--safe-area-bottom));
+  --bottom-floating-button: calc(24px + var(--safe-area-bottom));
+  --color-completed-green: #A3B666;
 
   /* Achievement tier colors */
   --tier-brown: #6e5034;
@@ -92,7 +129,7 @@ html.is-app {
 }
 
 body {
-  min-height: 100vh;
+  min-height: var(--safe-viewport-height);
   color: var(--color-text);
   background: var(--color-background);
   touch-action: manipulation;
@@ -101,6 +138,7 @@ body {
     background-color 0.5s;
   line-height: 1.6;
   font-family:
+    GlowSansTC,
     Inter,
     -apple-system,
     BlinkMacSystemFont,
@@ -117,4 +155,31 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Autofill styling (Chromium/Safari/WebKit)
+   - `:-internal-autofill-selected` is Chromium-specific.
+   - `:-webkit-autofill` is the stable selector for most WebKit-based engines.
+*/
+input:-internal-autofill-selected,
+textarea:-internal-autofill-selected,
+select:-internal-autofill-selected {
+  background-color: var(--color-surface-page) !important;
+  color: var(--color-font-dark) !important;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-font-dark);
+  caret-color: var(--color-font-dark);
+  -webkit-box-shadow: 0 0 0px 1000px var(--color-surface-page) inset;
+  box-shadow: 0 0 0px 1000px var(--color-surface-page) inset;
+  transition: background-color 9999s ease-in-out 0s;
 }

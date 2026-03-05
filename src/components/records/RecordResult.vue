@@ -11,14 +11,19 @@
 
       <div v-else class="result-body">
         <button
-          class="result-share-btn result-share-btn--floating"
+          class="result-share-btn user-fab"
           type="button"
           aria-label="Share"
           title="Share / Download"
           :disabled="isCapturing"
           @click="shareOrDownload"
         >
-          <img class="result-share-btn__icon" :src="uploadIconUrl" alt="" aria-hidden="true" />
+          <span
+            class="result-share-btn__icon-mask"
+            :style="{ '--result-share-icon-url': `url(${uploadIconUrl})` }"
+            aria-hidden="true"
+          />
+          <img class="result-share-btn__icon-img" :src="uploadIconUrl" alt="" aria-hidden="true" />
         </button>
 
         <div v-if="showSummary" class="result-summary">
@@ -118,7 +123,6 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { onAuthStateChanged } from 'firebase/auth'
-import html2canvas from 'html2canvas'
 import { auth } from '@/firebaseConfig'
 import { fetchUserRecord } from '@/services/firestore/records'
 import { originalStatuses } from '@/constants/status.js'
@@ -437,6 +441,8 @@ const capturePageContentPngBlob = async () => {
   const el = pageContentEl.value
   if (!el) throw new Error('page-content element not found')
 
+  const { default: html2canvas } = await import('html2canvas')
+
   const dpr = typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1
   const scale = Math.max(1, Math.min(2, dpr))
 
@@ -477,10 +483,10 @@ const shareOrDownload = async () => {
     await nextTick()
 
     const blob = await capturePageContentPngBlob()
-    const file = new File([blob], filename, { type: 'image/png' })
+    const file = typeof File !== 'undefined' ? new File([blob], filename, { type: 'image/png' }) : null
 
     try {
-      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+      if (file && navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
         await navigator.share({ title, files: [file] })
         return
       }
@@ -576,8 +582,6 @@ onUnmounted(() => {
 
 .result-share-btn {
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
   border-radius: 999px;
   border: 1px solid rgba(17, 24, 39, 0.14);
   background: rgba(255, 255, 255, 0.9);
@@ -586,13 +590,6 @@ onUnmounted(() => {
   place-items: center;
   cursor: pointer;
   transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
-}
-
-.result-share-btn--floating {
-  position: fixed;
-  top: calc(6rem + env(safe-area-inset-top, 0px));
-  right: calc(0.75rem + env(safe-area-inset-right, 0px));
-  z-index: 30;
 }
 
 .result-share-btn:hover {
@@ -604,10 +601,30 @@ onUnmounted(() => {
   transform: translateY(1px);
 }
 
-.result-share-btn__icon {
+.result-share-btn__icon-mask {
   width: 20px;
   height: 20px;
-  opacity: 0.85;
+  background-color: var(--color-icon-base);
+  opacity: 0.9;
+  -webkit-mask: var(--result-share-icon-url) center / contain no-repeat;
+  mask: var(--result-share-icon-url) center / contain no-repeat;
+}
+
+.result-share-btn__icon-img {
+  width: 20px;
+  height: 20px;
+  display: none;
+}
+
+@supports not ((-webkit-mask: url("")) or (mask: url(""))) {
+  .result-share-btn__icon-mask {
+    display: none;
+  }
+
+  .result-share-btn__icon-img {
+    display: block;
+    opacity: 0.85;
+  }
 }
 
 .record-result-view.is-capturing .result-share-btn--floating {
@@ -627,8 +644,8 @@ onUnmounted(() => {
 }
 
 .btn-more-details {
-  border: 1px solid rgba(66, 185, 131, 0.35);
-  background: rgba(66, 185, 131, 0.12);
+  border: 1px solid rgb(var(--color-icon-add-rgb) / 0.35);
+  background: rgb(var(--color-icon-add-rgb) / 0.12);
   color: #0f5132;
   border-radius: 10px;
   padding: 0.6rem 1rem;
@@ -639,7 +656,7 @@ onUnmounted(() => {
 }
 
 .btn-more-details:hover {
-  background: rgba(66, 185, 131, 0.18);
+  background: rgb(var(--color-icon-add-rgb) / 0.18);
 }
 
 .btn-more-details:active {
@@ -694,9 +711,6 @@ onUnmounted(() => {
       rgba(255, 214, 64, 0.55) 88%,
       transparent 88%
     );
-  box-shadow:
-    0 0.02em 0 rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(255, 214, 64, 0.16) inset;
 }
 
 .result-empty {
@@ -786,7 +800,7 @@ onUnmounted(() => {
   /* border: 1px solid #e5e7eb; */
   border-radius: 14px;
   padding: 1.5rem 1rem;
-  /* border: 1px solid rgba(66, 185, 131, 0.35); */
+  /* border: 1px solid rgb(var(--color-icon-add-rgb) / 0.35); */
 }
 
 .metric-value {
@@ -848,7 +862,7 @@ onUnmounted(() => {
 }
 
 .rest-card-header:focus-visible {
-  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.22);
+  box-shadow: 0 0 0 3px rgb(var(--color-icon-add-rgb) / 0.22);
   border-radius: 12px;
 }
 

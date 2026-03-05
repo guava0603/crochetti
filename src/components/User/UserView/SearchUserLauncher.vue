@@ -48,20 +48,3 @@ const handleConfirm = (id) => {
   emit('open-user', userId)
 }
 </script>
-
-<style scoped>
-.user-fab {
-  position: fixed;
-  right: 36px;
-  bottom: calc(36px + env(safe-area-inset-bottom));
-  z-index: 1100;
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-}
-
-.user-fab:active {
-  transform: translateY(1px);
-}
-</style>

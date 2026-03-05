@@ -71,6 +71,7 @@ import ButtonPrinter from '@/components/buttons/svg/ButtonPrinter.vue'
 import { fetchProject } from '@/services/firestore/projects'
 import { getPatternItemDisplay } from '@/constants/crochetData.js'
 import { useCrochetLang } from '@/composables/useCrochetLang'
+import { buildStitchLookup } from '@/utils/calculateConsumeGenerate.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -84,6 +85,11 @@ const captureRef = ref(null)
 const downloading = ref(false)
 
 const { crochetLang } = useCrochetLang()
+
+const stitchLookup = computed(() => {
+  const list = projectData.value?.self_defined_stitches
+  return buildStitchLookup(Array.isArray(list) ? list : [])
+})
 
 const noticeMessage = ref('')
 let noticeTimer = null
@@ -99,7 +105,9 @@ function showNotice(message) {
 const getRowStitchesText = (row) => {
   const list = row?.content?.stitch_node_list
   if (!Array.isArray(list) || list.length === 0) return ''
-  return list.map((node) => getPatternItemDisplay(node, crochetLang.value)).join(', ')
+  return list
+    .map((node) => getPatternItemDisplay(node, crochetLang.value, stitchLookup.value))
+    .join(', ')
 }
 
 const getRowRepeatCount = (row) => {
@@ -265,7 +273,7 @@ onMounted(async () => {
 }
 
 .btn-download:focus-visible {
-  outline: 2px solid rgba(66, 185, 131, 0.55);
+  outline: 2px solid rgb(var(--color-icon-add-rgb) / 0.55);
   outline-offset: 2px;
 }
 
@@ -281,8 +289,8 @@ onMounted(async () => {
   margin-bottom: 1rem;
   padding: 0.75rem 1rem;
   border-radius: 10px;
-  border: 1px solid rgba(66, 185, 131, 0.35);
-  background: rgba(66, 185, 131, 0.12);
+  border: 1px solid rgb(var(--color-icon-add-rgb) / 0.35);
+  background: rgb(var(--color-icon-add-rgb) / 0.12);
   color: #0f5132;
   font-weight: 700;
 }

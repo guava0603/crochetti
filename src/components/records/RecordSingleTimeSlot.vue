@@ -495,8 +495,8 @@ onMounted(() => {
 }
 
 .edit-btn:hover {
-  background: rgba(66, 185, 131, 0.10);
-  border-color: rgba(66, 185, 131, 0.35);
+  background: rgb(var(--color-icon-add-rgb) / 0.1);
+  border-color: rgb(var(--color-icon-add-rgb) / 0.35);
 }
 
 .dt-input {
@@ -519,10 +519,10 @@ onMounted(() => {
 }
 
 .bottom-bar :deep(.btn-delete) {
+  width: 44px;
   height: 44px;
   border-radius: 12px;
-  font-weight: 900;
-  padding: 0 1rem;
+  padding: 0;
 }
 
 .confirm-btn {
@@ -533,7 +533,7 @@ onMounted(() => {
   height: 44px;
   font-size: 1rem;
   font-weight: 900;
-  background: #42b983;
+  background: var(--color-icon-add);
   color: #fff;
   cursor: pointer;
 }

@@ -75,11 +75,11 @@ const props = defineProps({
   // Percentage-based coloring: low % uses `lightColor`, high % uses `darkColor`.
   lightColor: {
     type: String,
-    default: '#FFF3C4'
+    default: '#ECC466'
   },
   darkColor: {
     type: String,
-    default: '#B17A00'
+    default: '#A3B666'
   },
   textColor: {
     type: String,

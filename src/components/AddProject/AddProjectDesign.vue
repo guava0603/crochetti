@@ -9,13 +9,13 @@
       <!-- Components -->
       <div class="form-section">
         <div class="section-header">
-          <h3>{{ $t('addProject.design.componentsTitle') }}</h3>
           <div class="section-header__right">
-          <span class="section-header__right-label">{{ $t('project.public') }}</span>
-          <label class="switch" :aria-label="$t('project.public')">
-            <input type="checkbox" v-model="projectData.is_public" />
-            <span class="slider" aria-hidden="true"></span>
-          </label>
+            <ButtonGroup
+              type="toggle"
+              v-model="visibilityKey"
+              :items="visibilityItems"
+              :aria-label="$t('project.visibility')"
+            />
           </div>
         </div>
 
@@ -32,36 +32,33 @@
               :component-list="projectData.component_list"
               :component-index="index"
               :is-editing="true"
+              :help-topic-ids="{
+                stitch: 'addProjectTableHeaderStitch',
+                total: 'addProjectTableHeaderTotalStitches'
+              }"
               @remove="removeComponent(index)"
             />
           </template>
         </CarouselWithDot>
 
-        <!-- Add Component Type Selector -->
-        <div class="add-component-selector">
+        <div class="add-component-actions" role="group" :aria-label="$t('addProject.design.addMenuAria')">
           <button
             type="button"
-            class="add-component-selector__button"
-            :aria-label="$t('addProject.design.addMenuAria')"
-            @click="handleAddComponent"
+            class="add-component-actions__btn"
+            :disabled="loading"
+            @click="handleAddPart"
           >
-            <ButtonAdd type="flat" />
+            {{ $t('addProject.design.addComponent') }}
+          </button>
+          <button
+            type="button"
+            class="add-component-actions__btn"
+            :disabled="loading"
+            @click="handleAddStitch"
+          >
+            {{ $t('addProject.design.addStitch') }}
           </button>
         </div>
-      </div>
-
-      <OptionSelectModal
-        :show="showAddTypeSelector"
-        :title="$t('addProject.design.addMenuAria')"
-        :message="$t('confirmation.addProjectChooseComponentType.message')"
-        :options="addTypeOptions"
-        :cancel-text="$t('confirmation.actions.cancel')"
-        @cancel="closeAddTypeSelector"
-        @select="selectAddType"
-      />
-
-      <div v-if="error" class="error">
-        {{ error }}
       </div>
     </form>
 
@@ -84,14 +81,16 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits, nextTick, computed, onBeforeUnmount, onMounted } from 'vue'
+import { ref, defineProps, defineEmits, nextTick, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { v4 as uuidv4 } from '@lukeed/uuid'
 import ComponentCard from '../cards/ComponentCard.vue/index.vue'
 import CarouselWithDot from '@/components/Carousel/CarouselWithDot.vue'
+import ButtonGroup from '@/components/buttons/ButtonGroup.vue'
 import { openConfirmation } from '@/services/ui/confirmation'
-import ButtonAdd from '@/components/buttons/svg/ButtonAdd.vue'
-import OptionSelectModal from '@/components/modals/OptionSelectModal.vue'
+import { openError } from '@/services/ui/error'
+import { useBottomToolbarPadding } from './useBottomToolbarPadding'
+import { provideSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -114,49 +113,13 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['back', 'submit'])
+const emit = defineEmits(['back', 'submit', 'dirty-change'])
 
 const loading = ref(false)
-const error = ref(null)
 
 const carouselEl = ref(null)
-const bottomToolbarEl = ref(null)
-const bottomToolbarHeight = ref(0)
 
-
-const stepFormStyle = computed(() => {
-  if (!bottomToolbarHeight.value) return {}
-  return {
-    paddingBottom: `calc(${bottomToolbarHeight.value}px + env(safe-area-inset-bottom))`
-  }
-})
-
-let bottomToolbarResizeObserver = null
-
-function updateBottomToolbarHeight() {
-  const el = bottomToolbarEl.value
-  if (!el) {
-    bottomToolbarHeight.value = 0
-    return
-  }
-  bottomToolbarHeight.value = Math.ceil(el.getBoundingClientRect().height)
-}
-
-onMounted(() => {
-  updateBottomToolbarHeight()
-  window.addEventListener('resize', updateBottomToolbarHeight)
-
-  if (typeof ResizeObserver !== 'undefined' && bottomToolbarEl.value) {
-    bottomToolbarResizeObserver = new ResizeObserver(() => updateBottomToolbarHeight())
-    bottomToolbarResizeObserver.observe(bottomToolbarEl.value)
-  }
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateBottomToolbarHeight)
-  if (bottomToolbarResizeObserver) bottomToolbarResizeObserver.disconnect()
-  bottomToolbarResizeObserver = null
-})
+const { bottomToolbarEl, stepFormStyle } = useBottomToolbarPadding()
 
 async function scrollToCard(index) {
   await nextTick()
@@ -183,10 +146,75 @@ function restorePageScroll(state) {
   el.scrollTop = Math.min(maxTop, Math.max(0, safeTop))
 }
 
-// Initialize project data
-const projectData = ref(props.initialData || {
+function deepClone(value) {
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(value)
+    } catch {
+      // fall through
+    }
+  }
+  try {
+    return JSON.parse(JSON.stringify(value))
+  } catch {
+    return value
+  }
+}
+
+const DEFAULT_PROJECT_DATA = {
   component_list: [],
-  is_public: false
+  is_public: false,
+  self_defined_stitches: []
+}
+
+// Initialize project data (clone so we can diff against a snapshot for dirty tracking)
+const projectData = ref(deepClone(props.initialData || DEFAULT_PROJECT_DATA))
+
+const visibilityKey = computed({
+  get: () => (projectData.value?.is_public ? 'public' : 'private'),
+  set: (key) => {
+    projectData.value.is_public = key === 'public'
+  }
+})
+
+const visibilityItems = computed(() => [
+  { key: 'public', label: t('project.public') },
+  { key: 'private', label: t('project.private') }
+])
+
+if (!Array.isArray(projectData.value.self_defined_stitches)) {
+  projectData.value.self_defined_stitches = []
+}
+
+function addSelfDefinedStitch(stitch) {
+  if (!stitch || typeof stitch !== 'object') return
+  if (!Array.isArray(projectData.value.self_defined_stitches)) {
+    projectData.value.self_defined_stitches = []
+  }
+
+  const id = Number(stitch.stitch_id)
+  if (!Number.isFinite(id)) return
+
+  const list = projectData.value.self_defined_stitches
+  const next = {
+    stitch_id: id,
+    name: String(stitch.name || '').trim(),
+    description: String(stitch.description || ''),
+    consume: Number(stitch.consume || 0),
+    generate: Number(stitch.generate || 0)
+  }
+
+  const existingIndex = list.findIndex((s) => Number(s?.stitch_id) === id)
+  if (existingIndex >= 0) {
+    list.splice(existingIndex, 1, next)
+  } else {
+    list.push(next)
+  }
+}
+
+provideSelfDefinedStitchesContext({
+  stitchesRef: computed(() => projectData.value.self_defined_stitches),
+  addStitch: addSelfDefinedStitch
 })
 
 function ensureComponentIdsAndStitchFieldsInPlace(componentList) {
@@ -209,6 +237,21 @@ function ensureComponentIdsAndStitchFieldsInPlace(componentList) {
 }
 
 ensureComponentIdsAndStitchFieldsInPlace(projectData.value.component_list)
+
+const initialSnapshot = ref(null)
+
+function safeSerialize(value) {
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return ''
+  }
+}
+
+const isDirty = computed(() => {
+  if (!initialSnapshot.value) return false
+  return safeSerialize(projectData.value) !== safeSerialize(initialSnapshot.value)
+})
 
 // Create default structures
 const createPart = () => ({
@@ -285,28 +328,12 @@ const addComponentOfType = async (type, options = {}) => {
   }
 }
 
-async function handleAddComponent() {
-  showAddTypeSelector.value = true
+async function handleAddPart() {
+  await addComponentOfType('component')
 }
 
-const showAddTypeSelector = ref(false)
-
-const addTypeOptions = computed(() => {
-  return [
-    { id: 'component', label: t('addProject.design.addComponent') },
-    { id: 'stitch', label: t('addProject.design.addStitch') }
-  ]
-})
-
-function closeAddTypeSelector() {
-  showAddTypeSelector.value = false
-}
-
-async function selectAddType(type) {
-  closeAddTypeSelector()
-  if (type === 'component' || type === 'stitch') {
-    await addComponentOfType(type)
-  }
+async function handleAddStitch() {
+  await addComponentOfType('stitch')
 }
 
 const removeComponent = (index) => {
@@ -322,6 +349,63 @@ function safeNumber(value) {
   return Number.isFinite(n) ? n : 0
 }
 
+function rowHasCrochetContent(row) {
+  const nodes = row?.content?.stitch_node_list
+  if (Array.isArray(nodes) && nodes.length > 0) return true
+
+  // Fallback: if a row has explicit non-zero values, treat as content.
+  // (Some flows may compute generate/consume even if nodes are not present.)
+  const generate = safeNumber(row?.content?.generate)
+  const consume = safeNumber(row?.content?.consume)
+  return generate !== 0 || consume !== 0
+}
+
+function trimTrailingEmptyRows(rowList) {
+  const list = Array.isArray(rowList) ? rowList : []
+  let end = list.length
+  while (end > 0 && !rowHasCrochetContent(list[end - 1])) end -= 1
+  return list.slice(0, end)
+}
+
+function findEmptyRowsAfterTrim(componentList) {
+  const results = []
+  const list = Array.isArray(componentList) ? componentList : []
+
+  for (let cIndex = 0; cIndex < list.length; cIndex += 1) {
+    const component = list[cIndex]
+    const isPart = !component?.type || component?.type === 'component'
+    if (!isPart) continue
+
+    const rowListRaw = component?.content?.row_list
+    const rowList = trimTrailingEmptyRows(rowListRaw)
+
+    for (let rIndex = 0; rIndex < rowList.length; rIndex += 1) {
+      const row = rowList[rIndex]
+      if (rowHasCrochetContent(row)) continue
+      const rowNumber = row?.row_index ?? (rIndex + 1)
+      results.push({
+        componentName: component?.name || String(cIndex + 1),
+        rowNumber
+      })
+    }
+  }
+
+  return results
+}
+
+function trimTrailingEmptyRowsInPlace(componentList) {
+  const list = Array.isArray(componentList) ? componentList : []
+  for (const component of list) {
+    const isPart = !component?.type || component?.type === 'component'
+    if (!isPart) continue
+    if (!component.content || typeof component.content !== 'object') component.content = {}
+
+    const rowListRaw = component?.content?.row_list
+    if (!Array.isArray(rowListRaw) || rowListRaw.length === 0) continue
+    component.content.row_list = trimTrailingEmptyRows(rowListRaw)
+  }
+}
+
 const hasAnyCrochetRow = computed(() => {
   const list = Array.isArray(projectData.value.component_list)
     ? projectData.value.component_list
@@ -331,14 +415,19 @@ const hasAnyCrochetRow = computed(() => {
     const isPart = !c?.type || c?.type === 'component'
     if (!isPart) return false
     const rowList = c?.content?.row_list
-    return Array.isArray(rowList) && rowList.length > 0
+    if (!Array.isArray(rowList) || rowList.length === 0) return false
+    return rowList.some(rowHasCrochetContent)
   })
 })
+
+const emptyCrochetRows = computed(() => findEmptyRowsAfterTrim(projectData.value.component_list))
+const hasEmptyCrochetRow = computed(() => emptyCrochetRows.value.length > 0)
 
 const canSubmit = computed(() => {
   if (loading.value) return false
   if (!Array.isArray(projectData.value.component_list) || projectData.value.component_list.length === 0) return false
-  return hasAnyCrochetRow.value
+  if (!hasAnyCrochetRow.value) return false
+  return !hasEmptyCrochetRow.value
 })
 
 function findUnexpectedGenerateRows(componentList) {
@@ -422,12 +511,22 @@ const handleSubmit = async () => {
   normalizeProjectMaterialsInPlace(projectData.value.component_list)
 
   if (!Array.isArray(projectData.value.component_list) || projectData.value.component_list.length === 0) {
-    error.value = t('addProject.design.errors.atLeastOneComponent')
+    openError({ title: t('common.error'), message: t('addProject.design.errors.atLeastOneComponent') })
     return
   }
 
   if (!hasAnyCrochetRow.value) {
-    error.value = t('addProject.design.errors.atLeastOneRow')
+    openError({ title: t('common.error'), message: t('addProject.design.errors.atLeastOneRow') })
+    return
+  }
+
+  if (hasEmptyCrochetRow.value) {
+    const first = emptyCrochetRows.value[0]
+    const example = first ? `${first.componentName} #${first.rowNumber}` : ''
+    openError({
+      title: t('common.error'),
+      message: t('addProject.design.errors.noEmptyRows', { example })
+    })
     return
   }
 
@@ -447,15 +546,29 @@ const handleSubmit = async () => {
     if (!ok) return
   }
 
-  error.value = null
   loading.value = true
+
+    // Ensure saved projects never include trailing placeholder rows.
+    trimTrailingEmptyRowsInPlace(projectData.value.component_list)
   emit('submit', projectData.value)
 }
 
 // Add at least one component by default if none exist
-if (projectData.value.component_list.length === 0) {
-  addComponentOfType('component', { scrollToLatest: false })
-}
+;(async () => {
+  if (projectData.value.component_list.length === 0) {
+    await addComponentOfType('component', { scrollToLatest: false })
+  }
+  initialSnapshot.value = deepClone(projectData.value)
+  emit('dirty-change', false)
+})()
+
+watch(
+  () => projectData.value,
+  () => {
+    emit('dirty-change', Boolean(isDirty.value))
+  },
+  { deep: true }
+)
 </script>
 
 <style scoped>
@@ -483,10 +596,6 @@ if (projectData.value.component_list.length === 0) {
   margin-bottom: 1.5rem;
 }
 
-.section-header h3 {
-  margin: 0;
-}
-
 .section-header__right {
 	display: inline-flex;
 	align-items: center;
@@ -501,100 +610,35 @@ if (projectData.value.component_list.length === 0) {
 	white-space: nowrap;
 }
 
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 26px;
-  margin: 0;
+.add-component-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6rem;
+  margin: 0.75rem 0 1rem;
 }
 
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
+.add-component-actions__btn {
+  width: min(320px, 40vw);
+  height: 44px;
+  padding: 0 1rem;
+  border-radius: 12px;
+  background: var(--color-icon-add);
+  color: var(--color-white);
+  font-weight: 900;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  inset: 0;
-  background-color: #d1d5db;
-  transition: 0.18s;
-  border-radius: 999px;
+  transition: background 0.15s ease, transform 0.12s ease;
+  border: none;
 }
 
-.slider:before {
-  position: absolute;
-  content: '';
-  height: 20px;
-  width: 20px;
-  left: 3px;
-  top: 3px;
-  background-color: white;
-  transition: 0.18s;
-  border-radius: 999px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
-}
-
-.switch input:checked + .slider {
-  background-color: #42b983;
-}
-
-.switch input:checked + .slider:before {
-  transform: translateX(18px);
-}
-
-.switch input:disabled + .slider {
+.add-component-actions__btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.add-component-selector {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.add-component-selector__button {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  padding: 0;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-
-.add-component-selector__button:hover {
-  background: transparent;
-}
-
-.add-component-selector__button:active {
-  transform: translateY(1px);
-}
-
-.button-group-fixed {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 100;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(229, 231, 235, 0.9);
-  padding: 0.75rem 2rem;
-  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
-}
-
-.button-group-fixed__inner {
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
 :deep(.button-group-fixed__inner.button-group) {
-  margin-top: 0;
+  justify-content: space-between;
 }
 
 /* Carousel arrows: fix to viewport so they stay at screen edges */

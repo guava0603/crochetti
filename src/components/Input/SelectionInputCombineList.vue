@@ -127,15 +127,16 @@ const showMenu = computed(() => {
 .selection-combine__input {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-warm);
   border-radius: 8px;
   font-size: 0.95rem;
+  font-family: inherit;
 }
 
 .selection-combine__input:focus {
   outline: none;
-  border-color: #42b983;
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.1);
+  border-color: var(--color-icon-add);
+  box-shadow: 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.1);
 }
 
 .selection-combine__menu {

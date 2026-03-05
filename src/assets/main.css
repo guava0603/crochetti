@@ -31,7 +31,7 @@ body.hide-scrollbar::-webkit-scrollbar {
 .page-content {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge legacy */
-  background: var(--color-surface-page);
+  min-height: var(--safe-viewport-height);
 }
 
 .page-content::-webkit-scrollbar {
@@ -43,6 +43,206 @@ body.hide-scrollbar::-webkit-scrollbar {
 /* Layout helper: apply when a view uses <TopBanner fixed> */
 .page-content--with-top-banner {
   padding-top: var(--safe-area-top);
+}
+
+/* Text utility: 2-line clamp with ellipsis. */
+.text-clamp-2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+.user-fab {
+  width: 64px;
+  height: 64px;
+  position: fixed;
+  right: 36px;
+  bottom: var(--bottom-floating-button);
+  z-index: 1100;
+  border: none;
+  background: white;
+  padding: 0;
+  cursor: pointer;
+}
+
+.wish-fab {
+  width: 64px;
+  height: 64px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wish-fab:active {
+  transform: translateY(1px);
+}
+
+/* Bottom-left dock that hosts RecordOptions (left) and WishFab (right). */
+.bottom-left-dock {
+  position: fixed;
+  left: 36px;
+  bottom: var(--bottom-floating-button);
+  z-index: 1100;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.bottom-left-dock__before {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.bottom-left-dock > *,
+.bottom-left-dock__before > * {
+  pointer-events: auto;
+}
+
+/* Shared fixed bottom action bar (used by Add/Edit Project steps). */
+.button-group-fixed {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(229, 231, 235, 0.9);
+  padding: 0.75rem 1.5rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+
+.button-group-fixed__inner {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.button-group-fixed__inner.button-group {
+  margin-top: 0;
+  justify-content: space-between;
+}
+
+/* Variant: match the warm page surface (used by WishPool). */
+.button-group-fixed--page {
+  background: var(--color-surface-sheet);
+  backdrop-filter: none;
+  border-top-color: rgba(17, 24, 39, 0.10);
+}
+
+/* Global button styles */
+.btn-primary {
+  background: var(--color-buton-add);
+  color: var(--color-white);
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.05s;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--color-font-dark);
+  border: 1px solid var(--color-border-warm);
+  border-radius: 10px;
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.05s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-surface-accent);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Project textareas: base styles are global (components should not restyle borders/colors). */
+.project-wizard-layout textarea,
+.project-view textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border-warm);
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--color-font-dark);
+  resize: vertical;
+}
+
+.project-wizard-layout textarea:focus,
+.project-view textarea:focus {
+  outline: none;
+  border-color: var(--color-icon-add);
+  box-shadow: 0 0 0 3px rgb(var(--color-icon-add-rgb) / 0.18);
+}
+
+/* Visual connector (correct version): the crochetting button gets a tall outer
+   div with the same background as the overlay box. */
+.home-latest-record-mini-outer {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: transparent;
+  pointer-events: none; /* keep clicks on the button only */
+}
+
+.home-latest-record-mini-outer > .home-latest-record-mini {
+  pointer-events: auto;
+}
+
+/* When the panel is visible, extend upward enough to cover the overlay corner.
+   panelBottom = 64 + 10; extend 24px into panel => total extra height 34px */
+.home-latest-record-panel:not(.is-hidden) ~ .home-latest-record-mini-outer {
+  height: calc(64px + 10px + 24px);
+  background: white;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-bottom-left-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+}
+
+.user-fab:active {
+  transform: translateY(1px);
 }
 
 a,

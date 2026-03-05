@@ -45,10 +45,9 @@ defineEmits(['last-page'])
   top: 0;
   left: 0;
   width: 100vw;
-  height: calc(5rem + var(--safe-area-top));
   padding: 1rem;
   padding-top: calc(1rem + var(--safe-area-top));
-  background: transparent;
+  background: var(--color-surface-sheet);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   z-index: 101;
 }
@@ -85,7 +84,7 @@ defineEmits(['last-page'])
 :deep(.top-banner__title-text) {
   margin: 0;
   text-align: center;
-  font-size: 1.5rem;
+  font-size: 1rem;
   font-weight: 900;
   display: block;
   max-width: 100%;

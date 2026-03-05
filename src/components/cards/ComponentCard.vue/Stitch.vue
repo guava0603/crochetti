@@ -267,7 +267,7 @@ function removeStitchNote(index) {
 .subsection {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border);
 }
 
 .subsection-header {
@@ -279,6 +279,7 @@ function removeStitchNote(index) {
 
 .subsection-header h5 {
   margin: 0;
+  font-weight: 500;
   font-size: 1rem;
 }
 

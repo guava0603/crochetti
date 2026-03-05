@@ -480,11 +480,19 @@ const isStitchNodeLike = (node) => {
   return Number.isInteger(node.stitch_id)
 }
 
-const getStitchNodeDisplay = (stitchNode, crochetLang = CROCHET_LANG.symbol_jp) => {
-  const stitch = BasicStitch[stitchNode?.stitch_id]
+const getStitchNodeDisplay = (stitchNode, crochetLang = CROCHET_LANG.symbol_jp, stitchLookup) => {
+  const lookup = stitchLookup || BasicStitch
+  const stitch = lookup[stitchNode?.stitch_id]
   if (!stitch) return '?'
 
   const count = stitchNode?.count || 1
+
+  // Self-defined stitches always display raw `name`.
+  if (typeof stitch?.name === 'string' && stitch.name.trim()) {
+    const base = stitch.name.trim()
+    return count > 1 ? `${count}${base}` : base
+  }
+
   const text = getStitchDisplayText(stitch, crochetLang)
 
   const pos = normalizePosition(stitchNode?.position)
@@ -535,14 +543,18 @@ const compactConsecutiveStitches = (nodes = []) => {
   return out
 }
 
-export const getPatternItemDisplay = (anchor, crochetLang = CROCHET_LANG.symbol_jp) => {
+export const getPatternItemDisplay = (anchor, crochetLang = CROCHET_LANG.symbol_jp, stitchLookup) => {
   const isZhText = crochetLang === CROCHET_LANG.text_zh
 
   if (anchor.type === 'stitch') {
-    return getStitchNodeDisplay(anchor, crochetLang)
+    return getStitchNodeDisplay(anchor, crochetLang, stitchLookup)
   } else if (anchor.type === 'bundle') {
     const items = compactConsecutiveStitches(anchor.bundle || [])
-      .map((item) => (isStitchNodeLike(item) ? getStitchNodeDisplay(item, crochetLang) : getPatternItemDisplay(item, crochetLang)))
+      .map((item) => (
+        isStitchNodeLike(item)
+          ? getStitchNodeDisplay(item, crochetLang, stitchLookup)
+          : getPatternItemDisplay(item, crochetLang, stitchLookup)
+      ))
       .join(', ') || ''
     const count = anchor.count || 1
 
@@ -560,11 +572,11 @@ export const getPatternItemDisplay = (anchor, crochetLang = CROCHET_LANG.symbol_
       const repeat = anchor.count || 1
       const innerCount = only.count || 1
       const totalCount = repeat * innerCount
-      return getStitchNodeDisplay({ ...only, type: 'stitch', count: totalCount }, crochetLang)
+      return getStitchNodeDisplay({ ...only, type: 'stitch', count: totalCount }, crochetLang, stitchLookup)
     }
 
     const text = compactConsecutiveStitches(anchor.pattern || [])
-      .map((item) => getPatternItemDisplay(item, crochetLang))
+      .map((item) => getPatternItemDisplay(item, crochetLang, stitchLookup))
       .join(', ')
     const count = anchor.count || 1
 
@@ -584,12 +596,23 @@ export const getPatternItemDisplay = (anchor, crochetLang = CROCHET_LANG.symbol_
 // - pattern: '[X, V] * 6' -> '[X, V]'
 // - stitch: '6X' -> 'X'
 // - bundle: '(X, V) * 6' -> '(X, V)'
-export const getPatternItemDisplayWithoutCount = (anchor, crochetLang = CROCHET_LANG.symbol_jp) => {
+export const getPatternItemDisplayWithoutCount = (
+  anchor,
+  crochetLang = CROCHET_LANG.symbol_jp,
+  stitchLookup
+) => {
   if (!anchor || typeof anchor !== 'object') return ''
 
+  const lookup = stitchLookup || BasicStitch
+
   if (anchor.type === 'stitch') {
-    const stitch = BasicStitch[anchor.stitch_id]
+    const stitch = lookup[anchor.stitch_id]
     if (!stitch) return '?'
+
+    // Self-defined stitches always display raw `name`.
+    if (typeof stitch?.name === 'string' && stitch.name.trim()) {
+      return stitch.name.trim()
+    }
 
     const text = getStitchDisplayText(stitch, crochetLang)
     const pos = normalizePosition(anchor.position)
@@ -604,10 +627,16 @@ export const getPatternItemDisplayWithoutCount = (anchor, crochetLang = CROCHET_
 
   if (anchor.type === 'bundle') {
     const items = anchor.bundle?.flatMap(item => {
-      if (!isStitchNodeLike(item)) return [getPatternItemDisplayWithoutCount(item, crochetLang)].filter(Boolean)
+      if (!isStitchNodeLike(item)) {
+        return [getPatternItemDisplayWithoutCount(item, crochetLang, lookup)].filter(Boolean)
+      }
 
-      const stitch = BasicStitch[item.stitch_id]
+      const stitch = lookup[item.stitch_id]
       if (!stitch) return []
+
+      if (typeof stitch?.name === 'string' && stitch.name.trim()) {
+        return Array(item.count || 1).fill(stitch.name.trim())
+      }
 
       const text = getStitchDisplayText(stitch, crochetLang)
       const pos = normalizePosition(item.position)
@@ -627,10 +656,12 @@ export const getPatternItemDisplayWithoutCount = (anchor, crochetLang = CROCHET_
 
   if (anchor.type === 'pattern') {
     if (anchor.pattern?.length === 1 && isStitchNodeLike(anchor.pattern[0])) {
-      return getPatternItemDisplayWithoutCount({ ...anchor.pattern[0], type: 'stitch' }, crochetLang)
+      return getPatternItemDisplayWithoutCount({ ...anchor.pattern[0], type: 'stitch' }, crochetLang, lookup)
     }
 
-    const text = (anchor.pattern || []).map((item) => getPatternItemDisplayWithoutCount(item, crochetLang)).join(', ')
+    const text = (anchor.pattern || [])
+      .map((item) => getPatternItemDisplayWithoutCount(item, crochetLang, lookup))
+      .join(', ')
     return `[${text}]`
   }
 

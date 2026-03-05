@@ -9,6 +9,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { BasicStitch, getStitchDisplayText } from '@/constants/crochetData.js'
 import { useCrochetLang } from '@/composables/useCrochetLang'
+import { useSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
 
 const props = defineProps({
   stitchId: {
@@ -27,8 +28,15 @@ const props = defineProps({
 
 const { crochetLang } = useCrochetLang()
 const { t } = useI18n({ useScope: 'global' })
+const selfDefinedCtx = useSelfDefinedStitchesContext()
 
 const displayText = computed(() => {
+  const selfDefined = selfDefinedCtx.byId.value.get(props.stitchId)
+  if (selfDefined?.name) {
+    const base = String(selfDefined.name)
+    return props.count > 1 ? `${props.count}${base}` : base
+  }
+
   const stitch = BasicStitch[props.stitchId]
   if (!stitch) return ''
   const text = getStitchDisplayText(stitch, crochetLang.value)

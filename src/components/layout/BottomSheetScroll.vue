@@ -73,7 +73,8 @@ watch(
 const sheetStyle = computed(() => ({
   '--bottom-sheet-vh': String(currentVh.value),
   '--bottom-sheet-min-vh': String(effectiveMinVh.value),
-  '--bottom-sheet-max-vh': String(effectiveMaxVh.value)
+  '--bottom-sheet-max-vh': String(effectiveMaxVh.value),
+  height: `${Math.max(1, (safeViewportHeightPx.value * currentVh.value) / 100)}px`
 }))
 
 const scrollEl = ref(null)
@@ -89,6 +90,25 @@ function viewportHeightPx() {
   if (vv && typeof vv.height === 'number' && vv.height > 0) return vv.height
   const h = window?.innerHeight
   return typeof h === 'number' && h > 0 ? h : 1
+}
+
+function readCssPxVar(name) {
+  try {
+    const raw = window.getComputedStyle(document.documentElement).getPropertyValue(name)
+    const n = Number.parseFloat(String(raw || '').trim())
+    return Number.isFinite(n) ? n : 0
+  } catch {
+    return 0
+  }
+}
+
+const safeViewportHeightPx = ref(1)
+
+function updateSafeViewportHeight() {
+  const h = viewportHeightPx()
+  const safeTop = readCssPxVar('--safe-area-top')
+  const safeBottom = readCssPxVar('--safe-area-bottom')
+  safeViewportHeightPx.value = Math.max(1, h - safeTop - safeBottom)
 }
 
 function applySheetDeltaPx(deltaPx) {
@@ -117,6 +137,10 @@ function sheetAtBottom() {
 let wheelUnlockTimer = null
 const wheelLocked = ref(false)
 
+function preventDefaultIfCancelable(e) {
+  if (e?.cancelable) e.preventDefault()
+}
+
 function lockWheelUntilIdle(idleMs = 160) {
   wheelLocked.value = true
   if (wheelUnlockTimer) window.clearTimeout(wheelUnlockTimer)
@@ -134,7 +158,7 @@ function handleWheel(e) {
 
   // While a single wheel gesture is ongoing, keep consuming events so content doesn't scroll.
   if (wheelLocked.value) {
-    e.preventDefault?.()
+    preventDefaultIfCancelable(e)
     if (scrollEl.value) scrollEl.value.scrollTop = 0
     applySheetDeltaPx(deltaY)
     lockWheelUntilIdle()
@@ -143,19 +167,19 @@ function handleWheel(e) {
 
   // Prevent wheel chaining to the page when the sheet can't scroll.
   if (sheetAtTop() && isCollapsed.value && deltaY < 0) {
-    e.preventDefault?.()
+    preventDefaultIfCancelable(e)
     // Don't allow the page behind to scroll.
     return
   }
   if (sheetAtBottom() && isExpanded.value && deltaY > 0) {
-    e.preventDefault?.()
+    preventDefaultIfCancelable(e)
     // At bottom: block page scroll chaining but NEVER jump to top.
     return
   }
 
   // If not fully expanded, interpret wheel as resizing (smooth).
   if (!isExpanded.value) {
-    e.preventDefault?.()
+    preventDefaultIfCancelable(e)
     if (scrollEl.value) scrollEl.value.scrollTop = 0
     applySheetDeltaPx(deltaY)
     lockWheelUntilIdle()
@@ -164,7 +188,7 @@ function handleWheel(e) {
 
   // When fully expanded, allow inner scrolling; but at top, wheel-up collapses smoothly.
   if (sheetAtTop() && deltaY < 0 && currentVh.value > effectiveMinVh.value) {
-    e.preventDefault?.()
+    preventDefaultIfCancelable(e)
     if (scrollEl.value) scrollEl.value.scrollTop = 0
     applySheetDeltaPx(deltaY)
     lockWheelUntilIdle()
@@ -198,17 +222,17 @@ function handleTouchMove(e) {
 
   // Prevent touch chaining to the page when the sheet can't scroll.
   if (sheetAtTop() && isCollapsed.value && deltaY < 0) {
-    e.preventDefault?.()
+    preventDefaultIfCancelable(e)
     return
   }
   if (sheetAtBottom() && isExpanded.value && deltaY > 0) {
-    e.preventDefault?.()
+    preventDefaultIfCancelable(e)
     return
   }
 
   // If not expanded, treat this gesture as resizing; keep consuming moves.
   if (!isExpanded.value || touchLocked.value) {
-    e.preventDefault?.()
+    preventDefaultIfCancelable(e)
     if (scrollEl.value) scrollEl.value.scrollTop = 0
     applySheetDeltaPx(deltaY)
     touchLocked.value = true
@@ -217,7 +241,7 @@ function handleTouchMove(e) {
 
   // Fully expanded: at top, pulling down collapses smoothly.
   if (sheetAtTop() && deltaY < 0 && currentVh.value > effectiveMinVh.value) {
-    e.preventDefault?.()
+    preventDefaultIfCancelable(e)
     if (scrollEl.value) scrollEl.value.scrollTop = 0
     applySheetDeltaPx(deltaY)
     touchLocked.value = true
@@ -246,10 +270,25 @@ function removeGestureListeners() {
   el.removeEventListener('touchcancel', handleTouchEnd)
 }
 
-onMounted(addGestureListeners)
+function addViewportListeners() {
+  updateSafeViewportHeight()
+  window.addEventListener('resize', updateSafeViewportHeight)
+  window.visualViewport?.addEventListener?.('resize', updateSafeViewportHeight)
+}
+
+function removeViewportListeners() {
+  window.removeEventListener('resize', updateSafeViewportHeight)
+  window.visualViewport?.removeEventListener?.('resize', updateSafeViewportHeight)
+}
+
+onMounted(() => {
+  addGestureListeners()
+  addViewportListeners()
+})
 
 onBeforeUnmount(() => {
   removeGestureListeners()
+  removeViewportListeners()
   if (wheelUnlockTimer) window.clearTimeout(wheelUnlockTimer)
 })
 </script>
@@ -261,7 +300,7 @@ onBeforeUnmount(() => {
   right: 0;
   margin-left: auto;
   margin-right: auto;
-  bottom: 0;
+  bottom: var(--safe-area-bottom);
   width: min(var(--bottom-sheet-max-width, 1200px), 100vw);
   height: calc(
     clamp(
@@ -273,8 +312,6 @@ onBeforeUnmount(() => {
   z-index: var(--bottom-sheet-z, 55);
   overflow: hidden;
   transition: height 120ms ease-out;
-  /* Ensure this sheet doesn't sit under the iOS home indicator. */
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .bottom-sheet--resizing {

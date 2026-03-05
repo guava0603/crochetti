@@ -61,6 +61,12 @@ const router = createRouter({
       }),
     },
 
+    {
+      path: '/wish-pool',
+      name: 'wish-pool',
+      component: () => import('../views/WishPoolView.vue'),
+    },
+
     // Debug utilities
     {
       path: '/debug/achievement-toast',

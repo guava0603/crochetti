@@ -16,6 +16,8 @@ import {
   documentId
 } from 'firebase/firestore'
 
+import { normalizeEmptyNotesForSaveInPlace } from '@/utils/normalizeEmptyNotesForSave'
+
 function normalizeEmptyNotesForSave(componentList) {
   const list = Array.isArray(componentList) ? componentList : []
 
@@ -24,45 +26,7 @@ function normalizeEmptyNotesForSave(componentList) {
     return { ...c }
   })
 
-  for (const c of cloned) {
-    if (!c || typeof c !== 'object') continue
-    if (!('notes' in c)) continue
-
-    const notes = c.notes
-
-    if (Array.isArray(notes)) {
-      const hasObjectNotes = notes.some((n) => n && typeof n === 'object' && 'description' in n)
-
-      if (hasObjectNotes) {
-        const cleaned = notes
-          .map((n) => {
-            if (typeof n === 'string') return { description: n }
-            return n
-          })
-          .map((n) => ({
-            ...n,
-            description: String(n?.description ?? '').trim()
-          }))
-          .filter((n) => n.description)
-
-        if (cleaned.length) c.notes = cleaned
-        else delete c.notes
-      } else {
-        const cleaned = notes
-          .map((n) => String(n ?? '').trim())
-          .filter(Boolean)
-
-        if (cleaned.length) c.notes = cleaned
-        else delete c.notes
-      }
-    } else if (typeof notes === 'string') {
-      const cleaned = notes.trim()
-      if (cleaned) c.notes = [cleaned]
-      else delete c.notes
-    } else {
-      delete c.notes
-    }
-  }
+  normalizeEmptyNotesForSaveInPlace(cloned)
 
   return cloned
 }

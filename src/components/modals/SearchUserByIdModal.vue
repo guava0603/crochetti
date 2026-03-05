@@ -20,8 +20,6 @@
           />
         </div>
 
-        <p v-if="error" class="error">{{ error }}</p>
-
         <div class="modal-actions">
           <button class="btn-cancel" type="button" @click="$emit('cancel')">
             {{ t('common.cancel') }}
@@ -38,6 +36,7 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { openError } from '@/services/ui/error'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -52,14 +51,12 @@ const emit = defineEmits(['cancel', 'confirm'])
 
 const inputEl = ref(null)
 const userId = ref('')
-const error = ref('')
 
 watch(
   () => props.show,
   async (open) => {
     if (!open) return
     userId.value = ''
-    error.value = ''
     await nextTick()
     inputEl.value?.focus?.()
   }
@@ -69,11 +66,9 @@ const trimmedUserId = computed(() => String(userId.value || '').trim())
 const canSubmit = computed(() => Boolean(trimmedUserId.value))
 
 const submit = () => {
-  error.value = ''
-
   const id = trimmedUserId.value
   if (!id) {
-    error.value = t('user.searchUser.errors.userIdRequired')
+    openError({ title: t('common.error'), message: t('user.searchUser.errors.userIdRequired') })
     return
   }
 
@@ -137,12 +132,6 @@ const submit = () => {
   border-radius: 10px;
   padding: 0.65rem 0.75rem;
   font-size: 1rem;
-}
-
-.error {
-  margin: 0;
-  color: #ef4444;
-  font-weight: 700;
 }
 
 .modal-actions {

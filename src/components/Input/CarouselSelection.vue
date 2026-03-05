@@ -293,7 +293,7 @@ watch(
     rgba(255, 255, 255, 0.92) var(--progress),
     rgba(255, 255, 255, 0.92) 100%
   );
-  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.08), 0 0 0 2px rgba(66, 185, 131, 0.12);
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.08), 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.12);
 }
 
 .carousel-card-top {

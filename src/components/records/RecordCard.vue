@@ -12,6 +12,8 @@
         v-if="!record?.is_completed"
         class="record-card__mark-ring"
         :value="markPercent"
+        :size="44"
+        :stroke="6"
       />
 
       <img
@@ -35,15 +37,7 @@
           decoding="async"
         />
 
-        <div v-else class="record-card__media-placeholder" aria-hidden="true">
-          <img
-            class="record-card__default-image"
-            :src="defaultMediaUrl"
-            alt=""
-            loading="lazy"
-            decoding="async"
-          />
-        </div>
+        <DefaultImage v-else :src="defaultMediaUrl" />
       </div>
 
       <div class="record-card__bottom">
@@ -58,7 +52,9 @@
 import { computed } from 'vue'
 import { formatDateTimeCompact } from '@/utils/dateTime'
 import { getRecordProgressPercent } from '@/utils/recordProgressGenerate'
+import { toMs } from '@/utils/toMs'
 import ProgressRing from '@/components/ui/ProgressRing.vue'
+import DefaultImage from '@/components/Image/DefaultImage.vue'
 
 const props = defineProps({
   record: {
@@ -73,7 +69,7 @@ const record = computed(() => props.record)
 
 const title = computed(() => record.value?.project_name || record.value?.projectName || 'Record')
 
-const completeIconUrl = '/assets/image/achievement/noun-complete-6294508-FFFFFF.svg'
+const completeIconUrl = '/assets/image/settings/noun-success-8303342-FFFFFF.svg'
 const defaultMediaUrl = '/assets/image/achievement/noun-crochet-5351977-FFFFFF.svg'
 
 const percentage = computed(() => {
@@ -111,28 +107,6 @@ const coverImageUrl = computed(() => {
   const first = images.find((u) => typeof u === 'string' && u.trim() !== '')
   return first ? first.trim() : ''
 })
-
-const toMs = (input) => {
-  if (input == null) return null
-  if (typeof input === 'number' && Number.isFinite(input)) return input
-  if (input instanceof Date && !Number.isNaN(input.getTime())) return input.getTime()
-
-  if (typeof input === 'object' && typeof input.toMillis === 'function') {
-    try {
-      const ms = input.toMillis()
-      return (typeof ms === 'number' && Number.isFinite(ms)) ? ms : null
-    } catch {
-      return null
-    }
-  }
-
-  if (typeof input === 'string' && input.trim() !== '') {
-    const ms = new Date(input).getTime()
-    return Number.isNaN(ms) ? null : ms
-  }
-
-  return null
-}
 
 const recordTimeMs = computed(() => {
   const r = record.value
@@ -174,9 +148,9 @@ const timeText = computed(() => {
   --rc-sub: #9c948a;
   --rc-accent-pink: rgba(232, 168, 156, 0.45);
   --rc-border: rgba(90, 82, 75, 0.75);
-  --rc-mark-green: var(--color-warm-highlight-green);
+  --rc-mark-green: var(--color-completed-green);
 
-  --rc-mark-size: clamp(2.6rem, 9vw, 2.9rem);
+  --rc-mark-size: 44px;
   --rc-mark-top: clamp(0.3rem, 1.2vw, 0.4rem);
   --rc-mark-pad: clamp(0.3rem, 1.2vw, 0.4rem);
 
@@ -184,10 +158,16 @@ const timeText = computed(() => {
   width: 100%;
   text-align: left;
   padding-top: calc(var(--rc-mark-size) * 0.56);
+  padding-bottom: 0;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 
   transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.record-card[data-completed='1'] {
+  padding-top: 0;
+  padding-bottom: calc(var(--rc-mark-size) * 0.56);
 }
 
 .record-card:active {
@@ -195,7 +175,7 @@ const timeText = computed(() => {
 }
 
 .record-card:focus-visible {
-  outline: 0.125rem solid rgba(66, 185, 131, 0.55);
+  outline: 0.125rem solid rgb(var(--color-icon-add-rgb) / 0.55);
   outline-offset: 0.125rem;
   border-radius: 1.125rem;
 }
@@ -205,13 +185,19 @@ const timeText = computed(() => {
   top: var(--rc-mark-top);
   left: 50%;
   transform: translateX(-50%);
-  width: var(--rc-mark-size);
-  height: var(--rc-mark-size);
   border-radius: 999px;
+  border: 2px solid white;
   background: var(--rc-bg);
   z-index: 2;
   display: grid;
   place-items: center;
+}
+
+.record-card[data-completed='1'] .record-card__mark {
+  top: auto;
+  width: var(--rc-mark-size);
+  height: var(--rc-mark-size);
+  bottom: var(--rc-mark-top);
 }
 
 .record-card[data-completed='1'] .record-card__mark {
@@ -258,22 +244,6 @@ const timeText = computed(() => {
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-.record-card__media-placeholder {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  background: var(--color-surface-accent);
-}
-
-.record-card__default-image {
-  width: clamp(2.4rem, 10vw, 3.4rem);
-  height: clamp(2.4rem, 10vw, 3.4rem);
-  display: block;
-  opacity: 0.95;
-  filter: drop-shadow(0 0.15rem 0 rgba(0, 0, 0, 0.12));
 }
 
 .record-card__bottom {

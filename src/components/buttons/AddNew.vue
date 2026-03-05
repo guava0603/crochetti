@@ -25,7 +25,7 @@ defineProps({
   },
   size: {
     type: String,
-    default: 'sm',
+    default: 'fab',
     validator: (v) => ['sm', 'md', 'fab'].includes(v)
   },
   block: {
@@ -47,9 +47,9 @@ defineEmits(['click'])
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  border: 1px solid #42b983;
+  border: 1px solid var(--color-icon-add);
   background: #fff;
-  color: #42b983;
+  color: var(--color-icon-add);
   cursor: pointer;
   user-select: none;
   transition: all 0.2s;
@@ -57,7 +57,7 @@ defineEmits(['click'])
 }
 
 .add-new:hover {
-  background: #42b983;
+  background: var(--color-icon-add);
   color: #fff;
 }
 
@@ -65,7 +65,7 @@ defineEmits(['click'])
 .add-new--icon {
   border: none;
   background: transparent;
-  color: #42b983;
+  color: var(--color-icon-add);
   padding: 0;
   margin: 0;
   gap: 0;
@@ -86,18 +86,6 @@ defineEmits(['click'])
   cursor: not-allowed;
 }
 
-.add-new--sm {
-  padding: 0;
-  border-radius: 6px;
-  font-size: 0.75rem;
-}
-
-.add-new--md {
-  padding: 0.45rem 0.9rem;
-  border-radius: 10px;
-  font-size: 0.875rem;
-}
-
 /* Floating add-row style */
 .add-new--fab {
   width: 44px;
@@ -112,17 +100,29 @@ defineEmits(['click'])
 .add-new--row {
   width: 100%;
   padding: 0.7rem;
-  background: #f0f8ff;
-  border: 1px dashed #42b983;
+  background: rgb(var(--color-icon-add-rgb) / 0.12);
+  border: 1px dashed var(--color-icon-add);
   border-radius: 8px;
   font-size: 1.2rem;
-  color: #42b983;
+  color: var(--color-icon-add);
   margin-top: 0.5rem;
 }
 
 .add-new--row:hover {
-  background: #e6f7ef;
-  color: #42b983;
+  background: rgb(var(--color-icon-add-rgb) / 0.2);
+  color: var(--color-icon-add);
+}
+
+.add-new--sm {
+  padding: 0;
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+
+.add-new--md {
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
 }
 
 .add-new__icon {

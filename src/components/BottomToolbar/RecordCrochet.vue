@@ -34,6 +34,7 @@ import { computed } from 'vue'
 import { getNodePerRepeatGenerate, getNodeTotalGenerate } from '@/utils/crochetGenerate.js'
 import { BasicStitch, getStitchDisplayText } from '@/constants/crochetData.js'
 import { useCrochetLang } from '@/composables/useCrochetLang'
+import { useSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
 
 const props = defineProps({
   componentName: {
@@ -53,6 +54,17 @@ const props = defineProps({
 const emit = defineEmits(['confirm', 'cancel'])
 
 const { crochetLang } = useCrochetLang()
+const selfDefinedCtx = useSelfDefinedStitchesContext()
+const selfDefinedStitches = computed(() => selfDefinedCtx.list.value)
+
+function getStitchLabel(stitchId) {
+  const selfDefined = selfDefinedCtx.byId.value.get(stitchId)
+  if (selfDefined?.name) return String(selfDefined.name)
+
+  const stitch = BasicStitch[stitchId]
+  if (!stitch) return ''
+  return getStitchDisplayText(stitch, crochetLang.value)
+}
 
 const getCrochetNumber = computed(() => {
   if (!props.row || !props.endAt) return null
@@ -65,18 +77,18 @@ const getCrochetNumber = computed(() => {
   const nodes = props.row.content.stitch_node_list
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i]
-    const nodeGenerate = getNodeTotalGenerate(node)
+    const nodeGenerate = getNodeTotalGenerate(node, selfDefinedStitches.value)
 
     if (remaining < nodeGenerate) {
       nodeIndex = i
       if (node.type === 'pattern') {
-        const per = getNodePerRepeatGenerate(node)
+        const per = getNodePerRepeatGenerate(node, selfDefinedStitches.value)
         const rawRemainder = per > 0 ? (remaining % per) : remaining
         let innerRemaining = rawRemainder === 0 && remaining > 0 ? per : rawRemainder
 
         for (let j = 0; j < (node.pattern || []).length; j++) {
           const item = node.pattern[j]
-          const itemGenerate = getNodeTotalGenerate(item)
+          const itemGenerate = getNodeTotalGenerate(item, selfDefinedStitches.value)
           if (innerRemaining < itemGenerate) {
             stitchIndex = j
             selectedCount = innerRemaining
@@ -112,16 +124,17 @@ const nodeSymbol = computed(() => {
   const node = props.row.content.stitch_node_list[getCrochetNumber.value.node_index]
   if (!node) return ''
   if (node.type === 'stitch') {
-    const stitch = BasicStitch[node.stitch_id]
-    return getStitchDisplayText(stitch, crochetLang.value)
+    return getStitchLabel(node.stitch_id)
   }
   if (node.type === 'pattern') {
-    return node.pattern.map(item => {
-      const stitch = BasicStitch[item.stitch_id]
-      if (!stitch) return ''
-      const text = getStitchDisplayText(stitch, crochetLang.value)
-      return item.count > 1 ? `${item.count}${text}` : text
-    }).join(', ')
+    return node.pattern
+      .map((item) => {
+        const text = getStitchLabel(item?.stitch_id)
+        if (!text) return ''
+        return item?.count > 1 ? `${item.count}${text}` : text
+      })
+      .filter(Boolean)
+      .join(', ')
   }
   return ''
 })
@@ -131,8 +144,7 @@ const stitchSymbol = computed(() => {
   const node = props.row.content.stitch_node_list[getCrochetNumber.value.node_index]
   if (!node || node.type !== 'pattern') return ''
   const item = node.pattern[getCrochetNumber.value.stitch_index]
-  const stitch = BasicStitch[item.stitch_id]
-  return getStitchDisplayText(stitch, crochetLang.value)
+  return getStitchLabel(item?.stitch_id)
 })
 
 const handleConfirm = () => {
@@ -264,7 +276,7 @@ const handleBlur = (event) => {
 }
 
 .confirm-button {
-  background: #42b983;
+  background: var(--color-icon-add);
   color: white;
   border: none;
 }

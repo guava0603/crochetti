@@ -81,11 +81,23 @@ const rowEl = ref(null)
 const itemEls = ref([])
 const activeIndex = ref(0)
 
+let programmaticScroll = null
+let programmaticScrollTimeout = 0
+
 const count = computed(() => (Array.isArray(props.items) ? props.items.length : 0))
 
 const bleedStyle = computed(() => {
   if (!props.bleed) return {}
-  return { marginLeft: `-${props.bleedX}`, marginRight: `-${props.bleedX}` }
+
+  // Full-bleed pattern for centered layouts (e.g. ProjectWizardLayout has max-width + padding).
+  // This makes the carousel span the viewport while keeping its center aligned with the screen.
+  // Ref: https://css-tricks.com/full-width-containers-limited-width-parents/
+  return {
+    width: '100vw',
+    maxWidth: '100vw',
+    marginLeft: 'calc(50% - 50vw)',
+    marginRight: 'calc(50% - 50vw)'
+  }
 })
 
 function keyFor(item, index) {
@@ -110,6 +122,17 @@ function dotVariantFor(item, index) {
 function updateActiveIndexFromScroll() {
   const row = rowEl.value
   if (!row) return
+
+  // When we programmatically scroll (e.g. clicking a dot), ignore intermediate
+  // scroll positions to avoid emitting multiple active-index changes.
+  if (programmaticScroll) {
+    const targetLeft = Number(programmaticScroll?.targetLeft)
+    if (Number.isFinite(targetLeft) && Math.abs(row.scrollLeft - targetLeft) <= 2) {
+      programmaticScroll = null
+    } else {
+      return
+    }
+  }
 
   const viewportCenterX = row.scrollLeft + row.clientWidth / 2
   const els = Array.isArray(itemEls.value) ? itemEls.value : []
@@ -190,6 +213,16 @@ async function scrollToIndex(index) {
     const desiredLeft = itemCenterX - row.clientWidth / 2
     const maxLeft = Math.max(0, row.scrollWidth - row.clientWidth)
     const left = Math.max(0, Math.min(maxLeft, desiredLeft))
+
+    // Lock scroll-derived activeIndex updates while the smooth scroll animates.
+    // This prevents active-index-change from bouncing during animation.
+    programmaticScroll = { targetIndex: target, targetLeft: left }
+    if (programmaticScrollTimeout) clearTimeout(programmaticScrollTimeout)
+    programmaticScrollTimeout = setTimeout(() => {
+      programmaticScroll = null
+      updateActiveIndexFromScroll()
+    }, 900)
+
     row.scrollTo({ left, behavior: 'smooth' })
     activeIndex.value = target
     return
@@ -197,6 +230,13 @@ async function scrollToIndex(index) {
 
   // Fallback
   if (el && typeof el.scrollIntoView === 'function') {
+    programmaticScroll = { targetIndex: target, targetLeft: NaN }
+    if (programmaticScrollTimeout) clearTimeout(programmaticScrollTimeout)
+    programmaticScrollTimeout = setTimeout(() => {
+      programmaticScroll = null
+      updateActiveIndexFromScroll()
+    }, 900)
+
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
     activeIndex.value = target
     return
@@ -207,6 +247,13 @@ async function scrollToEnd() {
   await nextTick()
   const row = rowEl.value
   if (row && typeof row.scrollTo === 'function') {
+    const left = row.scrollWidth
+    programmaticScroll = { targetIndex: activeIndex.value, targetLeft: left }
+    if (programmaticScrollTimeout) clearTimeout(programmaticScrollTimeout)
+    programmaticScrollTimeout = setTimeout(() => {
+      programmaticScroll = null
+      updateActiveIndexFromScroll()
+    }, 900)
     row.scrollTo({ left: row.scrollWidth, behavior: 'smooth' })
   }
 }
@@ -233,6 +280,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
   if (scrollRaf) cancelAnimationFrame(scrollRaf)
+  if (programmaticScrollTimeout) clearTimeout(programmaticScrollTimeout)
 
   const row = rowEl.value
   if (row) {

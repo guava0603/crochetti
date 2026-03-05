@@ -1,7 +1,7 @@
 <template>
   <div class="add-project-info">
 
-    <form @submit.prevent="handleNext" class="step-form">
+    <form @submit.prevent="handleNext" class="step-form" :style="stepFormStyle">
       <div class="form-group">
         <label for="projectName">{{ $t('addProject.info.projectNameLabel') }} *</label>
         <input
@@ -37,24 +37,29 @@
           :alt-text-for-index="(i) => $t('addProject.info.imageAlt', { n: i + 1 })"
         />
       </div>
+    </form>
 
-      <div v-if="error" class="error">
-        {{ error }}
-      </div>
-
-      <div class="button-group">
-        <button type="submit" class="btn-primary">
+    <div
+      ref="bottomToolbarEl"
+      class="button-group-fixed"
+      role="region"
+      :aria-label="$t('addProject.info.submitBarAria')"
+    >
+      <div class="button-group button-group-fixed__inner">
+        <button type="button" class="btn-primary" @click="handleNext">
           {{ $t('addProject.common.next') }}
         </button>
       </div>
-    </form>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits } from 'vue'
+import { ref, defineProps, defineEmits, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ImageUploader from '@/components/Input/ImageUploader.vue'
+import { useBottomToolbarPadding } from './useBottomToolbarPadding'
+import { openError } from '@/services/ui/error'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -69,7 +74,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['next'])
+const emit = defineEmits(['next', 'dirty-change'])
 
 const formData = ref({
   name: props.initialData.name || '',
@@ -77,15 +82,46 @@ const formData = ref({
   image_files: Array.isArray(props.initialData.image_files) ? props.initialData.image_files : []
 })
 
-const error = ref(null)
+function normalizeImageList(value) {
+  const list = Array.isArray(value) ? value : []
+  return list
+    .filter(Boolean)
+    .map((x) => {
+      if (typeof File !== 'undefined' && x instanceof File) return `file:${x.name}:${x.size}`
+      return String(x)
+    })
+}
+
+const initialSnapshot = {
+  name: String(props.initialData?.name || ''),
+  description: String(props.initialData?.description || ''),
+  images: normalizeImageList(props.initialData?.image_files)
+}
+
+const isDirty = computed(() => {
+  const name = String(formData.value?.name || '')
+  const description = String(formData.value?.description || '')
+  const images = normalizeImageList(formData.value?.image_files)
+  if (name !== initialSnapshot.name) return true
+  if (description !== initialSnapshot.description) return true
+  return JSON.stringify(images) !== JSON.stringify(initialSnapshot.images)
+})
+
+watch(
+  () => formData.value,
+  () => {
+    emit('dirty-change', Boolean(isDirty.value))
+  },
+  { deep: true, immediate: true }
+)
+
+const { bottomToolbarEl, stepFormStyle } = useBottomToolbarPadding()
 
 const handleNext = () => {
   if (!formData.value.name.trim()) {
-    error.value = t('addProject.info.errors.projectNameRequired')
+    openError({ title: t('common.error'), message: t('addProject.info.errors.projectNameRequired') })
     return
   }
-
-  error.value = null
   emit('next', formData.value)
 }
 </script>
@@ -94,5 +130,9 @@ const handleNext = () => {
 .add-project-info {
   max-width: 600px;
   margin: 0 auto;
+}
+
+:deep(.button-group-fixed__inner.button-group) {
+  justify-content: flex-end;
 }
 </style>

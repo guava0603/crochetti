@@ -76,8 +76,6 @@
 
           <p class="hint">{{ t('user.addRecord.quick.hint', { rowCount: quick.rowCount, crochetCount: quick.crochetCount, stitch: t('crochet.stitches.singleCrochet') }) }}</p>
 
-          <p v-if="error" class="error">{{ error }}</p>
-
           <div class="modal-actions">
             <button class="btn-cancel" type="button" :disabled="loading" @click="step = 'choice'">
               {{ t('common.cancel') }}
@@ -95,6 +93,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { openError } from '@/services/ui/error'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -117,7 +116,6 @@ const emit = defineEmits(['cancel', 'add-project', 'select-project', 'quick-add'
 
 const step = ref('choice')
 const selectedProjectId = ref('')
-const error = ref('')
 
 const quick = ref({
   name: '',
@@ -131,7 +129,6 @@ watch(
   (open) => {
     if (!open) return
     step.value = 'choice'
-    error.value = ''
     const first = props.projects?.[0]?.id
     selectedProjectId.value = first ? String(first) : ''
   }
@@ -152,23 +149,21 @@ watch(
 const titleText = computed(() => t('user.addRecord.title'))
 
 const submitQuickAdd = () => {
-  error.value = ''
-
   const name = String(quick.value.name || '').trim()
   const description = String(quick.value.description || '').trim()
   const rowCount = Number(quick.value.rowCount)
   const crochetCount = Number(quick.value.crochetCount)
 
   if (!name) {
-    error.value = t('addProject.info.errors.projectNameRequired')
+    openError({ title: t('common.error'), message: t('addProject.info.errors.projectNameRequired') })
     return
   }
   if (!Number.isFinite(rowCount) || rowCount < 1) {
-    error.value = t('user.addRecord.quick.errors.rowCount')
+    openError({ title: t('common.error'), message: t('user.addRecord.quick.errors.rowCount') })
     return
   }
   if (!Number.isFinite(crochetCount) || crochetCount < 1) {
-    error.value = t('user.addRecord.quick.errors.crochetCount')
+    openError({ title: t('common.error'), message: t('user.addRecord.quick.errors.crochetCount') })
     return
   }
 
@@ -180,7 +175,6 @@ const submitQuickAdd = () => {
     crochetCount: Math.floor(crochetCount)
   }
 
-  error.value = ''
   emit('quick-add', payload)
 }
 </script>
@@ -238,7 +232,7 @@ const submitQuickAdd = () => {
 }
 
 .choice--primary {
-  border-color: rgba(66, 185, 131, 0.6);
+  border-color: rgb(var(--color-icon-add-rgb) / 0.6);
 }
 
 .form {
@@ -278,12 +272,6 @@ const submitQuickAdd = () => {
   font-size: 0.9rem;
 }
 
-.error {
-  margin: 0.25rem 0 0.75rem 0;
-  color: #dc2626;
-  font-weight: 700;
-}
-
 .modal-actions {
   display: flex;
   gap: 0.75rem;
@@ -303,7 +291,7 @@ const submitQuickAdd = () => {
 }
 
 .btn-confirm {
-  background: #42b983;
+  background: var(--color-icon-add);
   color: white;
   border: none;
   padding: 0.625rem 1.1rem;

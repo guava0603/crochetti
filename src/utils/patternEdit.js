@@ -95,37 +95,6 @@ export function addStitchToPatternList(patternList, stitchOrPayload) {
     return list
   }
 
-  if (list.length > 0) {
-    const lastIndex = list.length - 1
-    const last = list[lastIndex]
-
-    const lastPos = typeof last?.position === 'string' ? last.position.trim().toUpperCase() : ''
-    if (last?.type === 'stitch' && last.stitch_id === stitchId && lastPos === position) {
-      // Upgrade a plain stitch anchor into a compact pattern wrapper.
-      const nextCount = (last.count || 1) + 1
-      list[lastIndex] = {
-        type: 'pattern',
-        pattern: [{ type: 'stitch', stitch_id: stitchId, ...(position ? { position } : {}) }],
-        count: nextCount
-      }
-      return list
-    }
-
-    // Legacy: pattern{ [stitch] } count=N used as a compact stitch anchor.
-    if (
-      last?.type === 'pattern' &&
-      Array.isArray(last.pattern) &&
-      last.pattern.length === 1 &&
-      last.pattern[0]?.type === 'stitch' &&
-      last.pattern[0]?.stitch_id === stitchId &&
-      (typeof last.pattern[0]?.position === 'string' ? last.pattern[0].position.trim().toUpperCase() : '') === position
-    ) {
-      const nextCount = (last.count || 1) + 1
-      list[lastIndex] = { ...last, count: nextCount }
-      return list
-    }
-  }
-
   const next = { type: 'stitch', stitch_id: stitchId }
   if (position) next.position = position
   list.push(next)

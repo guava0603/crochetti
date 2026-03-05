@@ -14,13 +14,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { createPattern } from '@/constants/crochetData.js'
 import { createSelection, isInSelection, isRangeSelection } from '@/constants/selection.js'
 import { addStitchToPatternList } from '@/utils/patternEdit.js'
 import { crochetValidate } from '@/utils/crochetValidate.js'
 import { calculateConsumeGenerate } from '@/utils/calculateConsumeGenerate.js'
 import CrochetNode from './CrochetNode.vue'
+import { useSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
 
 const props = defineProps({
   tableType: {
@@ -40,6 +41,9 @@ const emit = defineEmits([
 
 const selectionList = ref([])
 
+const selfDefinedCtx = useSelfDefinedStitchesContext()
+const selfDefinedStitches = computed(() => selfDefinedCtx.list.value)
+
 const emitSelectionChange = () => {
   emit('selection-change', selectionList.value)
 }
@@ -48,7 +52,7 @@ const emitSelectionChange = () => {
 const emitUpdatedRow = (rowContent) => {
   const safeRowContent = Array.isArray(rowContent) ? rowContent : []
   const normalizedRowContent = crochetValidate(safeRowContent)
-  const stats = calculateConsumeGenerate(normalizedRowContent)
+  const stats = calculateConsumeGenerate(normalizedRowContent, 1, selfDefinedStitches.value)
   emit('update:stitchNodeList', {
     stitch_node_list: normalizedRowContent,
     generate: stats.generate,
@@ -179,11 +183,11 @@ const recalcAncestorPatterns = (pathStack) => {
   for (let i = pathStack.length - 1; i >= 0; i -= 1) {
     const { node } = pathStack[i]
     if (node.type === 'pattern' && Array.isArray(node.pattern)) {
-      const stats = calculateConsumeGenerate(node.pattern, node.count || 1)
+      const stats = calculateConsumeGenerate(node.pattern, node.count || 1, selfDefinedStitches.value)
       node.consume = stats.consume
       node.generate = stats.generate
     } else if (node.type === 'bundle' && Array.isArray(node.bundle)) {
-      const stats = calculateConsumeGenerate(node.bundle, 1)
+      const stats = calculateConsumeGenerate(node.bundle, 1, selfDefinedStitches.value)
       node.generate = stats.generate
     }
   }
@@ -278,7 +282,7 @@ const updateNodeCount = (newCount) => {
         pattern: [{ type: 'stitch', stitch_id: selectedNode.stitch_id, ...(pos ? { position: pos } : {}) }],
         count: Math.max(2, newCount)
       }
-      const stats = calculateConsumeGenerate(patternNode.pattern, patternNode.count)
+      const stats = calculateConsumeGenerate(patternNode.pattern, patternNode.count, selfDefinedStitches.value)
       patternNode.consume = stats.consume
       patternNode.generate = stats.generate
       currentList.splice(selectedIndex, 1, patternNode)
@@ -289,7 +293,7 @@ const updateNodeCount = (newCount) => {
         if (flattenPatternIfNeeded(currentList, selectedIndex, selectedNode, pathStack)) {
           removedSelected = true
         } else {
-          const stats = calculateConsumeGenerate(selectedNode.pattern, selectedNode.count || 1)
+          const stats = calculateConsumeGenerate(selectedNode.pattern, selectedNode.count || 1, selfDefinedStitches.value)
           selectedNode.consume = stats.consume
           selectedNode.generate = stats.generate
         }
@@ -461,7 +465,7 @@ const updateNodePattern = (newPattern) => {
   if (!selectedNode || selectedNode.type !== 'pattern') return
 
   selectedNode.pattern = newPattern
-  const stats = calculateConsumeGenerate(newPattern, selectedNode.count || 1)
+  const stats = calculateConsumeGenerate(newPattern, selectedNode.count || 1, selfDefinedStitches.value)
   selectedNode.consume = stats.consume
   selectedNode.generate = stats.generate
 

@@ -1,12 +1,27 @@
 <template>
   <div>
-    <div :class="['top-overlay-box', { 'is-idle': !isRecording }]">
-      <div v-if="isRecording && selectedComponentName && selectedComponentEndAt" class="selected-component-info-bar">
+    <div
+      :class="['top-overlay-box', { 'is-idle': !isRecording, 'is-docked': docked }]"
+      @click="handleOverlayClick"
+      :role="overlayClickable ? 'button' : undefined"
+      :tabindex="overlayClickable ? 0 : undefined"
+      @keydown.enter.prevent="handleOverlayKeydown"
+      @keydown.space.prevent="handleOverlayKeydown"
+    >
+      <div v-if="isRecording && selectedComponentName" class="selected-component-info-bar">
         <div class="selected-component-name">
           {{ selectedComponentName }}
         </div>
         <div class="selected-component-info">
-          {{ t('record.selectedPosition', { row: selectedComponentEndAt.row_index, stitch: selectedComponentEndAt.crochet_count }) }}
+          <template v-if="selectedComponentIsCompleted">
+            {{ t('record.completed') }}
+          </template>
+          <template v-else-if="selectedComponentEndAt">
+            {{ t('record.selectedPosition', { row: selectedComponentEndAt.row_index, stitch: selectedComponentEndAt.crochet_count }) }}
+          </template>
+          <template v-else>
+            {{ t('record.notStartedYet') }}
+          </template>
         </div>
       </div>
       <div class="top-overlay-content">
@@ -15,9 +30,9 @@
           class="record-toggle-btn"
           :aria-label="t('record.pauseRecording')"
           :title="t('record.pause')"
-          @click="pauseRecording"
+          @click.stop="pauseRecording"
         />
-        <PlayButton v-else class="record-toggle-btn record-toggle-btn--play" @click="startRecording" />
+        <PlayButton v-else class="record-toggle-btn record-toggle-btn--play" @click.stop="startRecording" />
         <div class="overlay-row">
           <div v-if="isRecording" class="time-display">
             <div class="time-part" v-for="(part, idx) in formattedConsumingTimeParts.parts" :key="idx">
@@ -29,27 +44,30 @@
             <div class="status-display">
               <div class="status-label-row">
                 <span style="color: gray;">{{ t('record.currently') }}</span>
-                <span class="short-text">
-                  {{ currentStatus }}
-                  <template v-if="currentStatusNoteDisplay">
-                    ({{ currentStatusNoteDisplay }})
-                  </template>
-                </span>
+                <div class="status-value-row">
+                  <span class="short-text text-clamp-2">
+                    {{ currentStatus }}
+                    <template v-if="currentStatusNoteDisplay">
+                      ({{ currentStatusNoteDisplay }})
+                    </template>
+                  </span>
+                  <button
+                    type="button"
+                    class="edit-status-btn"
+                    @click.stop="openStatusModal"
+                    :title="t('record.editStatus')"
+                    :aria-label="t('record.editStatus')"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M13.586 3.586a2 2 0 0 1 2.828 2.828l-8.5 8.5a2 2 0 0 1-.878.515l-3 1a1 1 0 0 1-1.263-1.263l1-3a2 2 0 0 1 .515-.878l8.5-8.5ZM15 5l-1-1" stroke="#888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>
               </div>
-              <button
-                class="edit-status-btn"
-                @click="openStatusModal"
-                :title="t('record.editStatus')"
-                :aria-label="t('record.editStatus')"
-              >
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M13.586 3.586a2 2 0 0 1 2.828 2.828l-8.5 8.5a2 2 0 0 1-.878.515l-3 1a1 1 0 0 1-1.263-1.263l1-3a2 2 0 0 1 .515-.878l8.5-8.5ZM15 5l-1-1" stroke="#888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
             </div>
             <!-- The select for editing status will be shown in a modal, triggered by parent -->
           </div>
         </div>
       </div>
-      <div class="btn-finish" @click="finishComponent">
+      <div class="btn-finish" @click.stop="finishComponent">
         <ButtonFinishIcon />
       </div>
     </div>
@@ -71,8 +89,18 @@ const props = defineProps({
   actions: {
     type: Object,
     required: true
+  },
+  docked: {
+    type: Boolean,
+    default: false
+  },
+  overlayClickable: {
+    type: Boolean,
+    default: false
   }
 })
+
+const emit = defineEmits(['overlay-click'])
 
 const isRecording = computed(() => Boolean(props.context?.recording?.isRecording))
 
@@ -84,6 +112,7 @@ const timeSlot = computed(() => {
 // Selected component info (preferred). Fallback to legacy `centered` for compatibility.
 const selectedComponentName = computed(() => String(props.context?.selected?.name || props.context?.centered?.name || ''))
 const selectedComponentEndAt = computed(() => props.context?.selected?.endAt || props.context?.centered?.endAt || null)
+const selectedComponentIsCompleted = computed(() => Boolean(props.context?.selected?.isCompleted))
 
 const statusId = computed(() => Number(props.context?.status?.id))
 const statusNote = computed(() => String(props.context?.status?.note || '').trim())
@@ -102,6 +131,20 @@ const startRecording = () => props.actions?.startRecording?.()
 const pauseRecording = () => props.actions?.pauseRecording?.()
 const openStatusModal = () => props.actions?.openStatusModal?.()
 const finishComponent = () => props.actions?.finishComponent?.()
+
+const handleOverlayClick = () => {
+  if (!props.overlayClickable) return
+  emit('overlay-click')
+}
+
+const handleOverlayKeydown = (e) => {
+  if (!props.overlayClickable) return
+  // Only trigger when the overlay itself is focused.
+  // This prevents keyboard interaction on child controls (like the edit button)
+  // from bubbling up and navigating unexpectedly.
+  if (e?.target !== e?.currentTarget) return
+  emit('overlay-click')
+}
 
 // Returns { parts: [{value, label}], type: 'second'|'minute-second'|'hour-minute'|'day-hour', raw: ms }
 const formatDurationParts = (ms) => {
@@ -198,7 +241,7 @@ const currentStatusNoteDisplay = computed(() => {
   height: 15vh;
   min-height: 120px;
   max-width: 1200px;
-  background: rgba(255,255,255,0.85);
+  background: white;
   border-radius: 24px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.12);
   z-index: 100;
@@ -208,13 +251,38 @@ const currentStatusNoteDisplay = computed(() => {
   padding: 1.5rem 2rem;
 }
 
+/* Docked mode: render as a normal element inside the bottom-left dock. */
+.top-overlay-box.is-docked {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  transform: none;
+  /* Wider when recording (non-idle), closer to the original overlay width. */
+  width: min(85vw, 1200px);
+  max-width: min(85vw, 1200px);
+  /* Remove the bottom shadow so it connects to the crochetting-button outer background. */
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.10);
+}
+
 /* While paused/not recording: keep it half width and aligned right */
 .top-overlay-box.is-idle {
-  left: 2.5rem;
+  left: 36px;
   right: auto;
   transform: none;
   width: 50vw;
   max-width: 50vw;
+  /* Place it above the Wish FAB (64px) with a small gap. */
+  bottom: var(--bottom-floating-button);
+}
+
+/* In docked mode, idle should not override positioning. */
+.top-overlay-box.is-docked.is-idle {
+  left: auto;
+  right: auto;
+  bottom: auto;
+  width: min(52vw, 520px);
+  max-width: min(52vw, 520px);
 }
 
 .record-toggle-btn {
@@ -238,7 +306,7 @@ const currentStatusNoteDisplay = computed(() => {
 
 .record-toggle-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.25);
+  box-shadow: 0 0 0 3px rgb(var(--color-icon-add-rgb) / 0.25);
 }
 
 /* Make play button 2x bigger */
@@ -273,11 +341,39 @@ const currentStatusNoteDisplay = computed(() => {
   z-index: 10;
 }
 .overlay-row .time-display {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow: hidden;
   text-align: center;
   font-size: 2.5rem;
   font-weight: 700;
-  color: #42b983;
-  font-family: 'Courier New', monospace;
+  color: var(--color-icon-add);
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.overlay-row .time-display .time-part {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.overlay-row .time-display .time-value,
+.overlay-row .time-display .time-label {
+  white-space: nowrap;
+}
+
+.overlay-row .time-display .time-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.9;
 }
 .overlay-row .status-select-section {
   display: flex;
@@ -286,7 +382,6 @@ const currentStatusNoteDisplay = computed(() => {
   min-width: 0;
 }
 .status-display {
-  position: relative;
   display: flex;
   flex-direction: row;
   align-items: flex-end;
@@ -294,10 +389,19 @@ const currentStatusNoteDisplay = computed(() => {
   width: 100%;
   min-width: 0;
 }
+
+.status-value-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.status-value-row .short-text {
+  flex: 1;
+  min-width: 0;
+}
 .edit-status-btn {
-  position: absolute;
-  bottom: -1rem;
-  right: 0;
   background: none;
   border: none;
   border-radius: 8px;
@@ -306,6 +410,8 @@ const currentStatusNoteDisplay = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
+  padding: 0.25rem;
 }
 .edit-status-btn:hover {
   background: rgba(229, 231, 235, 0.95);
@@ -318,7 +424,7 @@ const currentStatusNoteDisplay = computed(() => {
 
 .edit-status-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.25);
+  box-shadow: 0 0 0 3px rgb(var(--color-icon-add-rgb) / 0.25);
 }
 
 .status-label-row {
@@ -337,8 +443,8 @@ const currentStatusNoteDisplay = computed(() => {
 }
 .overlay-row .status-select:focus {
   outline: none;
-  border-color: #42b983;
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.1);
+  border-color: var(--color-icon-add);
+  box-shadow: 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.1);
 }
 .centered-component-info-bar,
 .selected-component-info-bar {
@@ -368,14 +474,7 @@ const currentStatusNoteDisplay = computed(() => {
 }
 
 .short-text {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
   max-width: 100%;
-  white-space: normal;
-  text-overflow: ellipsis;
 }
 
 .btn-finish {

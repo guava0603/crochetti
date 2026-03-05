@@ -95,8 +95,8 @@ const handleChildSelectionChange = (childSelectionList) => {
 }
 
 .selected {
-  background: #dbeafe;
-  border-color: #3b82f6;
+  background: var(--color-selected-active);
+  border-color: var(--color-selected);
 }
 
 </style>

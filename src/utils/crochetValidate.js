@@ -69,6 +69,53 @@ const collapseConsecutiveSameStitchesToPattern = (list) => {
   return out
 }
 
+// Lightweight normalization for live editing / display:
+// combine consecutive identical stitches (including compact pattern wrappers)
+// into a single compact pattern wrapper.
+//
+// This intentionally avoids other normalize rules (e.g. bundle -> increase variants)
+// so the UI doesn't unexpectedly rewrite user intent while typing.
+export const compactConsecutiveSameStitches = (list) => {
+  const safe = Array.isArray(list) ? list : []
+  if (safe.length <= 1) return safe
+
+  const out = []
+  for (const node of safe) {
+    const info = getRepeatedStitchInfo(node)
+    if (!info) {
+      out.push(node)
+      continue
+    }
+
+    const last = out.length > 0 ? out[out.length - 1] : null
+    const lastInfo = getRepeatedStitchInfo(last)
+
+    // Avoid merging labeled nodes to prevent losing label metadata.
+    const hasLabel = Boolean(node?.label) || Boolean(last?.label)
+    if (
+      hasLabel ||
+      !lastInfo ||
+      lastInfo.stitchId !== info.stitchId ||
+      (lastInfo.position || '') !== (info.position || '')
+    ) {
+      out.push(node)
+      continue
+    }
+
+    const nextCount = lastInfo.count + info.count
+    const stitch = { type: 'stitch', stitch_id: info.stitchId }
+    if (info.position) stitch.position = info.position
+
+    out[out.length - 1] = {
+      type: 'pattern',
+      pattern: [stitch],
+      count: nextCount
+    }
+  }
+
+  return out
+}
+
 const cloneNode = (node) => {
   if (!node || typeof node !== 'object') return node
   return JSON.parse(JSON.stringify(node))

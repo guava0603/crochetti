@@ -7,12 +7,17 @@
     role="img"
   >
     <img
-      v-if="resolvedUrl"
+      v-if="effectiveUrlWithBust"
       class="avatar-circle__img"
-      :src="resolvedUrl"
+      :src="effectiveUrlWithBust"
       :alt="alt"
-      loading="lazy"
+      loading="eager"
+      decoding="async"
+      referrerpolicy="no-referrer"
+      crossorigin="anonymous"
       draggable="false"
+      @error="handleImgError"
+      @load="handleImgLoad"
     />
     <div v-else class="avatar-circle__fallback" aria-hidden="true">
       {{ fallbackLetter }}
@@ -21,7 +26,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
   imageUrl: { type: String, default: '' },
@@ -35,7 +40,7 @@ const props = defineProps({
 
   // Border and background are owned by this component.
   border: { type: String, default: '2px solid #e5e7eb' },
-  background: { type: String, default: '#42b983' },
+  background: { type: String, default: 'var(--color-icon-add)' },
   color: { type: String, default: '#ffffff' },
 
   rootClass: { type: [String, Array, Object], default: '' }
@@ -45,6 +50,45 @@ const resolvedUrl = computed(() => {
   const raw = props.imageUrl || props.image_url
   const url = typeof raw === 'string' ? raw.trim() : ''
   return url || null
+})
+
+const imgFailed = ref(false)
+const retryCount = ref(0)
+const cacheBust = ref('')
+
+watch(
+  () => resolvedUrl.value,
+  () => {
+    imgFailed.value = false
+    retryCount.value = 0
+    cacheBust.value = ''
+  }
+)
+
+const effectiveUrl = computed(() => {
+  if (!resolvedUrl.value) return null
+  return imgFailed.value ? null : resolvedUrl.value
+})
+
+const handleImgError = () => {
+  if (retryCount.value < 1 && resolvedUrl.value) {
+    retryCount.value += 1
+    const joiner = resolvedUrl.value.includes('?') ? '&' : '?'
+    cacheBust.value = `${joiner}cb=${Date.now()}`
+    // keep showing the <img> to allow retry
+    return
+  }
+
+  imgFailed.value = true
+}
+
+const handleImgLoad = () => {
+  imgFailed.value = false
+}
+
+const effectiveUrlWithBust = computed(() => {
+  if (!effectiveUrl.value) return null
+  return `${effectiveUrl.value}${cacheBust.value}`
 })
 
 const fallbackLetter = computed(() => {

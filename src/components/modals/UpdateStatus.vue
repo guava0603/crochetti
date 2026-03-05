@@ -282,8 +282,8 @@ const handleSaveNote = () => {
 }
 .status-input:focus {
   outline: none;
-  border-color: #42b983;
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.1);
+  border-color: var(--color-icon-add);
+  box-shadow: 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.1);
 }
 .modal-actions {
   display: flex;
@@ -305,7 +305,7 @@ const handleSaveNote = () => {
   background: #f3f4f6;
 }
 .btn-confirm {
-  background: #42b983;
+  background: var(--color-icon-add);
   color: white;
   border: none;
   padding: 0.625rem 1.25rem;

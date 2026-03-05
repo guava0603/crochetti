@@ -257,28 +257,4 @@ function handleSave() {
   justify-content: flex-end;
   padding-top: 0.5rem;
 }
-
-.btn-secondary {
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  color: #111827;
-  border-radius: 10px;
-  padding: 0.6rem 0.9rem;
-  font-weight: 800;
-}
-
-.btn-primary {
-  background: #111827;
-  border: none;
-  color: #fff;
-  border-radius: 10px;
-  padding: 0.6rem 0.9rem;
-  font-weight: 900;
-}
-
-.btn-primary:disabled,
-.btn-secondary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 </style>

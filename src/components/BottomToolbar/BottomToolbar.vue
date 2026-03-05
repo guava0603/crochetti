@@ -22,6 +22,8 @@ const isExpanded = ref(true)
 }
 
 .crochet-scrollbar.expanded {
+  /* Must be above the bottom-left dock (z-index: 1100 in src/assets/main.css). */
+  z-index: 1200;
   max-height: 50vh;
   height: fit-content;
 }
@@ -41,15 +43,15 @@ const isExpanded = ref(true)
   justify-content: center;
   cursor: pointer;
   font-size: 1rem;
-  color: #42b983;
+  color: var(--color-icon-add);
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
-  z-index: 101;
+  z-index: 1201;
 }
 
 .expand-button:hover {
-  background: #42b983;
+  background: var(--color-icon-add);
   color: white;
-  border-color: #42b983;
+  border-color: var(--color-icon-add);
 }
 </style>

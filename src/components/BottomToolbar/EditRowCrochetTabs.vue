@@ -204,11 +204,12 @@ const handleConfirm = () => {
 
 <style scoped>
 .edit-row-crochet-tabs {
+  position: relative;
   display: flex;
   flex-direction: column;
-  height: 440px;
   max-height: 50vh;
   min-height: 260px;
+  background-color: var(--color-background);
 }
 
 /* Override ToolsTab styling to match toolbar tabs */
@@ -228,8 +229,21 @@ const handleConfirm = () => {
   height: 100%;
   width: 100%;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+
+  /* Hide scrollbar but keep scrolling */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge legacy */
 }
+
+.edit-row-crochet-tabs__panel::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 
 .edit-row-crochet-tabs__actions {
   display: flex;
@@ -268,7 +282,7 @@ const handleConfirm = () => {
 }
 
 .action-btn--primary {
-  background: #42b983;
+  background: var(--color-icon-add);
   color: white;
 }
 

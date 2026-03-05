@@ -292,7 +292,7 @@ watch(
 }
 
 .number-item.is-selected {
-  color: #2563eb;
+  color: var(--color-icon-add);
   font-weight: 800;
   transform: scale(1.1);
 }

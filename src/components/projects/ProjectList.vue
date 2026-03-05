@@ -80,7 +80,7 @@ const emit = defineEmits(['open', 'copy', 'share', 'delete'])
 
 .add-project-link {
   display: inline-block;
-  background: #42b983;
+  background: var(--color-icon-add);
   color: white;
   padding: 0.75rem 1.5rem;
   border-radius: 6px;

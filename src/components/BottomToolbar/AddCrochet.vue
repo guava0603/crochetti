@@ -7,8 +7,10 @@
         :preset-position="presetPosition"
         :default-position="defaultPosition"
         :stitches="stitchesForList"
+        :self-defined-stitches="selfDefinedStitches"
         :enabled-stitch-ids="null"
         :show-custom-button="showCustomButton"
+        :emit-on-decrease-toggle="emitOnDecreaseToggle"
         @stitch-click="handleCrochetClick"
         @position-change="handlePositionChange"
         @custom-click="openBundleWizard"
@@ -21,32 +23,23 @@
         <h3>{{ t('toolbar.addCrochet.bundleWizard.title') }}</h3>
 
         <div class="wizard-section">
-          <label>{{ t('toolbar.addCrochet.bundleWizard.chooseStitch') }}</label>
-          <div class="wizard-stitches">
-            <button
-              v-for="crochet in BasicStitch"
-              :key="crochet.index"
-              type="button"
-              class="wizard-stitch-button"
-              @click="addStitchToBundle(crochet.index)"
-            >
-              {{ getStitchDisplayText(crochet, crochetLang) }}
-            </button>
-          </div>
+          <label>{{ t('toolbar.addCrochet.bundleWizard.nameLabel') }}</label>
+          <input
+            v-model="bundleName"
+            type="text"
+            class="wizard-input"
+            :placeholder="t('toolbar.addCrochet.bundleWizard.namePlaceholder')"
+          />
         </div>
 
         <div class="wizard-section">
-          <label>{{ t('toolbar.addCrochet.bundleWizard.selectedStitches') }}</label>
-          <div class="bundle-preview">
-            <span v-if="bundleStitches.length === 0" class="empty-hint">
-              {{ t('toolbar.addCrochet.bundleWizard.emptyHint') }}
-            </span>
-            <CrochetDisplay
-              v-else
-              table-type="row"
-              :stitch-node-list="bundleStitches"
-            />
-          </div>
+          <label>{{ t('toolbar.addCrochet.bundleWizard.descriptionLabel') }}</label>
+          <textarea
+            v-model="bundleDescription"
+            class="wizard-textarea"
+            rows="3"
+            :placeholder="t('toolbar.addCrochet.bundleWizard.descriptionPlaceholder')"
+          />
         </div>
 
         <div class="wizard-section">
@@ -57,7 +50,7 @@
             </div>
             <div class="stat-item">
               <span>{{ t('toolbar.addCrochet.bundleWizard.generateLabel') }}</span>
-              <div class="stat-value">{{ bundleGenerate }}</div>
+              <InputNumber v-model="bundleGenerate" :min="0" :max="999" size="sm" />
             </div>
           </div>
         </div>
@@ -69,7 +62,7 @@
           <button
             type="button"
             class="btn-confirm"
-            :disabled="bundleStitches.length === 0"
+            :disabled="!bundleName.trim()"
             @click="confirmBundle"
           >
             {{ t('common.confirm') }}
@@ -83,19 +76,20 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { BasicStitch, BasicStitchGeneral, getStitchDisplayText } from '@/constants/crochetData'
-import { calculateConsumeGenerate } from '@/utils/calculateConsumeGenerate.js'
+import { BasicStitchGeneral } from '@/constants/crochetData'
 import InputNumber from '@/components/Input/InputNumber.vue'
-import CrochetDisplay from '@/components/CrochetTable/Crochet/CrochetDisplay.vue'
 import CrochetList from './CrochetList.vue'
-import { useCrochetLang } from '@/composables/useCrochetLang'
+import { useSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
+import { openError } from '@/services/ui/notice'
 
 const { t } = useI18n({ useScope: 'global' })
 
-const { crochetLang } = useCrochetLang()
-
 const props = defineProps({
   disabled: {
+    type: Boolean,
+    default: false
+  },
+  emitOnDecreaseToggle: {
     type: Boolean,
     default: false
   },
@@ -118,6 +112,8 @@ const emit = defineEmits(['add-crochet', 'add-bundle', 'position-change'])
 // mode: 'normal' => append stitches as usual
 // mode: 'same-stitch' => append into a top-level bundle (consume must be 1)
 const mode = ref('normal')
+
+const { list: selfDefinedStitches, addStitch: addSelfDefinedStitch } = useSelfDefinedStitchesContext()
 
 const stitchesForList = computed(() => {
   return BasicStitchGeneral
@@ -146,43 +142,54 @@ const handlePositionChange = (pos) => {
 }
 
 const showBundleWizard = ref(false)
-const bundleStitches = ref([])
 const bundleConsume = ref(1)
-
-const bundleGenerate = computed(() => {
-  return calculateConsumeGenerate(bundleStitches.value).generate
-})
+const bundleGenerate = ref(0)
+const bundleName = ref('')
+const bundleDescription = ref('')
 
 const openBundleWizard = () => {
   if (props.disabled) return
   showBundleWizard.value = true
-  bundleStitches.value = []
   bundleConsume.value = 1
+  bundleGenerate.value = 0
+  bundleName.value = ''
+  bundleDescription.value = ''
 }
 
 const closeBundleWizard = () => {
   showBundleWizard.value = false
 }
 
-const addStitchToBundle = (stitchId) => {
-  bundleStitches.value.push({
-    type: 'stitch',
-    stitch_id: stitchId
-  })
-}
-
 const confirmBundle = () => {
-  if (bundleStitches.value.length === 0) return
+  if (!String(bundleName.value || '').trim()) return
 
-  const bundle = {
-    type: 'bundle',
-    bundle: bundleStitches.value,
-    consume: bundleConsume.value,
-    generate: bundleGenerate.value,
-    count: 1
+  // Prefer storing as a project-level self-defined stitch.
+  if (!addSelfDefinedStitch) {
+    openError({
+      title: t('common.error'),
+      message: t('common.saveFailed'),
+      confirmText: t('common.ok')
+    })
+    return
   }
 
-  emit('add-bundle', bundle)
+  const list = Array.isArray(selfDefinedStitches.value) ? selfDefinedStitches.value : []
+  const ids = list
+    .map((s) => Number(s?.stitch_id))
+    .filter((n) => Number.isFinite(n))
+
+  const minId = ids.length ? Math.min(...ids) : 0
+  // Use negative ids to avoid colliding with built-in stitches (0..).
+  const nextId = minId < 0 ? minId - 1 : -1
+
+  addSelfDefinedStitch({
+    stitch_id: nextId,
+    name: String(bundleName.value || '').trim(),
+    description: String(bundleDescription.value || ''),
+    consume: bundleConsume.value,
+    generate: bundleGenerate.value
+  })
+
   closeBundleWizard()
 }
 </script>
@@ -239,8 +246,8 @@ h4 {
 }
 
 .add-tab.active {
-  border-color: rgba(66, 185, 131, 0.55);
-  background: rgba(66, 185, 131, 0.12);
+  border-color: rgb(var(--color-icon-add-rgb) / 0.55);
+  background: rgb(var(--color-icon-add-rgb) / 0.12);
   color: #0f5132;
 }
 
@@ -283,6 +290,22 @@ h4 {
   color: #374151;
 }
 
+.wizard-input,
+.wizard-textarea {
+  width: 100%;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: #111827;
+  background: #fff;
+}
+
+.wizard-textarea {
+  resize: vertical;
+}
+
 .wizard-stitches {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
@@ -300,8 +323,8 @@ h4 {
 }
 
 .wizard-stitch-button:hover {
-  background: #42b983;
-  border-color: #42b983;
+  background: var(--color-icon-add);
+  border-color: var(--color-icon-add);
   color: white;
 }
 
@@ -370,7 +393,7 @@ h4 {
 }
 
 .btn-confirm {
-  background: #42b983;
+  background: var(--color-icon-add);
   color: white;
 }
 

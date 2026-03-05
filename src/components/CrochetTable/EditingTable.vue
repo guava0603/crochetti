@@ -1,5 +1,13 @@
 <template>
 	<div ref="tableRef" class="crochet-table crochet-table--edit row-list-vertical">
+		<div class="row-container row-container--header" @click.stop>
+			<div class="row-table row-table--header">
+				<div class="row-table-cell row-number">{{ t('crochetTable.header.rowNumber') }}</div>
+				<div class="row-table-cell row-stitches">{{ t('crochetTable.header.stitch') }}</div>
+				<div class="row-table-cell row-generate">{{ t('crochetTable.header.totalStitches') }}</div>
+			</div>
+		</div>
+
 		<div
 			v-for="(row, idx) in visibleRows"
 			:key="row.row_index"
@@ -28,9 +36,9 @@
 			>
 			</CrochetRow>
 		</div>
-
-		<AddNew variant="row" @click="handleAddRow" />
 	</div>
+
+	<AddNew v-if="canShowAddNew" variant="row" size="fab" @click.stop="handleAddRow" />
 
 	<div v-if="activeToolbarKey !== TOOLBAR_KEYS.NONE" ref="toolbarRef">
 		<BottomToolbar>
@@ -68,6 +76,7 @@
 
 <script setup>
 import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import CrochetRow from './Crochet/CrochetRow.vue'
 import CrochetNode from './Crochet/CrochetNode.vue'
 import BottomToolbar from '@/components/BottomToolbar/BottomToolbar.vue'
@@ -78,11 +87,22 @@ import { isRowContainerGroupedStart } from '@/utils/crochetTable.js'
 import { createSelection, isRangeSelection } from '@/constants/selection'
 import { createPattern } from '@/constants/crochetData.js'
 import { calculateConsumeGenerate } from '@/utils/calculateConsumeGenerate.js'
+import { useSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps({
 	modelValue: {
 		type: Array,
 		required: true
+	},
+	helpTopicId: {
+		type: String,
+		default: ''
+	},
+	helpTopicIds: {
+		type: Object,
+		default: null
 	},
 	componentId: {
 		type: Number,
@@ -102,6 +122,9 @@ const emit = defineEmits(['update:modelValue', 'update:rowGroups'])
 
 // Fixed table type
 const type = 'edit'
+
+const selfDefinedCtx = useSelfDefinedStitchesContext()
+const selfDefinedStitches = computed(() => selfDefinedCtx.list.value)
 
 const TOOLBAR_KEYS = Object.freeze({
 	NONE: '',
@@ -136,12 +159,31 @@ const setRowContainerRef = (rowIndex) => (el) => {
 const internalRows = ref([...(props.modelValue || [])])
 const internalRowGroups = ref([...(props.rowGroups || [])])
 
+const createEmptyRow = () => ({
+	row_index: 0,
+	count: 1,
+	content: {
+		stitch_node_list: [],
+		generate: 0,
+		consume: 0
+	}
+})
+
+const ensureAtLeastOneRow = () => {
+	if (Array.isArray(internalRows.value) && internalRows.value.length > 0) return
+	internalRows.value = [createEmptyRow()]
+	internalRowGroups.value = []
+	recalculateAllRowIndices()
+	emitUpdate()
+}
+
 // Sync internalRows when parent updates modelValue
 let isEmitting = false
 watch(() => props.modelValue, (newValue) => {
 	if (!isEmitting) {
 		internalRows.value = [...(newValue || [])]
 		recalculateAllRowIndices()
+		ensureAtLeastOneRow()
 	}
 }, { deep: true })
 
@@ -151,6 +193,10 @@ watch(() => props.rowGroups, (newValue) => {
 		recalculateAllRowIndices()
 	}
 }, { deep: true })
+
+onMounted(() => {
+	ensureAtLeastOneRow()
+})
 
 // Update parent with current rows + groups
 const emitUpdate = () => {
@@ -647,8 +693,10 @@ watch(
 					: prevRow?.content?.stitch_node_list
 				const prevList = Array.isArray(prevDraftList) ? prevDraftList : []
 				const prevIsEmpty = prevList.length === 0
+				const prevIsLastRow = prevArrayIndex === internalRows.value.length - 1
 
-				if (prevIsEmpty) {
+				// Keep the trailing empty row as a persistent placeholder (do not auto-remove).
+				if (prevIsEmpty && !prevIsLastRow) {
 					internalRows.value.splice(prevArrayIndex, 1)
 					recalculateAllRowIndices()
 					emitUpdate()
@@ -1258,7 +1306,7 @@ const visibleRows = computed(() => {
 		) {
 			return slice
 		}
-		const stats = calculateConsumeGenerate(draftRootStitchNodeList.value)
+		const stats = calculateConsumeGenerate(draftRootStitchNodeList.value, 1, selfDefinedStitches.value)
 		return slice.map((r) => {
 			if (!r || r.row_index !== draftRowIndex.value) return r
 			const content = r.content || {}
@@ -1286,6 +1334,20 @@ const visibleRows = computed(() => {
 	const start = Math.max(0, editingIndexInList - Math.floor(maxVisible / 2))
 	const end = Math.min(internalRows.value.length, start + maxVisible)
 	return applyDraftToSlice(internalRows.value.slice(start, end))
+})
+
+const canShowAddNew = computed(() => {
+	if (!Array.isArray(internalRows.value) || internalRows.value.length === 0) return false
+	const lastRow = internalRows.value[internalRows.value.length - 1]
+	if (!lastRow) return false
+
+	const lastRowDraftList =
+		(draftRowIndex.value === lastRow.row_index && Array.isArray(draftRootStitchNodeList.value))
+			? draftRootStitchNodeList.value
+			: lastRow?.content?.stitch_node_list
+
+	const list = Array.isArray(lastRowDraftList) ? lastRowDraftList : []
+	return list.length > 0
 })
 
 const isEditing = (rowIndex) => {

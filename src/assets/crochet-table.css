@@ -1,6 +1,11 @@
 /* Crochet table shared styles
    Scoped under `.crochet-table` to avoid leaking globally.
 */
+.crochet-table {
+  --color-selected: var(--color-icon-add);
+  --color-selected-hover: rgb(var(--color-icon-add-rgb) / 0.12);
+  --color-selected-active: rgb(var(--color-icon-add-rgb) / 0.2);
+}
 
 /* Table wrappers */
 .crochet-table.row-list-vertical {
@@ -9,6 +14,11 @@
   margin-top: 1rem;
   overflow: visible;
   border: 1px solid var(--color-border-warm);
+  background: var(--color-surface-sheet);
+}
+
+.crochet-table.row-list-vertical .row-container--header {
+  border-bottom: 1px solid var(--color-border-warm);
 }
 
 .crochet-table .row-container {
@@ -25,8 +35,8 @@
 }
 
 .crochet-table--edit .row-container.drag-over {
-  border: 2px dashed #42b983;
-  background: rgba(66, 185, 131, 0.05);
+  border: 2px dashed var(--color-icon-add);
+  background: rgb(var(--color-icon-add-rgb) / 0.05);
 }
 
 .crochet-table .row-main {
@@ -59,18 +69,18 @@
 .crochet-table--edit .btn-add-row {
   width: 100%;
   padding: 0.7rem;
-  background: #f0f8ff;
-  border: 1px dashed #42b983;
+  background: rgb(var(--color-icon-add-rgb) / 0.12);
+  border: 1px dashed var(--color-icon-add);
   border-radius: 8px;
   cursor: pointer;
   font-size: 1.2rem;
-  color: #42b983;
+  color: var(--color-icon-add);
   transition: all 0.2s;
   margin-top: 0.5rem;
 }
 
 .crochet-table--edit .btn-add-row:hover {
-  background: #e6f7ef;
+  background: rgb(var(--color-icon-add-rgb) / 0.2);
 }
 
 /* Row repeat reminder */
@@ -83,9 +93,21 @@
 /* CrochetRow layout */
 .crochet-table .row-table {
   display: grid;
-  grid-template-columns: 48px 1fr 48px;
+  grid-template-columns: 56px 1fr 72px;
   width: 100%;
   align-items: stretch;
+}
+
+/* Table header */
+.crochet-table .row-table--header .row-table-cell {
+  min-height: 34px;
+  padding: 0.35rem 0.75rem;
+  white-space: nowrap;
+  background: var(--color-surface-sheet);
+}
+
+.crochet-table .row-table--header .row-stitches {
+  justify-content: flex-start;
 }
 
 .crochet-table .row-table-cell {
@@ -147,7 +169,7 @@
 .crochet-table .row-editor {
   width: 100%;
   background: white;
-  border: 2px solid #42b983;
+  border: 2px solid var(--color-icon-add);
   border-radius: 6px;
   padding: 0;
   overflow: visible;
@@ -171,7 +193,7 @@
 
 .crochet-table .row-card.clickable:hover {
   background: #f9fafb;
-  border-color: #42b983;
+  border-color: var(--color-icon-add);
   cursor: pointer;
 }
 
@@ -188,5 +210,5 @@
 }
 
 .row-container--grouped-start {
-  margin-top: 0.75rem;
+  margin-top: 0;
 }

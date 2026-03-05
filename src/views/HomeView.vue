@@ -63,9 +63,46 @@
         </template>
       </div>
 
+      <!-- Latest record: docked next to WishFab -->
+      <Teleport to="#bottom-left-dock-before">
+        <div v-if="latestRecordData" class="home-latest-record-dock">
+          <div
+            class="home-latest-record-panel"
+            :class="{ 'is-hidden': latestRecordCollapsed }"
+          >
+            <RecordOptions
+              :context="latestRecordOptionsContext"
+              :actions="latestRecordOptionsActions"
+              docked
+              overlay-clickable
+              @overlay-click="openLatestRecord"
+            />
+          </div>
+
+          <!-- Crochetting button: always visible, toggles RecordOptions -->
+          <div class="home-latest-record-mini-outer">
+            <button
+              type="button"
+              class="home-latest-record-mini"
+              :aria-label="latestRecordCollapsed ? 'Show record options' : 'Hide record options'"
+              :title="latestRecordCollapsed ? 'Show record options' : 'Hide record options'"
+              @click="latestRecordCollapsed = !latestRecordCollapsed"
+            >
+              <img
+                class="home-latest-record-mini__icon"
+                :src="crochetIconUrl"
+                alt=""
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+        </div>
+      </Teleport>
+
       <ProfileSettingsModal
         :show="showProfileSettings"
         :profile="profile"
+        :auth-user="currentUser"
         :saving="savingProfile"
         :title="$t('user.settings.editProfile')"
         :name-label="$t('user.profile.name')"
@@ -100,6 +137,7 @@ import ProfileSettingsModal from '@/components/modals/ProfileSettingsModal.vue'
 import UserTabPage from '@/components/User/UserView/TabPage.vue'
 import UserDataDisplay from '@/components/User/UserView/UserDataDisplay.vue'
 import AchievementCabinet from '@/components/achievements/AchievementCabinet.vue'
+import RecordOptions from '@/components/FloatingTransparentBox/RecordOptions.vue'
 
 import { useAchievementStore } from '@/stores/achievementStore'
 
@@ -109,7 +147,7 @@ import {
   fetchProject,
   fetchProjectSummariesByIds
 } from '@/services/firestore/projects'
-import { listUserRecordSummaries } from '@/services/firestore/records'
+import { listUserRecordSummaries, fetchUserRecord, mergeUserRecord } from '@/services/firestore/records'
 import {
   fetchUserProjectSummaries,
   fetchUsers,
@@ -120,6 +158,7 @@ import { openConfirmation } from '@/services/ui/confirmation'
 import { openToast } from '@/services/ui/toast'
 import { openError, openNotice } from '@/services/ui/notice'
 import { storage } from '@/firebaseConfig'
+import { originalStatuses } from '@/constants/status'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -136,6 +175,141 @@ const savedProjects = ref([])
 const copyingProjectId = ref(null)
 const userRecords = ref([])
 const recordsLoading = ref(false)
+
+const latestRecordData = ref(null)
+const latestRecordToggling = ref(false)
+let latestRecordFetchToken = 0
+
+const latestRecordCollapsed = ref(false)
+const HOME_LATEST_RECORD_COLLAPSED_KEY = 'home_latest_record_collapsed'
+
+const crochetIconUrl = computed(() => {
+  const base = import.meta.env.BASE_URL || '/'
+  return `${base}assets/image/achievement/noun-crochet-5351977-FFFFFF.svg`
+})
+
+const latestRecordSummary = computed(() => {
+  const list = userRecords.value
+  return Array.isArray(list) && list.length ? list[0] : null
+})
+
+onMounted(() => {
+  try {
+    latestRecordCollapsed.value = window.localStorage?.getItem(HOME_LATEST_RECORD_COLLAPSED_KEY) === '1'
+  } catch {
+    console.warn('HomeView: failed to read latest record collapsed state from localStorage')
+  }
+})
+
+watch(latestRecordCollapsed, (val) => {
+  try {
+    window.localStorage?.setItem(HOME_LATEST_RECORD_COLLAPSED_KEY, val ? '1' : '0')
+  } catch {
+    console.warn('HomeView: failed to save latest record collapsed state to localStorage')
+  }
+})
+
+const openLatestRecord = () => {
+  const id = latestRecordSummary.value?.id
+  if (!id) return
+  router.push({ name: 'record', params: { record_id: String(id) } })
+}
+
+const toggleErrorToast = (message) => {
+  openToast({ message: String(message || '').trim() || t('common.saveFailed') })
+}
+
+const pauseLatestRecord = async () => {
+  const uid = currentUser.value?.uid
+  const id = latestRecordSummary.value?.id
+  const record = latestRecordData.value
+  if (!uid || !id || !record || latestRecordToggling.value) return
+
+  const slots = Array.isArray(record?.time_slots) ? [...record.time_slots] : []
+  if (!slots.length) return
+
+  const last = slots[slots.length - 1]
+  if (!last || last.end != null) return
+
+  latestRecordToggling.value = true
+  try {
+    slots[slots.length - 1] = { ...last, end: new Date().toISOString() }
+    await mergeUserRecord(String(uid), String(id), { time_slots: slots })
+    latestRecordData.value = { ...record, time_slots: slots }
+  } catch (e) {
+    console.error('HomeView: pauseLatestRecord failed', e)
+    toggleErrorToast(t('common.saveFailed'))
+  } finally {
+    latestRecordToggling.value = false
+  }
+}
+
+const startLatestRecord = async () => {
+  const uid = currentUser.value?.uid
+  const id = latestRecordSummary.value?.id
+  const record = latestRecordData.value
+  if (!uid || !id || !record || latestRecordToggling.value) return
+
+  const slots = Array.isArray(record?.time_slots) ? [...record.time_slots] : []
+  const last = slots.length ? slots[slots.length - 1] : null
+  if (last && last.end == null) return
+
+  const list = Array.isArray(record?.component_list) ? record.component_list : []
+
+  latestRecordToggling.value = true
+  try {
+    slots.push({
+      start: new Date().toISOString(),
+      end: null,
+      status_id: Number(last?.status_id ?? 0),
+      status_note: String(last?.status_note || ''),
+      end_at_list: list.map((comp) => (comp?.end_at ? { ...comp.end_at } : null))
+    })
+    await mergeUserRecord(String(uid), String(id), { time_slots: slots })
+    latestRecordData.value = { ...record, time_slots: slots }
+  } catch (e) {
+    console.error('HomeView: startLatestRecord failed', e)
+    toggleErrorToast(t('common.saveFailed'))
+  } finally {
+    latestRecordToggling.value = false
+  }
+}
+
+const latestRecordOptionsActions = {
+  startRecording: () => startLatestRecord(),
+  pauseRecording: () => pauseLatestRecord(),
+  openStatusModal: () => openLatestRecord(),
+  finishComponent: () => openLatestRecord()
+}
+
+const latestRecordOptionsContext = computed(() => {
+  const record = latestRecordData.value
+  const slots = Array.isArray(record?.time_slots) ? record.time_slots : []
+  const lastSlot = slots.length ? slots[slots.length - 1] : null
+  const isRecording = Boolean(lastSlot && lastSlot.end === null)
+
+  const list = Array.isArray(record?.component_list) ? record.component_list : []
+  const idx = Number(record?.last_selected_component_index ?? 0)
+  const safeIdx = Number.isFinite(idx) ? Math.max(0, Math.min(list.length - 1, idx)) : 0
+  const selected = list[safeIdx] || null
+
+  return {
+    recording: {
+      isRecording,
+      timeSlot: lastSlot
+    },
+    status: {
+      id: Number(lastSlot?.status_id ?? 0),
+      note: String(lastSlot?.status_note || ''),
+      originalStatuses,
+      selfDefinedStatuses: Array.isArray(record?.self_defined_status) ? record.self_defined_status : []
+    },
+    selected: {
+      name: String(selected?.name || record?.project_name || record?.projectName || ''),
+      endAt: selected?.end_at ?? null
+    }
+  }
+})
 
 const followingUsers = ref([])
 const followingLoading = ref(false)
@@ -586,15 +760,34 @@ const fetchSavedProjects = async () => {
 const fetchUserRecords = async () => {
   if (!currentUser.value?.uid) {
     userRecords.value = []
+    latestRecordData.value = null
     return
   }
 
   recordsLoading.value = true
   try {
     userRecords.value = await listUserRecordSummaries(currentUser.value.uid)
+
+    const top = Array.isArray(userRecords.value) && userRecords.value.length ? userRecords.value[0] : null
+    const topId = top?.id
+    if (!topId) {
+      latestRecordData.value = null
+      return
+    }
+
+    const token = ++latestRecordFetchToken
+    try {
+      const full = await fetchUserRecord(currentUser.value.uid, String(topId))
+      if (token !== latestRecordFetchToken) return
+      latestRecordData.value = full
+    } catch {
+      if (token !== latestRecordFetchToken) return
+      latestRecordData.value = null
+    }
   } catch (error) {
     console.error('Error fetching user records:', error)
     userRecords.value = []
+    latestRecordData.value = null
   } finally {
     recordsLoading.value = false
   }
@@ -729,7 +922,7 @@ watch(
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  padding: 1.5rem 2rem;
+  padding: 1rem 2rem;
   z-index: 100;
 }
 
@@ -747,6 +940,54 @@ watch(
   color: #111827;
   font-size: 1.25rem;
   font-weight: 600;
+}
+
+/* Bottom-left dock: latest record overlay + crochetting toggle button */
+.home-latest-record-dock {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.home-latest-record-panel {
+  position: absolute;
+  left: 0;
+  bottom: calc(64px + 10px);
+  width: 100%;
+  z-index: 1;
+}
+
+.home-latest-record-panel.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.home-latest-record-mini {
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  border: none;
+  background: var(--color-icon-add);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+
+.home-latest-record-mini__icon {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
+.home-latest-record-mini:active {
+  transform: translateY(1px);
 }
 
 </style>

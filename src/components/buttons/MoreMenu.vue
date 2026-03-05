@@ -141,7 +141,7 @@ onUnmounted(() => {
   height: 44px;
   border-radius: 12px;
   border: none;
-  background: #fff;
+  background: transparent;
   cursor: pointer;
   transition: background 0.15s, transform 0.05s, opacity 0.15s;
 }
@@ -201,7 +201,7 @@ onUnmounted(() => {
 
 .more-menu__panel :deep(.more-menu__item) {
   display: flex;
-  width: calc(100% - 1.5rem);
+  width: 100%;
   text-align: left;
   padding: 0.6rem 0.2rem;
   border: none;

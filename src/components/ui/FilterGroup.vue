@@ -117,7 +117,7 @@ onMounted(() => {
 }
 
 .filter-group__btn:focus-visible {
-  outline: 0.125rem solid rgba(66, 185, 131, 0.55);
+  outline: 0.125rem solid rgb(var(--color-icon-add-rgb) / 0.55);
   outline-offset: -0.125rem;
 }
 </style>

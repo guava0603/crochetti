@@ -6,11 +6,18 @@
       @last-page="lastPage"
     >
       <template #right>
-        <MoreMenu
-          :label="t('project.more')"
-          :disabled="!recordData || recordLoading"
-          :items="moreMenuItems"
-        />
+        <div class="record-top-actions" @click.stop>
+          <HelpIconButton
+            v-if="isOngoingView"
+            topic-id="recordHowTo"
+            :aria-label="t('help.recordHowTo.aria')"
+          />
+          <MoreMenu
+            :label="t('project.more')"
+            :disabled="!recordData || recordLoading"
+            :items="moreMenuItems"
+          />
+        </div>
       </template>
     </TopBanner>
 
@@ -44,23 +51,26 @@ import RecordResult from '@/components/records/RecordResult.vue'
 import RecordCompletedResult from '@/components/records/RecordCompletedResult.vue'
 import TopBanner from '@/components/layout/TopBanner.vue'
 import MoreMenu from '@/components/buttons/MoreMenu.vue'
+import HelpIconButton from '@/components/help/HelpIconButton.vue'
 import { auth } from '@/firebaseConfig'
 import {
   deletePublicUserRecordSummary,
   deleteUserRecord,
   fetchUserRecord,
   mergeUserRecord,
-  setUserRecord,
+  // setUserRecord,
   upsertPublicUserRecordSummary,
 } from '@/services/firestore/records'
 import { fetchProject } from '@/services/firestore/projects'
 import { openConfirmation } from '@/services/ui/confirmation'
 import { openError, openNotice } from '@/services/ui/notice'
 import { provideRecordContext } from '@/composables/recordContext'
+import { provideSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
 import { expandComponentListByCount, normalizeRecordForComponentCountsInPlace } from '@/utils/componentInstances'
 import { storage } from '@/firebaseConfig'
 import EditRecordResultModal from '@/components/modals/EditRecordResultModal.vue'
 import { getLastEndAtForComponent, getRecordProgressPercent } from '@/utils/recordProgressGenerate'
+// import { toMs } from '@/utils/toMs'
 
 const route = useRoute()
 const router = useRouter()
@@ -71,7 +81,12 @@ const recordData = ref(null)
 const recordLoading = ref(false)
 const loadedRecordId = ref('')
 
-const syncingProject = ref(false)
+const selfDefinedStitches = ref([])
+const loadedProjectIdForStitches = ref('')
+
+provideSelfDefinedStitchesContext({ stitchesRef: selfDefinedStitches })
+
+// const syncingProject = ref(false)
 const savingResult = ref(false)
 const showEditResultModal = ref(false)
 
@@ -131,12 +146,12 @@ const moreMenuItems = computed(() => {
       disabled: !projectId.value,
       onSelect: () => goToProject()
     },
-    {
-      action: 'syncProject',
-      label: t('record.syncProject'),
-      disabled: syncingProject.value || !recordData.value,
-      onSelect: () => handleSyncProject()
-    },
+    // {
+    //   action: 'syncProject',
+    //   label: t('record.syncProject'),
+    //   disabled: syncingProject.value || !recordData.value,
+    //   onSelect: () => handleSyncProject()
+    // },
     {
       action: 'deleteRecord',
       label: t('record.deleteRecord'),
@@ -160,6 +175,8 @@ const activeView = computed(() => {
   if (hasResultSharingQuery.value) return RecordResult
   return RecordOngoing
 })
+
+const isOngoingView = computed(() => activeView.value === RecordOngoing)
 
 function goTimeSlots() {
   router.push({
@@ -358,13 +375,72 @@ const loadRecord = async ({ force = false } = {}) => {
 
     normalizeRecordForComponentCountsInPlace(data)
 
-    // Ensure project_name is available for banner title.
-    if (!data.project_name && data.project_id) {
-      try {
-        const project = await fetchProject(String(data.project_id))
-        if (project?.name) data.project_name = project.name
-      } catch (e) {
-        console.warn('Failed to fetch project name for record title:', e)
+    if (data.project_id) {
+      const pid = String(data.project_id)
+      const needProjectName = !data.project_name
+      const needStitches = loadedProjectIdForStitches.value !== pid
+
+      if (needProjectName || needStitches) {
+        try {
+          const project = await fetchProject(pid)
+          if (needProjectName && project?.name) data.project_name = project.name
+
+          if (needStitches) {
+            loadedProjectIdForStitches.value = pid
+            selfDefinedStitches.value = Array.isArray(project?.self_defined_stitches)
+              ? project.self_defined_stitches
+              : []
+          }
+
+          // Backward-compat: some old records were saved with only the first component.
+          // Reconcile against the project's full component list so the record page can
+          // display and track all components.
+          if (project?.component_list && Array.isArray(project.component_list)) {
+            const projectComponents = expandComponentListByCount(project.component_list, { resetEndAt: false })
+            const recordComponents = Array.isArray(data.component_list) ? data.component_list : []
+
+            if (projectComponents.length > recordComponents.length && projectComponents.length > 0) {
+              const nextComponentList = projectComponents.map((component, idx) => {
+                const base = JSON.parse(JSON.stringify(component))
+                const existing = recordComponents[idx]
+                if (existing && typeof existing === 'object') {
+                  // Preserve record-specific progress fields for existing components.
+                  return { ...base, ...JSON.parse(JSON.stringify(existing)) }
+                }
+                return { ...base, end_at: null, is_completed: false }
+              })
+
+              data.component_list = nextComponentList
+
+              // Keep time slot snapshots shape stable if present.
+              const slots = Array.isArray(data.time_slots) ? data.time_slots : []
+              for (const slot of slots) {
+                if (!slot || typeof slot !== 'object') continue
+                if (!Array.isArray(slot.end_at_list)) continue
+                const next = slot.end_at_list.slice(0, nextComponentList.length).map((e) => (e ? { ...e } : null))
+                while (next.length < nextComponentList.length) next.push(null)
+                slot.end_at_list = next
+              }
+
+              try {
+                await mergeUserRecord(uid, id, {
+                  component_list: nextComponentList,
+                  time_slots: data.time_slots
+                })
+              } catch (e) {
+                console.warn('RecordView: failed to reconcile record components with project:', e)
+              }
+            }
+          }
+        } catch (e) {
+          if (needProjectName) {
+            console.warn('Failed to fetch project name for record title:', e)
+          }
+          if (needStitches) {
+            console.warn('Failed to fetch project self_defined_stitches for record:', e)
+            selfDefinedStitches.value = []
+          }
+        }
       }
     }
 
@@ -389,86 +465,103 @@ function goWatchResult() {
   })
 }
 
-async function handleSyncProject() {
-  if (syncingProject.value) return
-  if (!recordData.value) return
+// async function handleSyncProject() {
+//   if (syncingProject.value) return
+//   if (!recordData.value) return
 
-  await openConfirmation({
-    type: 'syncProject',
-    onConfirm: async () => {
-      await syncProject()
-    }
-  })
-}
+//   await openConfirmation({
+//     type: 'syncProject',
+//     onConfirm: async () => {
+//       await syncProject()
+//     }
+//   })
+// }
 
-async function syncProject() {
-  if (syncingProject.value) return
+// async function syncProject() {
+//   if (syncingProject.value) return
 
-  const user = await waitForAuthReady()
-  const uid = user?.uid
-  if (!uid) {
-    openError({
-      title: t('common.error'),
-      message: t('auth.loginRequired'),
-      confirmText: t('common.ok')
-    })
-    return
-  }
+//   const user = await waitForAuthReady()
+//   const uid = user?.uid
+//   if (!uid) {
+//     openError({
+//       title: t('common.error'),
+//       message: t('auth.loginRequired'),
+//       confirmText: t('common.ok')
+//     })
+//     return
+//   }
 
-  if (!recordData.value?.project_id) {
-    openError({
-      title: t('common.error'),
-      message: t('record.noProjectId'),
-      confirmText: t('common.ok')
-    })
-    return
-  }
+//   if (!recordData.value?.project_id) {
+//     openError({
+//       title: t('common.error'),
+//       message: t('record.noProjectId'),
+//       confirmText: t('common.ok')
+//     })
+//     return
+//   }
 
-  try {
-    syncingProject.value = true
+//   try {
+//     syncingProject.value = true
 
-    const project = await fetchProject(String(recordData.value.project_id))
-    if (!project) {
-      openError({
-        title: t('common.error'),
-        message: t('project.notFound'),
-        confirmText: t('common.ok')
-      })
-      return
-    }
+//     const project = await fetchProject(String(recordData.value.project_id))
+//     if (!project) {
+//       openError({
+//         title: t('common.error'),
+//         message: t('project.notFound'),
+//         confirmText: t('common.ok')
+//       })
+//       return
+//     }
 
-    const projectComponents = expandComponentListByCount(project.component_list, { resetEndAt: false })
-    const recordComponents = Array.isArray(recordData.value.component_list) ? recordData.value.component_list : []
-    const endAtByIndex = recordComponents.map((c) => c?.end_at ?? null)
+//     // If the project hasn't changed since the record was last synced,
+//     // don't write anything—just notify the user.
+//     const projectUpdatedMs = toMs(project?.updated_at) ?? 0
+//     const recordSyncedMs = toMs(recordData.value?.synced_at) ?? 0
+//     if (projectUpdatedMs > 0 && recordSyncedMs >= projectUpdatedMs) {
+//       openNotice({
+//         title: t('common.notice'),
+//         message: t('record.syncNoChangesNotice'),
+//         confirmText: t('common.ok')
+//       })
+//       return
+//     }
 
-    const nextComponentList = projectComponents.map((component, idx) => {
-      const clone = JSON.parse(JSON.stringify(component))
-      clone.end_at = idx < endAtByIndex.length ? endAtByIndex[idx] : null
-      return clone
-    })
+//     const projectComponents = expandComponentListByCount(project.component_list, { resetEndAt: false })
+//     const recordComponents = Array.isArray(recordData.value.component_list) ? recordData.value.component_list : []
+//     const endAtByIndex = recordComponents.map((c) => c?.end_at ?? null)
 
-    recordData.value.component_list = nextComponentList
-    if (project?.name) recordData.value.project_name = project.name
+//     const nextComponentList = projectComponents.map((component, idx) => {
+//       const clone = JSON.parse(JSON.stringify(component))
+//       clone.end_at = idx < endAtByIndex.length ? endAtByIndex[idx] : null
+//       return clone
+//     })
 
-    normalizeRecordForComponentCountsInPlace(recordData.value)
-    await setUserRecord(uid, recordId.value, recordData.value)
+//     recordData.value.component_list = nextComponentList
+//     if (project?.name) recordData.value.project_name = project.name
 
-    openNotice({
-      title: t('common.notice'),
-      message: t('record.syncSuccessNotice'),
-      confirmText: t('common.ok')
-    })
-  } catch (error) {
-    console.error('RecordView: error syncing project:', error)
-    openError({
-      title: t('common.error'),
-      message: t('record.syncFailedNotice'),
-      confirmText: t('common.ok')
-    })
-  } finally {
-    syncingProject.value = false
-  }
-}
+//     // Mark the record as synced to the current project snapshot.
+//     // Use client time for immediate UI feedback; server updated_at will be set by setUserRecord().
+//     recordData.value.synced_at = new Date().toISOString()
+
+//     normalizeRecordForComponentCountsInPlace(recordData.value)
+//     await setUserRecord(uid, recordId.value, recordData.value)
+
+//     openNotice({
+//       title: t('common.notice'),
+//       message: t('record.syncSuccessNotice'),
+//       confirmText: t('common.ok')
+//     })
+//   } catch (error) {
+//     console.error('RecordView: error syncing project:', error)
+//     openError({
+//       title: t('common.error'),
+//       message: t('record.syncFailedNotice'),
+//       confirmText: t('common.ok')
+//     })
+//   } finally {
+//     syncingProject.value = false
+//   }
+// }
 
 async function handleDeleteRecord() {
   const user = await waitForAuthReady()
@@ -593,5 +686,11 @@ watch(
 
 .page-content > * {
   position: relative;
+}
+
+.record-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 </style>

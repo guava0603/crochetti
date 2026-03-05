@@ -8,50 +8,44 @@
         :key="itemKey ? itemKey(item, idx) : idx"
         :class="rowClass"
       >
-        <SelectionInput
-          v-if="inputType === 'dropdown'"
-          :model-value="getTextValue(item)"
-          :placeholder="placeholder"
-          :options="options"
-          @update:modelValue="(v) => updateTextAt(idx, v)"
-        />
+        <div class="component-material-input-cell">
+          <SelectionInput
+            v-if="inputType === 'dropdown'"
+            :model-value="getTextValue(item)"
+            :placeholder="placeholder"
+            :options="options"
+            @update:modelValue="(v) => updateTextAt(idx, v)"
+          />
 
-        <SelectionInputCombineList
-          v-else-if="inputType === 'selection'"
-          :model-value="getTextValue(item)"
-          :placeholder="placeholder"
-          :suggestions="suggestions"
-          @update:modelValue="(v) => updateTextAt(idx, v)"
-          @blur="() => $emit('item-blur', idx)"
-        />
+          <SelectionInputCombineList
+            v-else-if="inputType === 'selection'"
+            :model-value="getTextValue(item)"
+            :placeholder="placeholder"
+            :suggestions="suggestions"
+            @update:modelValue="(v) => updateTextAt(idx, v)"
+            @blur="() => $emit('item-blur', idx)"
+          />
 
-        <textarea
-          v-else
-          :value="getTextValue(item)"
-          :placeholder="placeholder"
-          :class="inputClass || undefined"
-          :rows="rows"
-          @input="(e) => updateTextAt(idx, e?.target?.value ?? '')"
-          @blur="() => $emit('item-blur', idx)"
-        />
-
-        <ButtonDelete
-          v-if="removable && isNonEmpty(item)"
-          variant="small"
-          type="deleteItem"
-          @click="$emit('remove', idx)"
-        />
+          <textarea
+            v-else
+            :value="getTextValue(item)"
+            :placeholder="placeholder"
+            :class="inputClass || undefined"
+            :rows="rows"
+            @input="(e) => updateTextAt(idx, e?.target?.value ?? '')"
+            @blur="() => $emit('item-blur', idx)"
+          />
+        </div>
       </div>
     </div>
 
-    <AddNew v-if="canAddComputed" variant="icon" @click="$emit('add')" />
+    <AddNew v-if="canAddComputed" variant="row" size="md" @click="$emit('add')" />
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import AddNew from '@/components/buttons/AddNew.vue'
-import ButtonDelete from '@/components/buttons/ButtonDelete.vue'
 import SelectionInput from '@/components/tools/SelectionInput.vue'
 import SelectionInputCombineList from '@/components/Input/SelectionInputCombineList.vue'
 
@@ -125,10 +119,6 @@ function updateTextAt(idx, nextText) {
   emit('update:items', next)
 }
 
-function isNonEmpty(item) {
-  return getTextValue(item).trim().length > 0
-}
-
 const rowClass = computed(() => {
   return props.variant === 'notes' ? 'list-item' : 'component-material-input-row'
 })
@@ -144,7 +134,6 @@ const canAddComputed = computed(() => {
 .component-material-field {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
   margin-bottom: 0.75rem;
 }
 
@@ -157,36 +146,40 @@ const canAddComputed = computed(() => {
 .component-material-input-list {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.5rem;
+  gap: 0.3rem;
 }
 
 .component-material-input-row {
   display: flex;
-  gap: 0.2rem;
-  align-items: center;
+  align-items: stretch;
 }
 
 .list-item {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
-  align-items: center;
+  align-items: stretch;
+}
+
+.component-material-input-cell {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.component-material-input-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  line-height: 0;
+}
+
+.component-material-input-cell :deep(.btn-delete__icon) {
+  cursor: pointer;
 }
 
 .list-item-input {
   flex: 1;
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-family: inherit;
-  line-height: 1.25rem;
-  resize: vertical;
-}
-
-.list-item-input:focus {
-  outline: none;
-  border-color: #42b983;
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.1);
+  min-width: 0;
 }
 </style>

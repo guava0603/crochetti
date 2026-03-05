@@ -14,6 +14,8 @@
 // - projects: raw project docs
 // - records: raw record docs
 
+import { toMs } from '@/utils/toMs'
+
 /**
  * @typedef {Object} AchievementMetrics
  * @property {number} totalProjects
@@ -136,34 +138,6 @@ export const ACHIEVEMENT_EVALUATORS = {
 
     return false
   }
-}
-
-function toMs(value) {
-  if (!value) return null
-
-  // Firestore Timestamp-like
-  if (value && typeof value.toMillis === 'function') {
-    const ms = value.toMillis()
-    return Number.isFinite(ms) ? ms : null
-  }
-
-  if (value instanceof Date) {
-    const ms = value.getTime()
-    return Number.isFinite(ms) ? ms : null
-  }
-
-  if (typeof value === 'string') {
-    const s = value.trim()
-    if (!s) return null
-    const ms = new Date(s).getTime()
-    return Number.isFinite(ms) ? ms : null
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null
-  }
-
-  return null
 }
 
 function localDayKey(ms) {

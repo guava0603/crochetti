@@ -4,18 +4,14 @@
       <div v-if="show" class="modal-overlay" @click="handleCancel">
         <div class="modal-container" @click.stop>
           <div class="modal-header">
-            <h2>Sign In</h2>
+            <h2>{{ t('auth.loginModal.title') }}</h2>
             <button class="close-button" @click="handleCancel">×</button>
           </div>
 
           <div class="modal-body">
             <p class="modal-description">
-              Sign in to access all features
+              {{ t('auth.loginModal.description') }}
             </p>
-
-            <div v-if="error" class="error-message">
-              {{ error }}
-            </div>
 
             <button
               class="google-signin-button"
@@ -29,7 +25,7 @@
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
               <span v-if="loading">Signing in...</span>
-              <span v-else>Sign in with Google</span>
+              <span v-else>{{ t('auth.loginModal.google') }}</span>
             </button>
 
             <button
@@ -41,7 +37,16 @@
                 <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" fill="currentColor"/>
               </svg>
               <span v-if="loading">Signing in...</span>
-              <span v-else>Sign in with Apple</span>
+              <span v-else>{{ t('auth.loginModal.apple') }}</span>
+            </button>
+
+            <button
+              class="quick-start-button"
+              @click="handleQuickStart"
+              :disabled="loading"
+            >
+              <span v-if="loading">{{ t('auth.loginModal.signingIn') }}</span>
+              <span v-else>{{ t('auth.quickStart') }}</span>
             </button>
 
             <button
@@ -49,7 +54,7 @@
               @click="handleCancel"
               :disabled="loading"
             >
-              Cancel
+              {{ t('auth.loginModal.cancel') }}
             </button>
           </div>
         </div>
@@ -60,9 +65,14 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Capacitor } from '@capacitor/core'
 import { auth } from '../firebaseConfig'
-import { signInWithCredential, GoogleAuthProvider, OAuthProvider } from 'firebase/auth'
+import { signInAnonymously, signInWithCredential, GoogleAuthProvider, OAuthProvider } from 'firebase/auth'
+import { openError } from '@/services/ui/error'
+import { openConfirmation } from '@/services/ui/confirmation'
+
+const { t } = useI18n({ useScope: 'global' })
 
 defineProps({
   show: {
@@ -75,6 +85,35 @@ const emit = defineEmits(['close', 'login-success'])
 
 const loading = ref(false)
 const error = ref(null)
+
+const showError = (message) => {
+  const msg = String(message || '').trim()
+  error.value = msg || null
+  if (msg) {
+    openError({ title: t('common.error'), message: msg })
+  }
+}
+
+const handleQuickStart = async () => {
+  if (loading.value) return
+
+  const ok = await openConfirmation({ type: 'quickStartAnonymous' })
+  if (!ok) return
+
+  loading.value = true
+  error.value = null
+
+  try {
+    const result = await signInAnonymously(auth)
+    emit('login-success', result.user)
+    emit('close')
+  } catch (err) {
+    console.error('Anonymous login error:', err)
+    showError(err?.message || 'Failed to sign in. Please try again.')
+  } finally {
+    loading.value = false
+  }
+}
 
 const handleGoogleLogin = async () => {
   loading.value = true
@@ -120,16 +159,16 @@ const handleGoogleLogin = async () => {
 
     // Provide helpful error messages
     if (err.code === 'auth/configuration-not-found') {
-      error.value = 'Google Sign-In is not configured. Please enable Google authentication in Firebase Console: Authentication > Sign-in method > Google'
+      showError('Google Sign-In is not configured. Please enable Google authentication in Firebase Console: Authentication > Sign-in method > Google')
     } else if (err.code === 'auth/popup-closed-by-user') {
-      error.value = 'Sign-in cancelled'
+      showError('Sign-in cancelled')
     } else if (err.code === 'auth/popup-blocked') {
-      error.value = 'Pop-up blocked by browser. Please allow pop-ups for this site.'
+      showError('Pop-up blocked by browser. Please allow pop-ups for this site.')
     } else if (err.code === 'auth/cancelled-popup-request') {
       // Silently ignore cancelled popup requests (happens when user clicks login multiple times)
       error.value = null
     } else {
-      error.value = err.message || 'Failed to sign in. Please try again.'
+      showError(err.message || 'Failed to sign in. Please try again.')
     }
   } finally {
     loading.value = false
@@ -158,17 +197,17 @@ const handleAppleLogin = async () => {
 
     // Provide helpful error messages
     if (err.code === 'auth/operation-not-allowed') {
-      error.value = 'Apple Sign-In is not enabled. Please enable it in Firebase Console: Authentication > Sign-in method > Apple'
+      showError('Apple Sign-In is not enabled. Please enable it in Firebase Console: Authentication > Sign-in method > Apple')
     } else if (err.code === 'auth/configuration-not-found') {
-      error.value = 'Apple Sign-In is not configured. Please enable Apple authentication in Firebase Console: Authentication > Sign-in method > Apple'
+      showError('Apple Sign-In is not configured. Please enable Apple authentication in Firebase Console: Authentication > Sign-in method > Apple')
     } else if (err.code === 'auth/popup-closed-by-user') {
-      error.value = 'Sign-in cancelled'
+      showError('Sign-in cancelled')
     } else if (err.code === 'auth/popup-blocked') {
-      error.value = 'Pop-up blocked by browser. Please allow pop-ups for this site.'
+      showError('Pop-up blocked by browser. Please allow pop-ups for this site.')
     } else if (err.code === 'auth/cancelled-popup-request') {
       error.value = null
     } else {
-      error.value = err.message || 'Failed to sign in. Please try again.'
+      showError(err.message || 'Failed to sign in. Please try again.')
     }
   } finally {
     loading.value = false
@@ -248,15 +287,6 @@ const handleCancel = () => {
   text-align: center;
 }
 
-.error-message {
-  background: #fee2e2;
-  color: #dc2626;
-  padding: 0.75rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-}
-
 .google-signin-button {
   width: 100%;
   display: flex;
@@ -323,6 +353,33 @@ const handleCancel = () => {
 .apple-icon {
   width: 20px;
   height: 20px;
+}
+
+.quick-start-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(17, 24, 39, 0.18);
+  border-radius: 10px;
+  background: rgba(17, 24, 39, 0.04);
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-bottom: 0.75rem;
+}
+
+.quick-start-button:hover:not(:disabled) {
+  background-color: rgba(17, 24, 39, 0.08);
+}
+
+.quick-start-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .cancel-button {

@@ -3,43 +3,74 @@
     <div class="crochet-list">
       <button
         v-for="crochet in stitches"
-        :key="crochet.index"
+        :key="getStitchId(crochet)"
         type="button"
         class="crochet-button"
-        :class="{ 'is-selected': selectedStitchId === crochet.index }"
-        :disabled="disabled || !isStitchEnabled(crochet.index) || isStitchDisabledByPositionSelection(crochet.index)"
-        @click="handleStitchClick(crochet.index)"
+        :class="{ 'is-selected': selectedStitchId === getStitchId(crochet) }"
+        :disabled="disabled || !isStitchEnabled(getStitchId(crochet)) || isStitchDisabledByPositionSelection(getStitchId(crochet)) || isStitchDisabledByDecreaseMode(getStitchId(crochet))"
+        @click="handleStitchClick(getStitchId(crochet))"
       >
-        <div class="crochet-symbol">{{ getStitchDisplayText(crochet, crochetLang) }}</div>
+        <div class="crochet-symbol">{{ getStitchLabel(crochet) }}</div>
+      </button>
+
+      <button
+        v-for="sd in selfDefinedStitches"
+        :key="getStitchId(sd)"
+        type="button"
+        class="crochet-button crochet-button--self-defined"
+        :class="{ 'is-selected': selectedStitchId === getStitchId(sd) }"
+        :disabled="disabled || !isStitchEnabled(getStitchId(sd)) || isStitchDisabledByPositionSelection(getStitchId(sd)) || isStitchDisabledByDecreaseMode(getStitchId(sd))"
+        @click="handleStitchClick(getStitchId(sd))"
+      >
+        <div class="crochet-symbol">{{ getStitchLabel(sd) }}</div>
       </button>
 
       <button
         v-if="showCustomButton"
         type="button"
         class="crochet-button custom-button"
-        :disabled="disabled || isCustomDisabledByPositionSelection"
+        :disabled="disabled || isCustomDisabledByPositionSelection || decreaseMode"
         @click="$emit('custom-click')"
       >
         <div class="crochet-symbol">{{ t('toolbar.addCrochet.custom') }}</div>
       </button>
     </div>
 
-    <div
-      class="position-panel"
-      :aria-label="t('toolbar.addCrochet.position.ariaLabel')"
-    >
-      <button
-        v-for="opt in positionOptions"
-        :key="opt.value"
-        type="button"
-        class="crochet-position-button"
-        :class="{ active: selectedPosition === opt.value }"
-        :disabled="positionTogglesDisabled"
-        :aria-pressed="selectedPosition === opt.value"
-        @click="togglePosition(opt.value)"
+    <div class="side-panels">
+      <div
+        class="position-panel"
+        :aria-label="t('toolbar.addCrochet.position.ariaLabel')"
       >
-        <div v-if="opt.label" class="crochet-symbol">{{ opt.label }}</div>
-      </button>
+        <button
+          v-for="opt in positionOptions"
+          :key="opt.value"
+          type="button"
+          class="crochet-position-button"
+          :class="{ active: selectedPosition === opt.value }"
+          :disabled="positionTogglesDisabled"
+          :aria-pressed="selectedPosition === opt.value"
+          @click="togglePosition(opt.value)"
+        >
+          <div v-if="opt.label" class="crochet-symbol">{{ opt.label }}</div>
+        </button>
+      </div>
+
+      <div
+        class="position-panel position-panel--decrease"
+        :aria-label="t('toolbar.addCrochet.decrease.ariaLabel')"
+      >
+        <button
+          type="button"
+          class="crochet-position-button"
+          :class="{ active: isDecreaseSelected }"
+          :disabled="decreaseDisabled"
+          :aria-pressed="isDecreaseSelected"
+          @click="toggleDecrease"
+        >
+          <div class="crochet-symbol decrease-symbol">{{ decreaseSymbol }}</div>
+          <div class="crochet-symbol decrease-text">{{ decreaseText }}</div>
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -50,6 +81,7 @@ import { useI18n } from 'vue-i18n'
 import {
   BasicStitchGeneral,
   CrochetPositionOptions,
+  getVariantStitchId,
   getStitchDisplayText
 } from '@/constants/crochetData'
 import { useCrochetLang } from '@/composables/useCrochetLang'
@@ -62,6 +94,14 @@ const props = defineProps({
   disabled: {
     type: Boolean,
     default: false
+  },
+  emitOnDecreaseToggle: {
+    type: Boolean,
+    default: false
+  },
+  selfDefinedStitches: {
+    type: Array,
+    default: () => []
   },
   presetStitchId: {
     type: Number,
@@ -91,6 +131,22 @@ const props = defineProps({
 
 const emit = defineEmits(['stitch-click', 'custom-click', 'position-change'])
 
+const selfDefinedIdSet = computed(() => {
+  const set = new Set()
+  const list = Array.isArray(props.selfDefinedStitches) ? props.selfDefinedStitches : []
+  for (const s of list) {
+    const id = Number(s?.stitch_id)
+    if (Number.isFinite(id)) set.add(id)
+  }
+  return set
+})
+
+const isSelfDefinedStitchId = (stitchId) => {
+  const id = Number(stitchId)
+  if (!Number.isFinite(id)) return false
+  return selfDefinedIdSet.value.has(id)
+}
+
 const isStitchEnabled = (stitchId) => {
   const list = props.enabledStitchIds
   if (!Array.isArray(list) || list.length === 0) return true
@@ -99,15 +155,26 @@ const isStitchEnabled = (stitchId) => {
 
 const selectedStitchId = ref(null)
 const selectedPosition = ref('')
+const decreaseMode = ref(false)
 
-const POSITION_SUPPORTED_STITCH_IDS = new Set([4, 7, 10, 13]) // X, T, F, E
+const POSITION_SUPPORTED_STITCH_IDS = new Set([4, 7, 10, 13, 6, 9, 12, 15]) // X, T, F, E and their decrease variants
 const POSITION_DISABLED_STITCH_IDS = new Set([0, 1, 2, 3]) // sl, ch, skip
+
+const DECREASE_ALLOWED_BASE_STITCH_IDS = new Set([4, 7, 10, 13]) // X, T, F, E
 
 const isStitchDisabledByPositionSelection = (stitchId) => {
   // If a position toggle is selected, prevent clicking stitches that don't make sense with positions.
   // This avoids confusing UX where a selected position appears to "do nothing" for these stitches.
   if (!selectedPosition.value) return false
+  // Self-defined stitches do not support position; disable when a position is selected.
+  if (isSelfDefinedStitchId(stitchId)) return true
   return POSITION_DISABLED_STITCH_IDS.has(stitchId)
+}
+
+const isStitchDisabledByDecreaseMode = (stitchId) => {
+  if (!decreaseMode.value) return false
+  if (isSelfDefinedStitchId(stitchId)) return true
+  return !DECREASE_ALLOWED_BASE_STITCH_IDS.has(stitchId)
 }
 
 const isCustomDisabledByPositionSelection = computed(() => {
@@ -119,8 +186,68 @@ const isCustomDisabledByPositionSelection = computed(() => {
 const positionTogglesDisabled = computed(() => {
   if (props.disabled) return true
   if (selectedStitchId.value === null) return false
+  if (isSelfDefinedStitchId(selectedStitchId.value)) return true
   return POSITION_DISABLED_STITCH_IDS.has(selectedStitchId.value)
 })
+
+const isDecreaseSelected = computed(() => decreaseMode.value)
+
+const decreaseDisabled = computed(() => props.disabled)
+
+const decreaseSymbol = 'A'
+const decreaseText = computed(() => t('toolbar.addCrochet.decrease.ariaLabel'))
+
+const DECREASE_VARIANT_TO_BASE = computed(() => {
+  const map = new Map()
+  for (const baseId of DECREASE_ALLOWED_BASE_STITCH_IDS) {
+    const variantId = getVariantStitchId(baseId, 'decrease')
+    if (variantId !== null && variantId !== undefined) {
+      map.set(variantId, baseId)
+    }
+  }
+  return map
+})
+
+const emitStitchSelection = (stitchId) => {
+  const effectivePosition = POSITION_SUPPORTED_STITCH_IDS.has(stitchId)
+    ? selectedPosition.value
+    : ''
+
+  emit('stitch-click', {
+    stitch_id: stitchId,
+    position: effectivePosition
+  })
+}
+
+const toggleDecrease = () => {
+  if (decreaseDisabled.value) return
+
+  const next = !decreaseMode.value
+  decreaseMode.value = next
+
+  // In Change-stitch mode, toggling decrease should immediately apply to the
+  // currently selected base stitch (X/T/F/E) to avoid requiring an extra click.
+  if (!props.emitOnDecreaseToggle) return
+
+  const current = selectedStitchId.value
+  if (current === null || current === undefined) return
+
+  if (next) {
+    // turning ON
+    if (!DECREASE_ALLOWED_BASE_STITCH_IDS.has(current)) return
+    const variantId = getVariantStitchId(current, 'decrease')
+    if (variantId === null || variantId === undefined) return
+    selectedStitchId.value = variantId
+    emitStitchSelection(variantId)
+    return
+  }
+
+  // turning OFF
+  const baseId = DECREASE_VARIANT_TO_BASE.value.get(current)
+  if (baseId === null || baseId === undefined) return
+  selectedStitchId.value = baseId
+  emitStitchSelection(baseId)
+}
 
 const positionOptions = computed(() => {
   return CrochetPositionOptions.map((opt) => ({
@@ -138,11 +265,30 @@ const togglePosition = (pos) => {
   const next = normalizePosition(pos)
   const updated = selectedPosition.value === next ? '' : next
   selectedPosition.value = updated
-  console.log('Position toggled:', updated)
   emit('position-change', updated)
 }
 
 const handleStitchClick = (stitchId) => {
+  if (stitchId === null || stitchId === undefined) return
+
+  // Decrease mode: only allow X/T/F/E. Clicking them emits decrease variants A/TA/FA/EA.
+  if (decreaseMode.value) {
+    if (!DECREASE_ALLOWED_BASE_STITCH_IDS.has(stitchId)) return
+    const variantId = getVariantStitchId(stitchId, 'decrease')
+    if (variantId === null || variantId === undefined) return
+    selectedStitchId.value = variantId
+
+    const effectivePosition = POSITION_SUPPORTED_STITCH_IDS.has(variantId)
+      ? selectedPosition.value
+      : ''
+
+    emit('stitch-click', {
+      stitch_id: variantId,
+      position: effectivePosition
+    })
+    return
+  }
+
   selectedStitchId.value = stitchId
 
   // Selecting a stitch must NOT change the current position selection.
@@ -161,6 +307,20 @@ const handleStitchClick = (stitchId) => {
   emit('stitch-click', payload)
 }
 
+const getStitchId = (stitch) => {
+  if (!stitch || typeof stitch !== 'object') return null
+  if (typeof stitch.index === 'number' && Number.isFinite(stitch.index)) return stitch.index
+  const id = Number(stitch.stitch_id)
+  return Number.isFinite(id) ? id : null
+}
+
+const getStitchLabel = (stitch) => {
+  if (!stitch || typeof stitch !== 'object') return ''
+  // Self-defined stitches always display their raw name.
+  if (typeof stitch.name === 'string' && String(stitch.name).trim()) return String(stitch.name)
+  return getStitchDisplayText(stitch, crochetLang.value)
+}
+
 watch(
   () => [props.presetStitchId, props.presetPosition],
   ([nextId, nextPos]) => {
@@ -168,6 +328,9 @@ watch(
       selectedStitchId.value = nextId
       const normalized = normalizePosition(nextPos)
       selectedPosition.value = POSITION_SUPPORTED_STITCH_IDS.has(nextId) ? normalized : ''
+
+      // If preset is a decrease variant, reflect it in the UI.
+      decreaseMode.value = new Set([6, 9, 12, 15]).has(nextId)
     }
   },
   { immediate: true }
@@ -181,6 +344,14 @@ watch(
   align-items: stretch;
   height: 100%;
   min-height: 0;
+}
+
+.side-panels {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .crochet-list {
@@ -228,9 +399,18 @@ watch(
   padding: 0.5rem;
 }
 
+.crochet-button--self-defined {
+  background: rgb(var(--color-icon-add-rgb) / 0.10);
+  border-color: rgb(var(--color-icon-add-rgb) / 0.35);
+}
+
+.crochet-button--self-defined .crochet-symbol {
+  color: var(--color-font-dark);
+}
+
 .crochet-button:hover:not(:disabled), .crochet-position-button.active {
-  background: #42b983;
-  border-color: #42b983;
+  background: var(--color-icon-add);
+  border-color: var(--color-icon-add);
   color: white;
 }
 
@@ -245,12 +425,26 @@ watch(
 
 .crochet-symbol {
   font-size: 0.75rem;
+  line-height: 1.1;
   color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .crochet-button:hover:not(:disabled) .crochet-symbol,
 .crochet-position-button.active .crochet-symbol {
   color: white;
+}
+
+.decrease-symbol {
+  font-size: 0.85rem;
+}
+
+.decrease-text {
+  font-size: 0.62rem;
+  opacity: 0.95;
 }
 
 .custom-button {
@@ -268,8 +462,7 @@ watch(
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.65);
 }
 </style>

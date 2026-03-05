@@ -37,6 +37,46 @@
               </div>
             </div>
 
+            <div class="connected-accounts" aria-label="Connected accounts">
+              <div class="connected-accounts__title">{{ t('auth.connectedAccounts.title') }}</div>
+
+              <div v-if="isAnonymous" class="connected-accounts__hint">
+                {{ t('auth.connectedAccounts.anonymousHint') }}
+              </div>
+
+              <div v-if="providerInfo.length" class="connected-accounts__list">
+                <div v-for="p in providerInfo" :key="p.providerId" class="connected-accounts__item">
+                  <div class="connected-accounts__provider">{{ providerLabel(p.providerId) }}</div>
+                  <div v-if="p.email" class="connected-accounts__meta">{{ p.email }}</div>
+                </div>
+              </div>
+              <div v-else class="connected-accounts__none">
+                {{ t('auth.connectedAccounts.none') }}
+              </div>
+
+              <div class="connected-accounts__actions">
+                <button
+                  v-if="!hasGoogle"
+                  class="btn-secondary"
+                  type="button"
+                  :disabled="saving || linking"
+                  @click="handleConnectGoogle"
+                >
+                  {{ t('auth.connectedAccounts.connectGoogle') }}
+                </button>
+
+                <button
+                  v-if="!hasApple"
+                  class="btn-secondary"
+                  type="button"
+                  :disabled="saving || linking"
+                  @click="handleConnectApple"
+                >
+                  {{ t('auth.connectedAccounts.connectApple') }}
+                </button>
+              </div>
+            </div>
+
             <div class="actions">
               <button class="btn-secondary" type="button" :disabled="saving" @click="handleCancel">
                 {{ computedCancelText }}
@@ -55,13 +95,23 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Capacitor } from '@capacitor/core'
+import { auth } from '@/firebaseConfig'
+import {
+  GoogleAuthProvider,
+  OAuthProvider,
+  linkWithCredential
+} from 'firebase/auth'
 import ImageUploader from '@/components/Input/ImageUploader.vue'
+import { openError } from '@/services/ui/error'
+import { openToast } from '@/services/ui/toast'
 
 const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps({
   show: { type: Boolean, required: true },
   profile: { type: Object, default: null },
+  authUser: { type: Object, default: null },
   saving: { type: Boolean, default: false },
 
   title: { type: String, default: '' },
@@ -77,6 +127,21 @@ const emit = defineEmits(['close', 'save'])
 const draftName = ref('')
 const draftAvatarFiles = ref([])
 
+const linking = ref(false)
+const providerInfo = ref([])
+const providerIds = ref([])
+const isAnonymous = ref(false)
+
+const hasGoogle = computed(() => providerIds.value.includes('google.com'))
+const hasApple = computed(() => providerIds.value.includes('apple.com'))
+
+const providerLabel = (providerId) => {
+  const id = String(providerId || '')
+  if (id === 'google.com') return t('auth.providers.google')
+  if (id === 'apple.com') return t('auth.providers.apple')
+  return id
+}
+
 const computedTitle = computed(() => props.title || t('user.profileSettingsModal.title'))
 const computedNameLabel = computed(() => props.nameLabel || t('user.profileSettingsModal.nameLabel'))
 const computedAvatarLabel = computed(() => props.avatarLabel || t('user.profileSettingsModal.avatarLabel'))
@@ -87,14 +152,168 @@ const computedSavingText = computed(() => props.savingText || t('common.saving')
 const initialName = computed(() => String(props.profile?.name || '').trim())
 
 watch(
-  () => [props.show, props.profile],
-  () => {
+  () => [props.show, props.profile, props.authUser],
+  async () => {
     if (!props.show) return
     draftName.value = initialName.value
     draftAvatarFiles.value = []
+    await refreshProviders()
   },
   { immediate: true }
 )
+
+async function refreshProviders() {
+  const user = auth.currentUser || props.authUser
+  if (!user) {
+    providerInfo.value = []
+    providerIds.value = []
+    isAnonymous.value = false
+    return
+  }
+
+  try {
+    if (typeof user.reload === 'function') {
+      await user.reload()
+    }
+  } catch {
+    // ignore reload failures; still render best-effort provider data
+  }
+
+  const list = Array.isArray(user.providerData) ? user.providerData : []
+  providerInfo.value = list
+    .map((p) => ({
+      providerId: String(p?.providerId || ''),
+      email: String(p?.email || ''),
+      displayName: String(p?.displayName || '')
+    }))
+    .filter((p) => p.providerId)
+
+  providerIds.value = providerInfo.value.map((p) => p.providerId)
+  isAnonymous.value = Boolean(user.isAnonymous)
+}
+
+async function handleConnectGoogle() {
+  if (linking.value) return
+  const user = auth.currentUser
+  if (!user) {
+    openError({ title: t('common.error'), message: t('auth.loginRequired'), confirmText: t('common.ok') })
+    return
+  }
+
+  linking.value = true
+  try {
+    const isApp = Capacitor.isNativePlatform()
+
+    if (isApp) {
+      const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
+      const nativeResult = await FirebaseAuthentication.signInWithGoogle()
+
+      const idToken = nativeResult?.credential?.idToken || nativeResult?.idToken
+      const accessToken = nativeResult?.credential?.accessToken || nativeResult?.accessToken
+      if (!idToken && !accessToken) {
+        throw new Error('Missing Google credential token from native sign-in result')
+      }
+
+      const credential = GoogleAuthProvider.credential(idToken ?? null, accessToken ?? null)
+      await linkWithCredential(user, credential)
+    } else {
+      const { linkWithPopup } = await import('firebase/auth')
+      const provider = new GoogleAuthProvider()
+      provider.setCustomParameters({ prompt: 'select_account' })
+      await linkWithPopup(user, provider)
+    }
+
+    await refreshProviders()
+    openToast({ message: t('auth.connectedAccounts.connectSuccess', { provider: t('auth.providers.google') }) })
+  } catch (err) {
+    console.error('Connect Google failed:', err)
+    const code = err?.code
+    if (code === 'auth/credential-already-in-use') {
+      openError({
+        title: t('common.error'),
+        message: t('auth.connectedAccounts.alreadyInUse', { provider: t('auth.providers.google') }),
+        confirmText: t('common.ok')
+      })
+    } else {
+      openError({
+        title: t('common.error'),
+        message: t('auth.connectedAccounts.connectFailed', { provider: t('auth.providers.google') }),
+        confirmText: t('common.ok')
+      })
+    }
+  } finally {
+    linking.value = false
+  }
+}
+
+async function handleConnectApple() {
+  if (linking.value) return
+  const user = auth.currentUser
+  if (!user) {
+    openError({ title: t('common.error'), message: t('auth.loginRequired'), confirmText: t('common.ok') })
+    return
+  }
+
+  linking.value = true
+  try {
+    const isApp = Capacitor.isNativePlatform()
+
+    if (isApp) {
+      const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
+      if (typeof FirebaseAuthentication?.signInWithApple !== 'function') {
+        throw Object.assign(new Error('Apple sign-in not supported'), { code: 'not-supported' })
+      }
+
+      const nativeResult = await FirebaseAuthentication.signInWithApple()
+      const idToken = nativeResult?.credential?.idToken || nativeResult?.idToken
+      const rawNonce = nativeResult?.credential?.nonce || nativeResult?.nonce || nativeResult?.credential?.rawNonce || nativeResult?.rawNonce
+      if (!idToken) {
+        throw new Error('Missing Apple idToken from native sign-in result')
+      }
+
+      const credential = OAuthProvider.credential({
+        providerId: 'apple.com',
+        idToken,
+        rawNonce: rawNonce || undefined
+      })
+
+      await linkWithCredential(user, credential)
+    } else {
+      const { linkWithPopup } = await import('firebase/auth')
+      const provider = new OAuthProvider('apple.com')
+      provider.addScope('email')
+      provider.addScope('name')
+      await linkWithPopup(user, provider)
+    }
+
+    await refreshProviders()
+    openToast({ message: t('auth.connectedAccounts.connectSuccess', { provider: t('auth.providers.apple') }) })
+  } catch (err) {
+    console.error('Connect Apple failed:', err)
+    const code = err?.code
+    if (code === 'not-supported') {
+      openError({
+        title: t('common.error'),
+        message: t('auth.connectedAccounts.notSupported', { provider: t('auth.providers.apple') }),
+        confirmText: t('common.ok')
+      })
+    } else if (code === 'auth/credential-already-in-use') {
+      openError({
+        title: t('common.error'),
+        message: t('auth.connectedAccounts.alreadyInUse', { provider: t('auth.providers.apple') }),
+        confirmText: t('common.ok')
+      })
+    } else {
+      openError({
+        title: t('common.error'),
+        message: t('auth.connectedAccounts.connectFailed', { provider: t('auth.providers.apple') }),
+        confirmText: t('common.ok')
+      })
+    }
+  } finally {
+    linking.value = false
+  }
+}
 
 function handleCancel() {
   emit('close')
@@ -202,27 +421,64 @@ function handleSave() {
   padding-top: 0.5rem;
 }
 
-.btn-secondary {
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  color: #111827;
-  border-radius: 10px;
-  padding: 0.6rem 0.9rem;
-  font-weight: 800;
+.connected-accounts {
+  margin-top: 1.1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(17, 24, 39, 0.1);
 }
 
-.btn-primary {
-  background: #111827;
-  border: none;
-  color: #fff;
-  border-radius: 10px;
-  padding: 0.6rem 0.9rem;
+.connected-accounts__title {
+  font-size: 0.95rem;
   font-weight: 900;
+  color: #111827;
+  margin-bottom: 0.45rem;
 }
 
-.btn-primary:disabled,
-.btn-secondary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.connected-accounts__hint {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(17, 24, 39, 0.7);
+  margin-bottom: 0.6rem;
+}
+
+.connected-accounts__list {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.7rem;
+}
+
+.connected-accounts__item {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.15rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  background: rgba(17, 24, 39, 0.04);
+}
+
+.connected-accounts__provider {
+  font-weight: 900;
+  color: #111827;
+}
+
+.connected-accounts__meta {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgba(17, 24, 39, 0.65);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.connected-accounts__none {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(17, 24, 39, 0.7);
+  margin-bottom: 0.7rem;
+}
+
+.connected-accounts__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 </style>

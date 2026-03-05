@@ -5,35 +5,52 @@
         <span class="start-time" v-if="formattedStartTime">{{ $t('record.startAt') }} {{ formattedStartTime }}</span>
       </div>
 
-      <div class="record-panel">
-        <CarouselSelection
-          v-model="selectedComponentIndex"
-          :items="componentList"
-          :aria-label="$t('project.components')"
-          :get-progress="getComponentProgress"
-          :get-item-label="getComponentLabel"
-          @settle="handleCarouselSettle"
-        />
-
-        <!-- Project Display (Record mode) -->
-        <div class="project-display">
-          <div
-            v-if="activeComponent"
-            class="component-section"
-          >
-            <span class="component-progress-tag">{{ getComponentProgress(selectedComponentIndex) }}%</span>
-            <h4>{{ getComponentLabel(activeComponent, selectedComponentIndex) }}</h4>
-            <RecordingTable
-              ref="componentTableRef"
-              :model-value="activeComponent.content.row_list"
-              :row-groups="activeComponent.content.row_groups"
-              :component-id="selectedComponentIndex"
-              :component-name="getComponentLabel(activeComponent, selectedComponentIndex)"
-              @update-end-at="(row_index, crochet_count) => handleUpdateEndAt(selectedComponentIndex, row_index, crochet_count)"
-              @revert-selection="handleRevertSelection"
-            />
-          </div>
+      <div class="header-with-time">
+        <div class="record-panel-actions" @click.stop>
+          <ButtonTranslate />
         </div>
+      </div>
+
+      <div class="record-panel">
+        <CarouselWithDot
+          ref="componentCarouselRef"
+          :items="componentList"
+          item-width="100%"
+          :disable-gesture="false"
+          @active-index-change="handleCarouselActiveIndexChange"
+          class="record-component-carousel"
+        >
+          <template #default="{ item, index }">
+            <div class="project-display">
+              <div class="component-section">
+                <span v-if="isRecordableComponent(item)" class="component-progress-tag">{{ getComponentProgress(index) }}%</span>
+                <div class="component-label">{{ getComponentLabel(item, index) }}</div>
+                <RecordingTable
+                  v-if="isRecordableComponent(item)"
+                  :ref="setComponentTableRef(index)"
+                  :model-value="item.content.row_list"
+                  :row-groups="Array.isArray(item?.content?.row_groups) ? item.content.row_groups : []"
+                  :component-id="index"
+                  :component-name="getComponentLabel(item, index)"
+                  @update-end-at="(row_index, crochet_count) => handleUpdateEndAt(index, row_index, crochet_count)"
+                  @revert-selection="handleRevertSelection"
+                />
+
+                <ComponentCardStitch
+                  v-else-if="isStitchComponent(item)"
+                  :component="item"
+                  :component-list="componentList"
+                  :component-index="index"
+                />
+
+                <div v-else class="component-not-recordable">
+                  <p class="component-not-recordable__title">{{ $t('record.notRecordableTitle') }}</p>
+                  <p class="component-not-recordable__desc">{{ $t('record.notRecordableDesc') }}</p>
+                </div>
+              </div>
+            </div>
+          </template>
+        </CarouselWithDot>
       </div>
 
       <!-- Status select modal -->
@@ -55,10 +72,37 @@
       />
     </div>
 
-    <RecordOptions
-      :context="recordOptionsContext"
-      :actions="recordOptionsActions"
-    />
+    <Teleport to="#bottom-left-dock-before">
+      <div class="home-latest-record-dock">
+        <div
+          class="home-latest-record-panel"
+          :class="{ 'is-hidden': recordDockCollapsed }"
+        >
+          <RecordOptions
+            :context="recordOptionsContext"
+            :actions="recordOptionsActions"
+            docked
+          />
+        </div>
+
+        <div class="home-latest-record-mini-outer">
+          <button
+            type="button"
+            class="home-latest-record-mini"
+            :aria-label="recordDockCollapsed ? 'Show record options' : 'Hide record options'"
+            :title="recordDockCollapsed ? 'Show record options' : 'Hide record options'"
+            @click="recordDockCollapsed = !recordDockCollapsed"
+          >
+            <img
+              class="home-latest-record-mini__icon"
+              :src="crochetIconUrl"
+              alt=""
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -75,6 +119,7 @@ import { openConfirmation } from '@/services/ui/confirmation'
 import { openError } from '@/services/ui/notice'
 import { formatDateTimeCompact } from '@/utils/dateTime'
 import { useRecordContext } from '@/composables/recordContext'
+import { useSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
 import { useAchievementStore } from '@/stores/achievementStore'
 
 import { endAtToSelectionList } from '@/utils/crochetPosition.js'
@@ -86,7 +131,9 @@ import {
 } from '@/utils/recordProgressGenerate.js'
 import RecordingTable from '@/components/CrochetTable/RecordingTable.vue'
 import RecordOptions from '@/components/FloatingTransparentBox/RecordOptions.vue'
-import CarouselSelection from '@/components/Input/CarouselSelection.vue'
+import CarouselWithDot from '@/components/Carousel/CarouselWithDot.vue'
+import ComponentCardStitch from '@/components/cards/ComponentCard.vue/Stitch.vue'
+import ButtonTranslate from '@/components/buttons/svg/ButtonTranslate.vue'
 import { originalStatuses } from '@/constants/status.js'
 
 const route = useRoute()
@@ -94,7 +141,14 @@ const router = useRouter()
 const { t } = useI18n({ useScope: 'global' })
 
 const recordCtx = useRecordContext()
+const selfDefinedCtx = useSelfDefinedStitchesContext()
 const achievementStore = useAchievementStore()
+
+const recordDockCollapsed = ref(false)
+const crochetIconUrl = computed(() => {
+  const base = import.meta.env.BASE_URL || '/'
+  return `${base}assets/image/achievement/noun-crochet-5351977-FFFFFF.svg`
+})
 
 const recordId = recordCtx?.recordId || ref(route.params.record_id)
 const currentRecord = recordCtx?.recordData || ref(null)
@@ -104,7 +158,13 @@ const currentUser = ref(null)
 const hasEnsuredProjectOngoing = ref(false)
 
 const recordViewRef = ref(null)
-const componentTableRef = ref(null)
+const componentCarouselRef = ref(null)
+const componentTableRefs = ref([])
+
+const setComponentTableRef = (idx) => (el) => {
+  if (!el) return
+  componentTableRefs.value[idx] = el
+}
 
 const componentList = computed(() => {
   const list = currentRecord.value?.component_list
@@ -141,11 +201,43 @@ const clampComponentIndex = (idx) => {
 const selectedComponentIndex = ref(0)
 const activeComponent = computed(() => componentList.value?.[selectedComponentIndex.value] || null)
 
+const hasInitializedComponentSelection = ref(false)
+
 watch(
   () => [currentRecord.value?.last_selected_component_index, componentList.value.length],
   () => {
+    if (!currentRecord.value) return
+
+    // Requirement: on first enter, jump to the latest unfinished component.
+    // Prefer the record's `last_selected_component_index` if it's unfinished; otherwise jump to the first unfinished.
+    if (!hasInitializedComponentSelection.value) {
+      const isCompletedRecord = currentRecord.value?.is_completed === true
+      const lastSelected = clampComponentIndex(currentRecord.value?.last_selected_component_index ?? 0)
+      const lastSelectedIsUnfinished = componentList.value?.[lastSelected]?.is_completed !== true
+      const firstUnfinished = firstIncompleteIdx.value
+
+      const next = isCompletedRecord
+        ? 0
+        : (lastSelectedIsUnfinished ? lastSelected : (firstUnfinished != null ? clampComponentIndex(firstUnfinished) : 0))
+
+      selectedComponentIndex.value = next
+      currentRecord.value.last_selected_component_index = clampComponentIndex(next)
+      hasInitializedComponentSelection.value = true
+
+      // Ensure the carousel view matches the initial selection.
+      // Avoid a global selection->scroll watcher to prevent feedback loops
+      // that can cancel dot-triggered smooth scrolling.
+      void (async () => {
+        await nextTick()
+        componentCarouselRef.value?.scrollToIndex?.(clampComponentIndex(next))
+        await nextTick()
+        applySelectionForSelectedComponent()
+      })()
+      return
+    }
+
     const next = clampComponentIndex(currentRecord.value?.last_selected_component_index ?? 0)
-    selectedComponentIndex.value = next
+    if (next !== selectedComponentIndex.value) selectedComponentIndex.value = next
   },
   { immediate: true }
 )
@@ -168,7 +260,7 @@ watch(
 //   }
 // )
 
-const handleCarouselSettle = async (idx) => {
+const handleCarouselActiveIndexChange = async (idx) => {
   await nextTick()
   selectedComponentIndex.value = clampComponentIndex(idx)
   applySelectionForSelectedComponent()
@@ -181,6 +273,14 @@ const handleRevertSelection = async () => {
   applySelectionForSelectedComponent()
 }
 const isComponentEditing = ref(false)
+
+const isRecordableComponent = (component) => {
+  return Array.isArray(component?.content?.row_list)
+}
+
+const isStitchComponent = (component) => {
+  return component?.type === 'stitch'
+}
 
 // Shared modal state
 const modalState = ref({
@@ -257,7 +357,8 @@ const recordOptionsContext = computed(() => ({
   },
   selected: {
     name: activeComponent.value ? getComponentLabel(activeComponent.value, selectedComponentIndex.value) : '',
-    endAt: activeComponent.value?.end_at || null
+    endAt: activeComponent.value?.end_at || null,
+    isCompleted: activeComponent.value?.is_completed === true
   }
 }))
 
@@ -336,7 +437,7 @@ const confirmAddCustomStatus = async (nameArg) => {
 
 // Set selection for each CrochetTable at mount
 const applySelectionForSelectedComponent = () => {
-  const tableRef = componentTableRef.value
+  const tableRef = componentTableRefs.value?.[clampComponentIndex(selectedComponentIndex.value)]
   if (!tableRef) return
 
   const clearSelection = () => {
@@ -352,13 +453,21 @@ const applySelectionForSelectedComponent = () => {
     return
   }
   const component = currentRecord.value.component_list[cIdx]
+  if (!Array.isArray(component?.content?.row_list)) {
+    clearSelection()
+    return
+  }
   const endAt = component?.end_at
   if (!endAt) {
     clearSelection()
     return
   }
 
-  const base_row = findRowWithRepeated(component.content.row_list, component.content.row_groups, endAt.row_index)
+  const base_row = findRowWithRepeated(
+    component.content.row_list,
+    Array.isArray(component?.content?.row_groups) ? component.content.row_groups : [],
+    endAt.row_index
+  )
   if (!base_row) {
     clearSelection()
     return
@@ -371,10 +480,9 @@ const applySelectionForSelectedComponent = () => {
     currentRecord.value.component_list[cIdx].end_at.crochet_count = nextCrochetCount
   }
 
-  const selectionList = endAtToSelectionList(base_row, endAt)
+  const selectionList = endAtToSelectionList(base_row, endAt, selfDefinedCtx.list.value)
   tableRef.applySelection({ row_index: endAt.row_index, selectionList })
 }
-
 
 const formattedStartTime = computed(() => {
   if (!currentRecord.value?.time_slots?.[0]?.start) return ''
@@ -578,6 +686,8 @@ const handleFinishComponent = async () => {
     }
 
     await nextTick()
+    componentCarouselRef.value?.scrollToIndex?.(clampComponentIndex(nextIdx))
+    await nextTick()
     applySelectionForSelectedComponent()
     return
   }
@@ -691,6 +801,8 @@ const handleUpdateEndAt = async (componentId, rowIndex, crochetCount) => {
     if (!ok) {
       selectedComponentIndex.value = clampComponentIndex(componentId)
       await nextTick()
+      componentCarouselRef.value?.scrollToIndex?.(clampComponentIndex(componentId))
+      await nextTick()
       applySelectionForSelectedComponent()
       isComponentEditing.value = false
       return
@@ -719,6 +831,7 @@ const getComponentProgress = (cIndex) => {
   if (!currentRecord.value?.component_list) return 0
 
   const component = currentRecord.value.component_list[cIndex]
+  if (!Array.isArray(component?.content?.row_list)) return 0
   return getComponentProgressPercent(component)
 }
 
@@ -830,11 +943,31 @@ watch(isComponentEditing, async (isEditing) => {
   gap: 1rem;
 }
 
+.record-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0.25rem;
+}
+
+/* Center the carousel items for this page.
+   Use the same sizing model as ProjectView (item-width: 100%). */
+.record-component-carousel :deep(.carousel__row) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  gap: 0 !important;
+  scroll-padding-left: 0 !important;
+  scroll-padding-right: 0 !important;
+}
+
 .project-display {
-  margin-top: 2rem;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .component-section {
+  width: 100%;
+  max-width: 1200px;
   margin-bottom: 2rem;
   background: white;
   padding: 1.5rem;
@@ -843,17 +976,91 @@ watch(isComponentEditing, async (isEditing) => {
   position: relative;
 }
 
+.component-label {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #111827;
+}
+
+.component-not-recordable {
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px dashed #d1d5db;
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+.component-not-recordable__title {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.component-not-recordable__desc {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
 .component-progress-tag {
   position: absolute;
   right: 2em;
   top: -1em;
-  background: #42b983;
+  background: var(--color-icon-add);
   color: #fff;
   font-size: 1.1rem;
   font-weight: 700;
   padding: 0.5em 1.2em;
   border-radius: 2em;
-  box-shadow: 0 2px 8px rgba(66,185,131,0.12);
+  box-shadow: 0 2px 8px rgb(var(--color-icon-add-rgb) / 0.12);
   z-index: 10;
+}
+
+/* Bottom-left dock: record options panel + crochetting toggle button */
+.home-latest-record-dock {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.home-latest-record-panel {
+  position: absolute;
+  left: 0;
+  bottom: calc(64px + 10px);
+  width: 100%;
+  z-index: 1;
+}
+
+.home-latest-record-panel.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.home-latest-record-mini {
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  border: none;
+  background: var(--color-icon-add);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+
+.home-latest-record-mini__icon {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
+.home-latest-record-mini:active {
+  transform: translateY(1px);
 }
 </style>

@@ -1,9 +1,9 @@
 <template>
   <BottomSheetScroll
     class="user-tab-sheet"
-    :min-vh="55"
-    :max-vh="80"
-  :initial-vh="55"
+    :min-vh="60"
+    :max-vh="90"
+    :initial-vh="60"
     :snap-on-first-gesture="true"
     :style="{ '--bottom-sheet-max-width': '1200px', '--bottom-sheet-z': '60' }"
   >
@@ -186,35 +186,84 @@ const showSearchUserLauncher = computed(() => {
 <style scoped>
 .user-tabs {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  z-index: 1;
-  width: fit-content;
+  align-items: flex-end;
+  gap: 0;
+  width: 100%;
+  padding: 0.35rem 0.5rem 0;
   background: var(--color-border-warm);
-  border-radius: 10px 10px 0 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.user-tabs::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .user-tabs__title {
+  flex: 1;
+  position: relative;
   border: none;
   background: var(--color-border-warm);
-  color: var(--color-font-dark);
-  font-weight: 800;
-  padding: 0.55rem 1.5rem;
-  border-left: 0;
-  border-right: 0;
-  border-bottom: 0;
-  border-radius: 10px 10px 0 0;
+  color: var(--color-icon-base);
+  font-weight: 850;
+  height: 40px;
+  padding: 0 1.15rem;
+  border-radius: 12px 12px 0 0;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, transform 0.08s ease;
   white-space: nowrap;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Chrome-like short separators between inactive tabs only. */
+.user-tabs__title::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 18px;
+  background: rgba(17, 24, 39, 0.26);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.user-tabs__title:not(.user-tabs__title--active):not(.user-tabs__title--disabled):not(:last-child)::after {
+  opacity: 1;
+}
+
+/* Hide separator right next to the active tab (Chrome behavior). */
+.user-tabs__title.user-tabs__title--active + .user-tabs__title::after {
+  opacity: 0;
+}
+
+.user-tabs__title:hover:not(.user-tabs__title--disabled):not(.user-tabs__title--active) {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--color-font-dark);
+}
+
+.user-tabs__title:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(var(--color-icon-add-rgb) / 0.22);
 }
 
 .user-tabs__title--active {
-  border: 3px solid var(--color-warm-highlight-green);
-  border-bottom: none;
+  z-index: 2;
   background: var(--color-surface-sheet);
   color: var(--color-font-dark);
+  transform: translateY(1px) translateX(-1px);
 }
 
 .user-tabs__title--disabled {

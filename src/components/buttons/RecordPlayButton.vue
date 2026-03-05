@@ -2,10 +2,10 @@
   <button
     class="record-action-btn"
     type="button"
-    @click="$emit('click')"
+    @click="$emit('click', $event)"
   >
     <svg :width="iconSize" :height="iconSize" viewBox="0 0 28 28" fill="none">
-      <circle cx="14" cy="14" r="14" fill="#42b983" />
+      <circle cx="14" cy="14" r="14" fill="var(--color-icon-add)" />
       <polygon points="12,9 21,14 12,19" fill="#fff" />
     </svg>
   </button>

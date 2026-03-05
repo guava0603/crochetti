@@ -1,5 +1,13 @@
 <template>
 	<div class="crochet-table crochet-table--view row-list-vertical">
+		<div class="row-container row-container--header" @click.stop>
+			<div class="row-table row-table--header">
+				<div class="row-table-cell row-number">{{ t('crochetTable.header.rowNumber') }}</div>
+				<div class="row-table-cell row-stitches">{{ t('crochetTable.header.stitch') }}</div>
+				<div class="row-table-cell row-generate">{{ t('crochetTable.header.totalStitches') }}</div>
+			</div>
+		</div>
+
 		<div
 			v-for="(row, idx) in visibleRows"
 			:key="row.row_index"
@@ -20,9 +28,12 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import CrochetRow from './Crochet/CrochetRow.vue'
 import CrochetNode from './Crochet/CrochetNode.vue'
 import { isRowContainerGroupedStart } from '@/utils/crochetTable.js'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps({
 	modelValue: {

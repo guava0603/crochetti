@@ -12,7 +12,7 @@ export const getNodeSize = (node) => {
 
 // Compute how many stitches have been generated within a row, based on a nested selection path.
 // This is used for converting selection UI -> end_at.crochet_count.
-export const computeGenerateDone = (selectionList, stitchList, counts) => {
+export const computeGenerateDone = (selectionList, stitchList, counts, selfDefinedStitches) => {
   if (!Array.isArray(selectionList) || selectionList.length === 0) return 0
 
   let total = 0
@@ -25,7 +25,7 @@ export const computeGenerateDone = (selectionList, stitchList, counts) => {
     if (index === null || index === undefined) break
 
     for (let i = 0; i < index; i += 1) {
-      total += getNodeTotalGenerate(currentList?.[i])
+      total += getNodeTotalGenerate(currentList?.[i], selfDefinedStitches)
     }
 
     const node = currentList?.[index]
@@ -36,7 +36,7 @@ export const computeGenerateDone = (selectionList, stitchList, counts) => {
     if (size > 1) countIndex += 1
 
     if (node.type === 'pattern') {
-      const perRepeat = getPatternRepeatGenerate(node.pattern || [])
+      const perRepeat = getPatternRepeatGenerate(node.pattern || [], selfDefinedStitches)
       if (level === selectionList.length - 1) {
         total += perRepeat * selectedCount
         return total
@@ -49,12 +49,12 @@ export const computeGenerateDone = (selectionList, stitchList, counts) => {
 
     if (node.type === 'stitch') {
       // The selectedCount means how many repetitions of this stitch have been completed.
-      total += getNodePerRepeatGenerate(node) * Math.max(0, selectedCount)
+      total += getNodePerRepeatGenerate(node, selfDefinedStitches) * Math.max(0, selectedCount)
       return total
     }
 
     if (node.type === 'bundle') {
-      const perRepeat = getNodePerRepeatGenerate(node)
+      const perRepeat = getNodePerRepeatGenerate(node, selfDefinedStitches)
 
       if (level === selectionList.length - 1) {
         total += perRepeat * Math.max(0, selectedCount)
@@ -74,7 +74,7 @@ export const computeGenerateDone = (selectionList, stitchList, counts) => {
 
 // Convert end_at.crochet_count to a nested selection path within a row.
 // Used for applying selection highlight to RecordingTable based on persisted end_at.
-export function endAtToSelectionList(row, endAt) {
+export function endAtToSelectionList(row, endAt, selfDefinedStitches) {
   if (!row?.content?.stitch_node_list) return []
 
   const rootNodes = row.content.stitch_node_list
@@ -88,13 +88,13 @@ export function endAtToSelectionList(row, endAt) {
 
     for (let i = 0; i < nodes.length; i += 1) {
       const node = nodes[i]
-      const nodeGen = getNodeTotalGenerate(node)
+      const nodeGen = getNodeTotalGenerate(node, selfDefinedStitches)
 
       if (remaining < nodeGen) {
         path.push({ start: i, end: i })
 
         if (node?.type === 'pattern' && isArrayNonEmpty(node.pattern)) {
-          const per = getNodePerRepeatGenerate(node)
+          const per = getNodePerRepeatGenerate(node, selfDefinedStitches)
           const rawRemainder = per > 0 ? (remaining % per) : remaining
           const nextCount = rawRemainder === 0 && remaining > 0 ? per : rawRemainder
 
@@ -102,7 +102,7 @@ export function endAtToSelectionList(row, endAt) {
             descend(node.pattern, nextCount)
           }
         } else if (node?.type === 'bundle' && isArrayNonEmpty(node.bundle)) {
-          const per = getNodePerRepeatGenerate(node)
+          const per = getNodePerRepeatGenerate(node, selfDefinedStitches)
           const rawRemainder = per > 0 ? (remaining % per) : remaining
           const nextCount = rawRemainder === 0 && remaining > 0 ? per : rawRemainder
           descend(node.bundle, nextCount)
@@ -115,12 +115,12 @@ export function endAtToSelectionList(row, endAt) {
         path.push({ start: i, end: i })
 
         if (node?.type === 'pattern' && isArrayNonEmpty(node.pattern)) {
-          const per = getNodePerRepeatGenerate(node) || nodeGen
+          const per = getNodePerRepeatGenerate(node, selfDefinedStitches) || nodeGen
           if (!(node.pattern.length === 1 && node.pattern[0]?.type === 'stitch')) {
             descend(node.pattern, per)
           }
         } else if (node?.type === 'bundle' && isArrayNonEmpty(node.bundle)) {
-          const per = getNodePerRepeatGenerate(node) || nodeGen
+          const per = getNodePerRepeatGenerate(node, selfDefinedStitches) || nodeGen
           descend(node.bundle, per)
         }
 

@@ -9,10 +9,6 @@
       border="0.4rem solid white"
     />
 
-    <div class="badge-container">
-      <span v-if="isMyPage" class="my-page-badge">{{ badgeText }}</span>
-    </div>
-
     <div v-if="false && fansCount > 0" class="fans-container">
       <span class="fans-count">{{ t('user.fansCount', { count: fansCount }) }}</span>
     </div>

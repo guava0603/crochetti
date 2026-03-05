@@ -26,6 +26,7 @@
     "done": "Done",
     "edit": "Edit",
     "save": "Save",
+    "saveFailed": "Failed to save. Please try again.",
     "saving": "Saving…",
     "loading": "Loading...",
     "unknown": "Unknown",
@@ -36,6 +37,270 @@
     "timeUnitMinute": "m",
     "timeUnitHour": "h",
     "timeUnitDay": "d"
+  },
+  "help": {
+    "open": "Help",
+    "modal": {
+      "aria": "Help",
+      "skip": "Skip",
+      "pagesAria": "Help pages",
+      "pageNAria": "Go to page {n}"
+    },
+    "addProjectTableHeader": {
+      "pageStitch": {
+        "title": "Stitch (針法)",
+        "body": "Choose the stitch pattern for this row."
+      },
+      "pageTotalStitches": {
+        "title": "Total stitches (總針數)",
+        "body": "This column shows the current total stitch count.",
+        "statusIntro": "Use the color to quickly validate the stitch count:",
+        "bullet1": "It helps you validate sizing and shaping while editing.",
+        "bullet2": "If the total looks wrong, double-check the stitch settings in this row and previous rows.",
+        "status": {
+          "green": "Green: matches expectation",
+          "red": "Red: exceeds expectation",
+          "yellow": "Yellow: below expectation"
+        }
+      }
+    },
+    "editCrochetBasics": {
+      "aria": "Edit-crochet tutorial",
+      "pageIntro": {
+        "title": "How to edit stitches (Edit Crochet)",
+        "items": {
+          "openEditor": "Tap any Stitch cell → opens the editor",
+          "changeOrAdd": "Use the top tabs: Change stitch / Add to bundle"
+        }
+      },
+      "pageChangeStitch": {
+        "title": "Change stitch",
+        "body": "Use this when you want to replace a selected stitch segment with another stitch.",
+        "items": {
+          "pickStitch": "Pick a stitch from the list and watch the preview update",
+          "positionOptional": "Some stitches support a position (e.g. X/T/F/E)",
+          "bundlePattern": "When selecting a pattern/bundle, the preview shows nested structure",
+          "goParent": "Use Go Parent to jump back up one level"
+        }
+      },
+      "pageAddToBundle": {
+        "title": "Add to bundle",
+        "body": "Use bundles for multiple stitches in the same spot (e.g. increases, popcorn).",
+        "items": {
+          "switchTab": "Switch to the Add to bundle tab",
+          "addSeveral": "Add multiple stitches; they will be grouped into one bundle",
+          "countMultiplier": "Use the × count to repeat a pattern multiple times",
+          "useForShaping": "Great for shaping: increases/decreases and special clusters"
+        }
+      },
+      "pageBasicStitches": {
+        "title": "Basic stitches",
+        "body": "The common foundation stitches: single/half-double/double/treble (symbols: X/T/F/E).",
+        "items": {
+          "x": "X: single crochet",
+          "t": "T: half double crochet",
+          "f": "F: double crochet",
+          "e": "E: treble crochet"
+        }
+      },
+      "pageDecorativeStitches": {
+        "title": "Decorative / utility",
+        "body": "Small utility stitches used for joins, turning, spacing, and shaping (may not increase stitch count).",
+        "items": {
+          "sl": "sl: slip stitch (joins/moves)",
+          "ch": "ch: chain (turning/spacing)",
+          "skip": "skip: skip 1 stitch (consume 1, generate 0)",
+          "turning": "^: turning chain (context-dependent)"
+        }
+      },
+      "pageIncrease": {
+        "title": "Increase",
+        "body": "An increase makes 2 stitches into the same spot (stitch count goes up).",
+        "items": {
+          "v": "Common symbols: V / TV / FV / EV (consume 1 → generate 2)",
+          "colorHint": "Use the Total color hints to validate shaping",
+          "useWithPosition": "Can also be combined with FL/BL/FP/BP when needed"
+        }
+      },
+      "pageDecrease": {
+        "title": "Decrease",
+        "body": "A decrease combines 2 stitches into 1 (stitch count goes down).",
+        "items": {
+          "panel": "Use the Decrease button on the right after selecting X/T/F/E",
+          "mapping": "Mapping: X→A, T→TA, F→FA, E→EA",
+          "bpfa": "If BP (back post) is selected with F-decrease, it displays as BPFA",
+          "stats": "Decrease is always consume 2, generate 1"
+        }
+      },
+      "pageCustom": {
+        "title": "Custom",
+        "body": "When built-in stitches aren't enough, create a custom bundle and save it as a button.",
+        "items": {
+          "when": "Good for popcorn, shells, and special stitch groups",
+          "consumeGenerate": "Set consume/generate so Total calculation stays correct",
+          "name": "Give it a clear name so you can find it later"
+        }
+      },
+      "pageWorkflowTips": {
+        "title": "Workflow tips",
+        "body": "Suggested approach: draft all rows first, then fine-tune row by row.",
+        "items": {
+          "oneRowAtATime": "Edit one row at a time to avoid confusion",
+          "checkTotal": "Use Total color hints to validate shaping",
+          "adjustEarlier": "If a row looks off, re-check the previous rows",
+          "okToSubmit": "Colors are hints only: you can still submit the design"
+        }
+      }
+    },
+    "editCrochetHowTo": {
+      "aria": "Edit Crochet - How-to",
+      "back": "Back",
+      "pageMenu": {
+        "title": "Edit Crochet",
+        "body": "Pick a topic:",
+        "items": {
+          "addBundle": "Add a stitch group",
+          "deleteBundle": "Delete a stitch group",
+          "increase": "Increase",
+          "decrease": "Decrease",
+          "position": "Stitch positions",
+          "custom": "Custom stitch"
+        }
+      },
+      "pageAddBundle": {
+        "title": "[Add a stitch group]",
+        "body": "Tap the buttons on the left to generate stitches.\nNeed more stitches? Tap again.\nAfter saving, stitches are auto-formatted into a readable counted form.\nYou can also adjust the input count directly while typing stitches."
+      },
+      "pageDeleteBundle": {
+        "title": "[Delete a stitch group]",
+        "body": "Open the row you want to edit.\nTap into the nested levels step by step.\nSelect the part you want to remove, then tap Delete (bottom-left).\nDon’t forget to save!"
+      },
+      "pageIncrease": {
+        "title": "[Increase]",
+        "body": "An increase is treated as: multiple stitches into the same stitch.\nFirst, enter the base stitch.\nTap into that stitch (its count will be 1).\nUse the top switch to choose Increase.\nAdd the same stitch again.\nAfter saving, it auto-converts to the increase symbol.\nYou can also mix different stitches.\nAfter going back up one level, you can still adjust the increase count."
+      },
+      "pageDecrease": {
+        "title": "[Decrease]",
+        "body": "Tap the Decrease button first, then pick a stitch in the middle list to enter a decrease.\nPicked the wrong order? It’s ok—enter the single stitch first, then apply decrease inside."
+      },
+      "pagePosition": {
+        "title": "[Stitch positions]",
+        "body": "Tap a position button on the right first, then tap a stitch on the left to enter a stitch with position.\nYou can also combine it with Decrease to enter longer stitch symbols."
+      },
+      "pageCustom": {
+        "title": "[Custom stitch]",
+        "body": "Can’t enter the stitch you need?\nTap the “Custom” button.\nEnter the custom stitch name, description, consume stitches, and generate stitches.\nSave after filling in the fields.\nThen you can use this stitch anywhere in the project!"
+      }
+    },
+    "editRowHowTo": {
+      "aria": "Edit Row - How-to",
+      "back": "Back",
+      "pageMenu": {
+        "title": "Edit Row",
+        "body": "Pick a topic:",
+        "items": {
+          "addRow": "Add a new row",
+          "addFromOldRow": "Add from an existing row",
+          "repeatMultipleRows": "Repeat multiple rows",
+          "moveRow": "Move this row",
+          "deleteRow": "Delete this row",
+          "multiRowActions": "Apply actions to multiple rows"
+        }
+      },
+      "pageAddRow": {
+        "title": "[Add a row]",
+        "body": "At the bottom of the table, tap the plus button (small text).\nNote: if the previous row has no stitches yet, you can’t add a new row below it."
+      },
+      "pageAddFromOldRow": {
+        "title": "[Add from an existing row]",
+        "body": "Tap a completed row.\nTap “Copy to latest row”."
+      },
+      "pageRepeatMultipleRows": {
+        "title": "[Repeat multiple rows]",
+        "body": "Tap the row you want to repeat.\nSlide to choose how many rows.\nSmall text on screen will indicate this row needs repeating."
+      },
+      "pageMoveRow": {
+        "title": "[Move this row]",
+        "body": "Tap the row you want to move.\nTap the move buttons to place it where you want."
+      },
+      "pageDeleteRow": {
+        "title": "[Delete this row]",
+        "body": "Tap the row you want to delete.\nTap the delete button (bottom-left)."
+      },
+      "pageMultiRowActions": {
+        "title": "[Apply actions to multiple rows]",
+        "body": "All the above features can be applied to multiple rows at once!\nTap “Select multiple rows” (top-right).\nSelect the first and last row numbers in the table.\nConfirm the displayed range is correct.\nTap the action you want to run.\nRemember to save!"
+      }
+    },
+    "recordHowTo": {
+      "aria": "Recording - How-to",
+      "page1": {
+        "title": "Recording (1/10)",
+        "body": "Tap the bottom-left “Start” button to begin recording your crochet time."
+      },
+      "page2": {
+        "title": "Recording (2/10)",
+        "body": "Tap “Edit” to change the current status."
+      },
+      "page3": {
+        "title": "Recording (3/10)",
+        "body": "Besides the default statuses, you can also add custom statuses."
+      },
+      "page4": {
+        "title": "Recording (4/10)",
+        "body": "Each status can have a note—for example what you’re watching or where you’re headed."
+      },
+      "page5": {
+        "title": "Recording (5/10)",
+        "body": "Before ending a session, don’t forget to save your current progress."
+      },
+      "page6": {
+        "title": "Recording (6/10)",
+        "body": "Tap your current position in the table. If it’s a repeated stitch group, slide to choose which repetition you’re on."
+      },
+      "page7": {
+        "title": "Recording (7/10)",
+        "body": "Tap an empty cell (no stitch) to quickly mark the whole row as completed."
+      },
+      "page8": {
+        "title": "Recording (8/10)",
+        "body": "Tap the “Complete” button next to “Pause” to mark the whole component as completed."
+      },
+      "page9": {
+        "title": "Recording (9/10)",
+        "body": "After everything is done, you can save a photo and any notes you want."
+      },
+      "page10": {
+        "title": "Recording (10/10)",
+        "body": "View your recording results!"
+      }
+    },
+    "crochetTableBasics": {
+      "aria": "Crochet table help",
+      "pageIntro": {
+        "title": "Crochet table",
+        "body": "The crochet table is the soul of a design. Use Help often to get up to speed quickly!"
+      },
+      "pageRowNumber": {
+        "title": "[Row #]",
+        "body": "Which row of the fabric this is.\nTap it to edit row details."
+      },
+      "pageStitch": {
+        "title": "[Stitch]",
+        "body": "The stitch pattern for each row.\nTap it to input the stitch pattern for that row."
+      },
+      "pageTotalStitches": {
+        "title": "[Total stitches]",
+        "body": "Automatically calculated from the Stitch column. It checks whether the previous row’s stitch count matches this row’s expected input.\n\nYellow: too few stitches\nGreen: correct\nRed: too many stitches"
+      }
+    }
+  },
+  "crochetTable": {
+    "header": {
+      "rowNumber": "Row",
+      "stitch": "Stitch",
+      "totalStitches": "Total"
+    }
   },
   "achievement": {
     "toast": {
@@ -97,6 +362,11 @@
     "more": "More"
   },
   "confirmation": {
+    "quickStartAnonymous": {
+      "title": "Quick start?",
+      "message": "This login method may cause data loss if you change devices, uninstall the app, or clear browser data. We strongly recommend connecting a Google/Apple account.",
+      "confirmText": "Continue"
+    },
     "defaults": {
       "title": "Confirm",
       "confirmText": "Confirm",
@@ -111,6 +381,11 @@
       "yes": "Yes",
       "no": "No",
       "submit": "Submit"
+    },
+    "discardChanges": {
+      "title": "Discard changes?",
+      "message": "You have unsaved changes. Discard them and go back?",
+      "confirmText": "Discard"
     },
     "addProjectChooseComponentType": {
       "title": "Add",
@@ -233,6 +508,9 @@
         "FP": "Front post",
         "BP": "Back post"
       },
+      "decrease": {
+        "ariaLabel": "Decrease"
+      },
       "positionJp": {
         "FL": "前半目",
         "BL": "後半目",
@@ -245,6 +523,10 @@
       },
       "bundleWizard": {
         "title": "Create custom bundle",
+        "nameLabel": "Stitch name:",
+        "namePlaceholder": "e.g. Popcorn",
+        "descriptionLabel": "Description:",
+        "descriptionPlaceholder": "Optional. What is this stitch used for?",
         "chooseStitch": "Choose stitches:",
         "selectedStitches": "Selected stitches:",
         "emptyHint": "Click a stitch above to add",
@@ -326,7 +608,10 @@
       "noDescription": "No description"
     },
     "castOnType": "Cast-on type",
+    "componentNameLabel": "Component name",
+    "stitchNameLabel": "Name",
     "componentCount": "Repeat count",
+    "makeCountLabel": "Quantity:",
     "componentCountMode": {
       "single": "Single",
       "multiple": "Multiple"
@@ -420,6 +705,7 @@
     "componentFallbackName": "Component {n}",
     "syncProject": "Sync Project",
     "syncing": "Syncing…",
+    "syncNoChangesNotice": "Nothing to sync — your record is already up to date.",
     "syncSuccessNotice": "Project synced.",
     "syncFailedNotice": "Failed to sync project. Please try again.",
     "noProjectId": "No project ID found on this record.",
@@ -441,7 +727,10 @@
     "editStatus": "Edit status",
     "invalidTimeRange": "End time cannot be earlier than start time.",
     "inProgress": "In progress",
-    "unknownTime": "Unknown"
+    "unknownTime": "Unknown",
+    "notStartedYet": "Not started yet",
+    "notRecordableTitle": "This component can’t be recorded",
+    "notRecordableDesc": "This component doesn’t have a row-by-row table, so progress tracking isn’t available here."
   },
   "recordResult": {
     "editResultTitle": "Edit result",
@@ -485,7 +774,33 @@
     "loginRequired": "Please login to continue.",
     "login": "Sign in",
     "logout": "Logout",
-    "logoutFailed": "Failed to logout. Please try again."
+    "logoutFailed": "Failed to logout. Please try again.",
+    "quickStart": "Quick start",
+    "loginModal": {
+      "title": "Sign in",
+      "description": "Sign in to access all features",
+      "google": "Sign in with Google",
+      "apple": "Sign in with Apple",
+      "signingIn": "Signing in...",
+      "cancel": "Cancel"
+    },
+    "connectedAccounts": {
+      "title": "Connected accounts",
+      "anonymousHint": "You are using Quick start (anonymous). Connect an account to avoid data loss.",
+      "none": "No accounts connected.",
+      "connect": "Connect",
+      "connected": "Connected",
+      "connectGoogle": "Connect Google",
+      "connectApple": "Connect Apple",
+      "connectSuccess": "Connected: {provider}",
+      "connectFailed": "Failed to connect {provider}. Please try again.",
+      "alreadyInUse": "This {provider} account is already linked to another user.",
+      "notSupported": "{provider} sign-in is not supported on this platform."
+    },
+    "providers": {
+      "google": "Google",
+      "apple": "Apple"
+    }
   },
   "user": {
     "title": "Profile",
@@ -596,6 +911,7 @@
       "imagesHint": "Upload up to {max} images",
       "removeImage": "Remove",
       "imageAlt": "Project image {n}",
+      "submitBarAria": "Project info actions",
       "errors": {
         "projectNameRequired": "Project name is required",
         "maxImages": "You can upload up to {max} images."
@@ -609,8 +925,8 @@
       "componentsAria": "Components",
       "submitBarAria": "Submit project",
       "addMenuAria": "Add",
-      "addComponent": "+ Component",
-      "addStitch": "+ Stitch",
+      "addComponent": "Add component",
+      "addStitch": "Add stitch",
       "relatedComponentsLabel": "Related components",
       "relatedComponentsPlaceholder": "Select a component",
       "stitchNotesPlaceholder": "Enter notes",
@@ -618,7 +934,8 @@
       "createProject": "Create Project",
       "errors": {
         "atLeastOneComponent": "At least one component is required",
-        "atLeastOneRow": "At least one row is required"
+        "atLeastOneRow": "At least one row is required",
+        "noEmptyRows": "Please remove empty rows before submitting{example, select, '' {} other { (e.g., {example})}}."
       }
     }
   },
@@ -703,6 +1020,26 @@
       "chainRing": "Chain ring",
       "flat": "Flat foundation",
       "oval": "Oval foundation"
+    }
+  },
+  "wishPool": {
+    "title": "Wish Pool",
+    "openFabAria": "Open wish pool",
+    "submitBarAria": "Wish submission",
+    "hint": "Leave your advice or wishes here. We read them regularly.",
+    "descriptionLabel": "Your wish",
+    "descriptionPlaceholder": "Type your advice or wishes…",
+    "wordCount": "{n}/{max} words",
+    "allowContact": "I agree to let the developer contact me by email",
+    "emailLabel": "Email (optional)",
+    "emailPlaceholder": "name@example.com",
+    "emailHint": "Only used for contacting you. It will not be public.",
+    "submit": "Submit",
+    "submitting": "Submitting…",
+    "success": "Submitted. Thank you for your feedback!",
+    "errors": {
+      "loginRequired": "Please log in to submit.",
+      "submitFailed": "Submission failed. Please try again later."
     }
   }
 }

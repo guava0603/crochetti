@@ -5,15 +5,25 @@
       <!-- Crochet selector (for stitch and pattern types, but not for select_range) -->
       <div class="crochet-column">
         <div class="crochet-column-header">
-          <ButtonGroup
-            v-if="showStitchAddTabs"
-            :items="stitchTabItems"
-            :aria-label="t('toolbar.editCrochet.addStitch')"
-          />
+          <div class="crochet-column-header__main">
+            <ButtonGroup
+              v-if="showStitchAddTabs"
+              type="toggle"
+              v-model="stitchEditTab"
+              :items="stitchTabItems"
+              :aria-label="t('toolbar.editCrochet.addStitch')"
+            />
 
-          <label v-else>{{ crochetColumnLabel }}</label>
+            <label v-else>{{ crochetColumnLabel }}</label>
+          </div>
 
-          <ButtonTranslate />
+          <div class="crochet-column-header__actions" @click.stop>
+            <ButtonTranslate />
+            <HelpIconButton
+              topic-id="editCrochetHowTo"
+              :aria-label="t('help.editCrochetHowTo.aria')"
+            />
+          </div>
         </div>
 
         <!-- Display current pattern for pattern type -->
@@ -51,6 +61,7 @@
           :preset-stitch-id="presetStitchId"
           :preset-position="presetPosition"
           :default-position="''"
+          :emit-on-decrease-toggle="showStitchAddTabs && stitchEditTab === 'change'"
           @add-crochet="handleAddCrochet"
           @position-change="handlePositionChange"
           @add-bundle="handleAddBundle"
@@ -70,6 +81,7 @@ import GoParent from '@/components/buttons/GoParent.vue'
 import ButtonGroup from '@/components/buttons/ButtonGroup.vue'
 import ButtonTranslate from '@/components/buttons/svg/ButtonTranslate.vue'
 import CrochetNodeDisplay from '@/components/CrochetTable/CrochetNodeDisplay.vue'
+import HelpIconButton from '@/components/help/HelpIconButton.vue'
 import { addStitchToPatternList } from '@/utils/patternEdit.js'
 import { createBundle, createPattern, createSimpleStitch } from '@/constants/crochetData.js'
 
@@ -120,14 +132,12 @@ const stitchTabItems = computed(() => ([
   {
     key: 'change',
     label: t('toolbar.editCrochet.changeStitch'),
-    active: stitchEditTab.value === 'change',
-    onClick: () => { stitchEditTab.value = 'change' }
+    ariaLabel: t('toolbar.editCrochet.changeStitch')
   },
   {
     key: 'add',
     label: t('toolbar.editCrochet.tabs.addToBundle'),
-    active: stitchEditTab.value === 'add',
-    onClick: () => { stitchEditTab.value = 'add' }
+    ariaLabel: t('toolbar.editCrochet.tabs.addToBundle')
   }
 ]))
 
@@ -150,13 +160,7 @@ const appendStitchIntoBundleList = (bundleList, stitchId, position) => {
   const safe = Array.isArray(bundleList) ? bundleList : []
   const pos = normalizePosition(position)
 
-  const last = safe.length > 0 ? safe[safe.length - 1] : null
-  const lastPos = normalizePosition(last?.position)
-  if (last?.type === 'stitch' && last.stitch_id === stitchId && lastPos === pos) {
-    last.count = (last.count || 1) + 1
-    return safe
-  }
-
+  // Do not compact/merge while editing; keep explicit stitches.
   safe.push(createSimpleStitch(stitchId, pos))
   return safe
 }
@@ -496,7 +500,20 @@ defineExpose({
   height: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+
+  /* Hide scrollbar but keep scrolling */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge legacy */
+}
+
+.edit-crochet::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .edit-columns {
@@ -505,7 +522,7 @@ defineExpose({
   align-items: flex-start;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .crochet-column {
@@ -515,7 +532,7 @@ defineExpose({
   gap: 0.5rem;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .crochet-column label {
@@ -529,6 +546,12 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.crochet-column-header__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .add-tabs {
@@ -559,8 +582,8 @@ defineExpose({
 }
 
 .add-tab.active {
-  border-color: rgba(66, 185, 131, 0.55);
-  background: rgba(66, 185, 131, 0.12);
+  border-color: rgb(var(--color-icon-add-rgb) / 0.55);
+  background: rgb(var(--color-icon-add-rgb) / 0.12);
   color: #0f5132;
 }
 

@@ -2,7 +2,7 @@
   <button
     class="record-action-btn"
     type="button"
-    @click="$emit('click')"
+    @click="$emit('click', $event)"
   >
     <svg :width="iconSize" :height="iconSize" viewBox="0 0 28 28" fill="none">
       <circle cx="14" cy="14" r="14" fill="#f59e42" />

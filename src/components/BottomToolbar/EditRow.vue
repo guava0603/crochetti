@@ -11,15 +11,22 @@
           </template>
         </div>
 
-        <button
-          v-if="!isGroupMode"
-          type="button"
-          class="toggle-button"
-          :class="{ selected: props.isSelectingMultipleRows }"
-          @click="handleToggleSelectMultipleRows"
-        >
-          {{ t('toolbar.editRow.selectMultipleRows') }}
-        </button>
+        <div class="edit-row-main-top__actions" @click.stop>
+          <button
+            v-if="!isGroupMode"
+            type="button"
+            class="toggle-button"
+            :class="{ selected: props.isSelectingMultipleRows }"
+            @click="handleToggleSelectMultipleRows"
+          >
+            {{ t('toolbar.editRow.selectMultipleRows') }}
+          </button>
+
+          <HelpIconButton
+            topic-id="editRowHowTo"
+            :aria-label="t('help.editRowHowTo.aria')"
+          />
+        </div>
       </div>
       <div>
         <div v-if="isGroupMode" class="group-summary">
@@ -91,6 +98,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputNumber from '@/components/Input/InputNumber.vue'
+import HelpIconButton from '@/components/help/HelpIconButton.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -263,6 +271,14 @@ defineExpose({
   gap: 1.5rem;
 }
 
+.edit-row-main-top__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex: none;
+}
+
 .count-section {
   display: flex;
   align-items: center;
@@ -293,20 +309,20 @@ defineExpose({
   font-weight: 700;
   border: 2px solid transparent;
   cursor: pointer;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: var(--color-selected-active);
+  color: var(--color-selected);
 }
 
 .toggle-button:hover {
-  background: #dbeafe;
+  background: var(--color-selected-active);
 }
 
 .toggle-button.selected {
-  border-color: #93c5fd;
+  border-color: var(--color-selected);
 }
 
 .secondary-button {
-  background: #f3f4f6;
+  background: var(--color-surface-sheet);
   color: #374151;
 }
 

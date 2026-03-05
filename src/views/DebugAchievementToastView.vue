@@ -239,8 +239,8 @@ function toggleLongText() {
 .btn {
   height: 40px;
   border-radius: 10px;
-  border: 1px solid rgba(66, 185, 131, 0.55);
-  background: rgba(66, 185, 131, 0.14);
+  border: 1px solid rgb(var(--color-icon-add-rgb) / 0.55);
+  background: rgb(var(--color-icon-add-rgb) / 0.14);
   color: #14532d;
   padding: 0 0.9rem;
   font-weight: 900;

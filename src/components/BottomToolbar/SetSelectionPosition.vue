@@ -40,10 +40,14 @@ import InputNumber from '@/components/Input/InputNumber.vue'
 import { getPatternItemDisplayWithoutCount } from '@/constants/crochetData.js'
 import { getNodeSize, computeGenerateDone } from '@/utils/crochetPosition.js'
 import { useCrochetLang } from '@/composables/useCrochetLang'
+import { useSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
+import { buildStitchLookup } from '@/utils/calculateConsumeGenerate.js'
 
 const { t } = useI18n({ useScope: 'global' })
 
 const { crochetLang } = useCrochetLang()
+const selfDefinedCtx = useSelfDefinedStitchesContext()
+const stitchLookup = computed(() => buildStitchLookup(selfDefinedCtx.list.value))
 
 const props = defineProps({
   selectionList: {
@@ -102,7 +106,7 @@ const pathLevels = computed(() => {
     .map((node) => ({
       node,
       size: getNodeSize(node),
-      label: getPatternItemDisplayWithoutCount(node, crochetLang.value)
+      label: getPatternItemDisplayWithoutCount(node, crochetLang.value, stitchLookup.value)
     }))
     .filter((lvl) => lvl.size > 1)
 })
@@ -132,7 +136,12 @@ const handleCountChange = (index, value) => {
 
 const handleConfirm = () => {
   selectionCounts.value = [...pendingCounts.value]
-  const generateCount = computeGenerateDone(props.selectionList, props.stitchList, selectionCounts.value)
+  const generateCount = computeGenerateDone(
+    props.selectionList,
+    props.stitchList,
+    selectionCounts.value,
+    selfDefinedCtx.list.value
+  )
   emit('update-end-at', props.rowIndex, generateCount)
 }
 
@@ -243,7 +252,7 @@ const handleCancel = () => {
 }
 
 .confirm-button {
-  background: #42b983;
+  background: var(--color-icon-add);
   color: white;
 }
 

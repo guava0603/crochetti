@@ -307,7 +307,7 @@ onUnmounted(() => {
 
 .slot-item:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.25);
+  box-shadow: 0 0 0 3px rgb(var(--color-icon-add-rgb) / 0.25);
 }
 
 .slot-index {
@@ -330,7 +330,7 @@ onUnmounted(() => {
 
 .slot-item:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.25);
+  box-shadow: 0 0 0 3px rgb(var(--color-icon-add-rgb) / 0.25);
 }
 }
 

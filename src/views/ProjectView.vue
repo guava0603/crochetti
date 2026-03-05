@@ -11,7 +11,7 @@
       </button>
 
       <div class="header-actions project-banner__actions">
-        <ButtonGroup :items="projectActionItems" />
+        <ButtonGroup type="actions" :items="projectActionItems" />
       </div>
     </div>
 
@@ -121,9 +121,11 @@
         </div>
       </BottomSheetScroll>
 
-      <div class="floating-play">
-        <PlayButton @click="handlePlayClick" />
-      </div>
+      <Teleport to="#bottom-left-dock-before">
+        <div class="floating-play">
+          <PlayButton class="floating-play__btn" @click="handlePlayClick" />
+        </div>
+      </Teleport>
 
       <RecordSelectionModal
         v-bind="recordModal"
@@ -157,10 +159,9 @@ import ButtonLink from '@/components/buttons/svg/ButtonLink.vue'
 import ButtonStar from '@/components/buttons/svg/ButtonStar.vue'
 import BottomSheetScroll from '@/components/layout/BottomSheetScroll.vue'
 import RecordSelectionModal from '../components/modals/RecordSelectionModal.vue'
-import { v4 as uuidv4 } from '@lukeed/uuid'
-import { normalizeComponentListForRecord } from '@/utils/componentInstances'
-import { addRecordToProjectOngoing, fetchProject } from '@/services/firestore/projects'
-import { listUserRecordsByProjectId, setUserRecord } from '@/services/firestore/records'
+import { fetchProject, updateProject } from '@/services/firestore/projects'
+import { listUserRecordsByProjectId } from '@/services/firestore/records'
+import { startRecordForProject } from '@/services/records/startRecordForProject'
 import {
   isCurrentUser,
   saveProjectToSaveList,
@@ -170,6 +171,7 @@ import {
 import { openError } from '@/services/ui/notice'
 import { openToast } from '@/services/ui/toast'
 import { useAchievementStore } from '@/stores/achievementStore'
+import { provideSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -183,6 +185,68 @@ const loading = ref(true)
 const permissionDenied = ref(false)
 const showRecordModal = ref(false)
 const existingRecords = ref([])
+
+const selfDefinedStitchesRef = computed(() => {
+  const list = projectData.value?.self_defined_stitches
+  return Array.isArray(list) ? list : []
+})
+
+async function addSelfDefinedStitch(stitch) {
+  if (!isProjectOwner.value) {
+    openError({
+      title: t('common.error'),
+      message: t('project.noPermission'),
+      confirmText: t('common.ok')
+    })
+    return
+  }
+
+  if (!stitch || typeof stitch !== 'object') return
+
+  const id = Number(stitch.stitch_id)
+  if (!Number.isFinite(id)) return
+
+  const name = String(stitch.name || '').trim()
+  if (!name) return
+
+  const description = String(stitch.description || '').trim()
+  const consume = Number(stitch.consume)
+  const generate = Number(stitch.generate)
+
+  const normalized = {
+    stitch_id: id,
+    name,
+    description,
+    consume: Number.isFinite(consume) ? consume : 1,
+    generate: Number.isFinite(generate) ? generate : 0
+  }
+
+  const prev = Array.isArray(projectData.value?.self_defined_stitches)
+    ? projectData.value.self_defined_stitches
+    : []
+
+  const withoutSameId = prev.filter((s) => Number(s?.stitch_id) !== id)
+  const next = [...withoutSameId, normalized]
+
+  // Optimistic local update.
+  if (projectData.value) projectData.value.self_defined_stitches = next
+
+  try {
+    await updateProject(projectId.value, { self_defined_stitches: next })
+  } catch (error) {
+    console.error('ProjectView: failed to persist self_defined_stitches', error)
+    openError({
+      title: t('common.error'),
+      message: t('common.saveFailed'),
+      confirmText: t('common.ok')
+    })
+  }
+}
+
+provideSelfDefinedStitchesContext({
+  stitchesRef: selfDefinedStitchesRef,
+  addStitch: addSelfDefinedStitch
+})
 
 const currentUserProfile = ref(null)
 let unsubscribeCurrentUserProfile = null
@@ -539,44 +603,31 @@ const handleStartNewRecord = async () => {
     return
   }
 
-  const cList = normalizeComponentListForRecord(projectData.value.component_list)
-  // Generate a new record_id
-  const record_id = uuidv4()
-  // Prepare new record data
-  const newRecord = {
-    project_id: projectId.value,
-    project_name: projectData.value.name,
-    component_list: cList,
-    time_slots: [],
-    self_defined_status: [],
-    // Use client timestamp for immediate achievement evaluation.
-    created_at: new Date().toISOString()
-  }
-  // Save to Firestore
   try {
-    await setUserRecord(user.uid, record_id, newRecord)
+    const { recordId: record_id, trackingAdded } = await startRecordForProject({
+      uid: user.uid,
+      projectId: projectId.value,
+      projectName: projectData.value?.name || '',
+      componentList: projectData.value?.component_list
+    })
 
     achievementStore.scanAndAwardNow(user.uid).catch((e) => {
       console.warn('[achievements] scan after start record failed:', e)
     })
 
-    try {
-      await addRecordToProjectOngoing(projectId.value, record_id)
-      if (projectData.value) {
-        const prev = projectData.value?.record || {}
-        const nextOngoing = Array.isArray(prev.ongoing_list) ? prev.ongoing_list.map(String) : []
-        if (!nextOngoing.includes(String(record_id))) {
-          projectData.value = {
-            ...projectData.value,
-            record: {
-              ...prev,
-              ongoing_list: [...nextOngoing, String(record_id)]
-            }
+    // Keep local tracking list in sync when the tracking write succeeded.
+    if (trackingAdded && projectData.value) {
+      const prev = projectData.value?.record || {}
+      const nextOngoing = Array.isArray(prev.ongoing_list) ? prev.ongoing_list.map(String) : []
+      if (!nextOngoing.includes(String(record_id))) {
+        projectData.value = {
+          ...projectData.value,
+          record: {
+            ...prev,
+            ongoing_list: [...nextOngoing, String(record_id)]
           }
         }
       }
-    } catch (error) {
-      console.warn('[project record tracking] failed to add ongoing record:', error)
     }
 
     router.push(`/record/${record_id}`)
@@ -646,8 +697,8 @@ const lastPage = () => {
   margin-bottom: 1rem;
   padding: 0.75rem 1rem;
   border-radius: 10px;
-  border: 1px solid rgba(66, 185, 131, 0.35);
-  background: rgba(66, 185, 131, 0.12);
+  border: 1px solid rgb(var(--color-icon-add-rgb) / 0.35);
+  background: rgb(var(--color-icon-add-rgb) / 0.12);
   color: #0f5132;
   font-weight: 700;
 }
@@ -805,10 +856,16 @@ const lastPage = () => {
 }
 
 .floating-play {
-  position: fixed;
-  right: calc(1.25rem + env(safe-area-inset-right));
-  bottom: calc(1.25rem + env(safe-area-inset-bottom));
-  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* Match Home add-style button size (64x64) when docked. */
+:deep(.floating-play .btn-play) {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
 }
 
 :deep(.row-list-vertical) {

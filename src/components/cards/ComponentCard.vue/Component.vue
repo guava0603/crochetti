@@ -2,18 +2,24 @@
   <!-- Rows -->
   <div :class="isEditing ? 'subsection' : 'view-section'">
     <div v-if="isEditing" class="subsection-header">
-      <h5>{{ t('common.rows') }}</h5>
+      <h5>{{ t('common.rows') }} *</h5>
+      <HelpIconButton
+        topic-id="crochetTableBasics"
+        :aria-label="t('help.crochetTableBasics.aria')"
+      />
     </div>
 
     <EditingTable
       v-if="isEditing"
-      v-model="component.content.row_list"
-      v-model:row-groups="component.content.row_groups"
+      v-model="rowListModel"
+      v-model:row-groups="rowGroupsModel"
+      :help-topic-id="helpTopicId"
+      :help-topic-ids="helpTopicIds"
     />
     <FixTable
       v-else
-      :model-value="component.content.row_list"
-      :row-groups="component.content.row_groups"
+      :model-value="rowListModel"
+      :row-groups="rowGroupsModel"
     />
   </div>
 
@@ -29,17 +35,17 @@
       :placeholder="t('common.noteDescriptionPlaceholder')"
       input-class="list-item-input"
       :rows="2"
-      :get-text="(n) => n?.description"
-      :set-text="(n, v) => ({ ...(n || {}), description: v })"
+      :get-text="(n) => n"
+      :set-text="(_n, v) => String(v ?? '')"
       @add="addNote"
       @remove="removeNote"
     />
   </div>
-  <div v-else-if="component.notes && component.notes.length > 0" class="view-section" style="margin-top: 1rem;">
+  <div v-else-if="displayNotes.length > 0" class="view-section" style="margin-top: 1rem;">
     <h5 class="view-section-title">{{ t('common.notes') }}</h5>
     <ul class="view-list">
-      <li v-for="(note, nIndex) in component.notes" :key="nIndex">
-        {{ note.description }}
+      <li v-for="(note, nIndex) in displayNotes" :key="nIndex">
+        {{ note }}
       </li>
     </ul>
   </div>
@@ -86,18 +92,18 @@
   >
     <div v-if="resolvedHookList.length > 0" class="component-metadata-row">
       <span class="component-metadata-label">{{ t('project.componentMetadata.hook') }}</span>
-      <span class="component-metadata-value">{{ resolvedHookList.join(', ') }}</span>
+      <span class="component-metadata-value">{{ resolvedHookList.join('\n') }}</span>
     </div>
     <div v-if="resolvedYarnList.length > 0" class="component-metadata-row">
       <span class="component-metadata-label">{{ t('project.componentMetadata.yarn') }}</span>
-      <span class="component-metadata-value">{{ resolvedYarnList.join(', ') }}</span>
+      <span class="component-metadata-value">{{ resolvedYarnList.join('\n') }}</span>
     </div>
   </div>
 
   <!-- Repeat count (edit mode, bottom of card) -->
   <div v-if="isEditing" class="subsection component-count-subsection">
     <div class="component-count-editor">
-      <span class="component-count-text">需要</span>
+      <span class="component-count-text">{{ t('project.makeCountLabel') }}</span>
       <div class="component-count-number">
         <InputNumber
           :model-value="countDraft"
@@ -109,7 +115,6 @@
           @close="commitCountDraft"
         />
       </div>
-      <span class="component-count-text">個</span>
     </div>
   </div>
 
@@ -135,10 +140,6 @@
       <div v-if="imageUploading" class="component-image-status">
         {{ t('project.componentImage.uploading') }}
       </div>
-
-      <div v-if="imageUploadError" class="error">
-        {{ imageUploadError }}
-      </div>
     </div>
   </div>
 </template>
@@ -146,6 +147,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import HelpIconButton from '@/components/help/HelpIconButton.vue'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { storage } from '@/firebaseConfig'
 import EditingTable from '@/components/CrochetTable/EditingTable.vue'
@@ -153,6 +155,7 @@ import FixTable from '@/components/CrochetTable/FixTable.vue'
 import ComponentMaterialField from '@/components/cards/ComponentMaterialField.vue'
 import ImageUploader from '@/components/Input/ImageUploader.vue'
 import InputNumber from '@/components/Input/InputNumber.vue'
+import { openError } from '@/services/ui/error'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -168,21 +171,93 @@ const props = defineProps({
   isEditing: {
     type: Boolean,
     default: false
+  },
+  helpTopicId: {
+    type: String,
+    default: ''
+  },
+  helpTopicIds: {
+    type: Object,
+    default: null
   }
 })
 
 const component = computed(() => props.component)
 const isEditing = computed(() => props.isEditing)
+const helpTopicId = computed(() => props.helpTopicId)
+const helpTopicIds = computed(() => props.helpTopicIds)
+
+function ensureRowTableFields() {
+  if (!component.value || typeof component.value !== 'object') return
+
+  if (!component.value.content || typeof component.value.content !== 'object') {
+    component.value.content = {}
+  }
+
+  // Backward compatibility: some legacy shapes store rows/groups at the top level.
+  if (!Array.isArray(component.value.content.row_list)) {
+    if (Array.isArray(component.value.row_list)) {
+      component.value.content.row_list = component.value.row_list
+    } else {
+      component.value.content.row_list = []
+    }
+  }
+
+  if (!Array.isArray(component.value.content.row_groups)) {
+    if (Array.isArray(component.value.row_groups)) {
+      component.value.content.row_groups = component.value.row_groups
+    } else {
+      component.value.content.row_groups = []
+    }
+  }
+}
+
+watch(
+  () => props.component,
+  () => ensureRowTableFields(),
+  { immediate: true }
+)
+
+const rowListModel = computed({
+  get() {
+    const list = component.value?.content?.row_list
+    return Array.isArray(list) ? list : []
+  },
+  set(next) {
+    ensureRowTableFields()
+    component.value.content.row_list = Array.isArray(next) ? next : []
+  }
+})
+
+const rowGroupsModel = computed({
+  get() {
+    const list = component.value?.content?.row_groups
+    return Array.isArray(list) ? list : []
+  },
+  set(next) {
+    ensureRowTableFields()
+    component.value.content.row_groups = Array.isArray(next) ? next : []
+  }
+})
+
+const displayNotes = computed(() => {
+  const notes = Array.isArray(component.value?.notes) ? component.value.notes : []
+  return notes
+    .map((n) => (typeof n === 'string' ? n : String(n?.description ?? '')))
+    .map((n) => String(n ?? '').trim())
+    .filter(Boolean)
+})
 
 function ensureNotesInputs() {
   if (!Array.isArray(component.value.notes)) component.value.notes = []
 
   component.value.notes = component.value.notes
-    .filter(Boolean)
-    .map((n) => ({ description: String(n?.description ?? '') }))
+    .filter((n) => n != null)
+    .map((n) => (typeof n === 'string' ? n : String(n?.description ?? '')))
+    .map((n) => String(n ?? ''))
 
   if (component.value.notes.length === 0) {
-    component.value.notes.push({ description: '' })
+    component.value.notes.push('')
   }
 }
 
@@ -344,15 +419,11 @@ function handleMaterialBlur(kind, idx) {
   }
 }
 
-if (component.value?.content && component.value?.type === 'component') {
-  if (!Array.isArray(component.value.content.row_groups)) {
-    component.value.content.row_groups = []
-  }
-}
+ensureRowTableFields()
 
 const addNote = () => {
   ensureNotesInputs()
-  component.value.notes.push({ description: '' })
+  component.value.notes.push('')
 }
 
 const removeNote = (index) => {
@@ -363,7 +434,6 @@ const removeNote = (index) => {
 
 const imageFiles = ref([])
 const imageUploading = ref(false)
-const imageUploadError = ref('')
 const lastUploadedSignature = ref('')
 
 function safeFileName(name) {
@@ -391,7 +461,6 @@ watch(
     const sig = fileSignature(file)
     if (sig && sig === lastUploadedSignature.value && component.value?.image) return
 
-    imageUploadError.value = ''
     imageUploading.value = true
 
     try {
@@ -408,7 +477,7 @@ watch(
       lastUploadedSignature.value = sig
     } catch (error) {
       console.warn('component image upload failed', error)
-      imageUploadError.value = t('project.componentImage.uploadFailed')
+      openError({ title: t('common.error'), message: t('project.componentImage.uploadFailed') })
     } finally {
       imageUploading.value = false
     }
@@ -421,7 +490,6 @@ function removeImage() {
   if ('image' in component.value) delete component.value.image
   imageFiles.value = []
   lastUploadedSignature.value = ''
-  imageUploadError.value = ''
 }
 </script>
 
@@ -433,7 +501,7 @@ function removeImage() {
 .subsection {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border);
 }
 
 .subsection-header {
@@ -445,6 +513,7 @@ function removeImage() {
 
 .subsection-header h5 {
   margin: 0;
+  font-weight: 500;
   font-size: 1rem;
 }
 
@@ -491,7 +560,6 @@ function removeImage() {
 .component-metadata-row {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: 0.75rem;
 }
 
@@ -510,6 +578,7 @@ function removeImage() {
   color: #111827;
   font-size: 0.9rem;
   font-weight: 800;
+  white-space: pre-line;
   word-break: break-word;
   text-align: right;
 }
@@ -546,8 +615,8 @@ function removeImage() {
 
 .component-count-number__input:focus {
   outline: none;
-  border-color: #42b983;
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.12);
+  border-color: var(--color-icon-add);
+  box-shadow: 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.12);
 }
 
 .component-image-uploader {

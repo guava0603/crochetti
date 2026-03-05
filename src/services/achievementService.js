@@ -12,12 +12,7 @@ import {
 import { listUserRecords } from '@/services/firestore/records'
 import { fetchAllAchievements, fetchEarnedAchievements } from '@/services/firestore/achievements'
 import { ACHIEVEMENT_EVALUATORS } from '@/services/achievements/evaluators'
-
-function toMs(iso) {
-  if (!iso) return null
-  const ms = new Date(String(iso)).getTime()
-  return Number.isFinite(ms) ? ms : null
-}
+import { toMs } from '@/utils/toMs'
 
 function getSlotDurationMs(slot, { includeOngoing = false, nowMs = Date.now() } = {}) {
   const startMs = toMs(slot?.start)
