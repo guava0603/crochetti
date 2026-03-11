@@ -204,7 +204,8 @@ export const BasicStitch = [
 // Stored in user profile as `user.crochet_lang: number`.
 export const CROCHET_LANG = Object.freeze({
   symbol_jp: 0,
-  text_zh: 1
+  text_zh: 1,
+  icon: 2
 })
 
 // Position modifiers for stitches (only some stitches support these, e.g. X/T/F/E).
@@ -243,8 +244,14 @@ export const CrochetPositionOptions = Object.freeze([
 
 export const CROCHET_LANG_FIELD_BY_ID = Object.freeze({
   0: 'symbol_jp',
-  1: 'nameKey'
+  1: 'nameKey',
+  // icon mode uses UI components for icons; string fallbacks should be Chinese text.
+  2: 'nameKey'
 })
+
+const shouldTranslatePositionPrefix = (crochetLang) => {
+  return Number(crochetLang) === CROCHET_LANG.text_zh || Number(crochetLang) === CROCHET_LANG.icon
+}
 
 export const getStitchDisplayText = (stitch, crochetLang = CROCHET_LANG.symbol_jp) => {
   if (!stitch) return ''
@@ -499,7 +506,7 @@ const getStitchNodeDisplay = (stitchNode, crochetLang = CROCHET_LANG.symbol_jp, 
   if (!pos) return count > 1 ? `${count}${text}` : text
 
   const decorated = (() => {
-    if (crochetLang !== CROCHET_LANG.text_zh) return `${pos}${text}`
+    if (!shouldTranslatePositionPrefix(crochetLang)) return `${pos}${text}`
 
     const key = `crochet.positionPrefix.${pos}`
     const translated = getCrochetZhText(key)
@@ -544,7 +551,7 @@ const compactConsecutiveStitches = (nodes = []) => {
 }
 
 export const getPatternItemDisplay = (anchor, crochetLang = CROCHET_LANG.symbol_jp, stitchLookup) => {
-  const isZhText = crochetLang === CROCHET_LANG.text_zh
+  const isZhText = Number(crochetLang) === CROCHET_LANG.text_zh
 
   if (anchor.type === 'stitch') {
     return getStitchNodeDisplay(anchor, crochetLang, stitchLookup)
@@ -618,7 +625,7 @@ export const getPatternItemDisplayWithoutCount = (
     const pos = normalizePosition(anchor.position)
     if (!pos) return text
 
-    if (crochetLang !== CROCHET_LANG.text_zh) return `${pos}${text}`
+    if (!shouldTranslatePositionPrefix(crochetLang)) return `${pos}${text}`
     const key = `crochet.positionPrefix.${pos}`
     const translated = getCrochetZhText(key)
     const prefix = translated === key ? pos : translated
@@ -642,7 +649,7 @@ export const getPatternItemDisplayWithoutCount = (
       const pos = normalizePosition(item.position)
       const decorated = (() => {
         if (!pos) return text
-        if (crochetLang !== CROCHET_LANG.text_zh) return `${pos}${text}`
+        if (!shouldTranslatePositionPrefix(crochetLang)) return `${pos}${text}`
         const key = `crochet.positionPrefix.${pos}`
         const translated = getCrochetZhText(key)
         const prefix = translated === key ? pos : translated

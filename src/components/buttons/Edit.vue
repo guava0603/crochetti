@@ -8,6 +8,7 @@
 </template>
 
 <script setup>
+defineOptions({ name: 'EditButton' })
 defineEmits(['click'])
 </script>
 

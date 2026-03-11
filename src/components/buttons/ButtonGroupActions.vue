@@ -1,22 +1,7 @@
 <template>
   <div class="button-group" role="toolbar" :aria-label="computedAriaLabel">
     <template v-for="(item, idx) in normalizedItems" :key="item.key || idx">
-      <button
-        class="button-group__btn"
-        type="button"
-        :disabled="Boolean(item.disabled)"
-        :aria-label="item.ariaLabel || item.label || item.key || t('common.action')"
-        :title="item.title || item.ariaLabel || ''"
-        @click="() => item.onClick()"
-      >
-        <component
-          v-if="item.icon"
-          :is="item.icon"
-          v-bind="item.iconProps"
-          class="button-group__icon"
-        />
-        <span v-else-if="item.label" class="button-group__label">{{ item.label }}</span>
-      </button>
+      <ButtonGroupAction :item="item" />
       <span
         v-if="idx < normalizedItems.length - 1"
         class="button-group__sep"
@@ -29,6 +14,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ButtonGroupAction from '@/components/buttons/ButtonGroupAction.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -90,38 +76,5 @@ const normalizedItems = computed(() => {
   background: rgba(0, 0, 0, 0.14);
   border-radius: 999px;
   pointer-events: none;
-}
-
-.button-group__btn {
-  width: fit-content;
-  min-width: 34px;
-  height: 34px;
-  padding: 0 6px;
-  border-radius: 9px;
-  border: none;
-  background: transparent;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: transform 0.12s ease, background 0.12s ease;
-}
-
-.button-group__btn:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.button-group__btn:active {
-  transform: scale(0.98);
-}
-
-.button-group__btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-/* Ensure clicks go to the button wrapper, not the icon component. */
-.button-group__icon {
-  pointer-events: none;
-  display: block;
 }
 </style>

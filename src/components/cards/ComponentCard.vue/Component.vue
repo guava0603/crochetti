@@ -2,7 +2,10 @@
   <!-- Rows -->
   <div :class="isEditing ? 'subsection' : 'view-section'">
     <div v-if="isEditing" class="subsection-header">
-      <h5>{{ t('common.rows') }} *</h5>
+      <div class="label-wrapper">
+        <h5>{{ t('common.rows') }}</h5>
+        <span class="required-badge">必填</span>
+      </div>
       <HelpIconButton
         topic-id="crochetTableBasics"
         :aria-label="t('help.crochetTableBasics.aria')"
@@ -39,6 +42,7 @@
       :set-text="(_n, v) => String(v ?? '')"
       @add="addNote"
       @remove="removeNote"
+      @item-blur="(idx) => handleNoteBlur(idx)"
     />
   </div>
   <div v-else-if="displayNotes.length > 0" class="view-section" style="margin-top: 1rem;">
@@ -51,37 +55,31 @@
   </div>
 
   <!-- Materials (edit mode) -->
-  <div v-if="isEditing" class="subsection component-metadata-subsection">
+  <div v-if="isEditing && hasMaterialOptions" class="subsection component-metadata-subsection">
     <div class="subsection-header">
       <h5>{{ t('project.componentMetadata.title') }}</h5>
     </div>
 
-    <div class="component-material-row">
-      <ComponentMaterialField
-        class="component-material-field--hook"
-        v-model:items="component.hook"
-        input-type="selection"
-        :label="t('project.componentMetadata.hook')"
-        :placeholder="t('project.componentMetadata.hookPlaceholder')"
-        :suggestions="hookSuggestions"
-        :item-key="(_, idx) => `hook-${idx}`"
-        @add="addMaterialInput('hook')"
-        @remove="(idx) => removeMaterialInput('hook', idx)"
-        @item-blur="(idx) => handleMaterialBlur('hook', idx)"
-      />
+    <div class="component-material-row" :class="{ 'component-material-row--single': isSingleMaterialField }">
+      <div v-if="hookSuggestions.length" class="component-material-field">
+        <div class="component-material-field__label">{{ t('project.componentMetadata.hook') }}</div>
+        <MultipleSelectionList
+          :model-value="component.hook"
+          :suggestions="hookSuggestions"
+          :placeholder="t('project.componentMetadata.hookPlaceholder')"
+          @update:modelValue="(v) => (component.hook = Array.isArray(v) ? v : [])"
+        />
+      </div>
 
-      <ComponentMaterialField
-        class="component-material-field--yarn"
-        v-model:items="component.yarn"
-        input-type="selection"
-        :label="t('project.componentMetadata.yarn')"
-        :placeholder="t('project.componentMetadata.yarnPlaceholder')"
-        :suggestions="yarnSuggestions"
-        :item-key="(_, idx) => `yarn-${idx}`"
-        @add="addMaterialInput('yarn')"
-        @remove="(idx) => removeMaterialInput('yarn', idx)"
-        @item-blur="(idx) => handleMaterialBlur('yarn', idx)"
-      />
+      <div v-if="yarnOptions.length" class="component-material-field">
+        <div class="component-material-field__label">{{ t('project.componentMetadata.yarn') }}</div>
+        <MultipleSelectionList
+          :model-value="component.yarn"
+          :options="yarnOptions"
+          :placeholder="t('project.componentMetadata.yarnPlaceholder')"
+          @update:modelValue="(v) => (component.yarn = Array.isArray(v) ? v : [])"
+        />
+      </div>
     </div>
   </div>
 
@@ -107,6 +105,7 @@
       <div class="component-count-number">
         <InputNumber
           :model-value="countDraft"
+          :auto-focus="false"
           size="sm"
           class="component-count-number__input"
           :min="1"
@@ -119,7 +118,7 @@
   </div>
 
   <!-- Image upload (edit mode, at most one image) -->
-  <div v-if="isEditing" class="subsection component-image-subsection">
+  <div v-if="false && isEditing" class="subsection component-image-subsection">
     <div class="subsection-header">
       <h5>{{ t('project.componentImage.uploadLabel') }}</h5>
     </div>
@@ -153,9 +152,17 @@ import { storage } from '@/firebaseConfig'
 import EditingTable from '@/components/CrochetTable/EditingTable.vue'
 import FixTable from '@/components/CrochetTable/FixTable.vue'
 import ComponentMaterialField from '@/components/cards/ComponentMaterialField.vue'
+import MultipleSelectionList from '@/components/Selection/MultipleSelectionList.vue'
 import ImageUploader from '@/components/Input/ImageUploader.vue'
 import InputNumber from '@/components/Input/InputNumber.vue'
 import { openError } from '@/services/ui/error'
+import {
+  mergeYarnMetaWithTypes,
+  normalizeComponentYarnSelection,
+  normalizeYarnMetaList,
+  yarnMetaIdMap,
+  yarnMetaOptions
+} from '@/utils/yarnMeta'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -167,6 +174,10 @@ const props = defineProps({
   component: {
     type: Object,
     required: true
+  },
+  materials: {
+    type: Object,
+    default: null
   },
   isEditing: {
     type: Boolean,
@@ -183,6 +194,7 @@ const props = defineProps({
 })
 
 const component = computed(() => props.component)
+const materials = computed(() => props.materials)
 const isEditing = computed(() => props.isEditing)
 const helpTopicId = computed(() => props.helpTopicId)
 const helpTopicIds = computed(() => props.helpTopicIds)
@@ -256,9 +268,24 @@ function ensureNotesInputs() {
     .map((n) => (typeof n === 'string' ? n : String(n?.description ?? '')))
     .map((n) => String(n ?? ''))
 
-  if (component.value.notes.length === 0) {
-    component.value.notes.push('')
-  }
+}
+
+function trimTrailingEmptyNotesInPlace() {
+  ensureNotesInputs()
+  const list = Array.isArray(component.value.notes) ? component.value.notes : []
+  let end = list.length
+  while (end > 0 && String(list[end - 1] ?? '').trim() === '') end -= 1
+  component.value.notes = list.slice(0, end)
+}
+
+function handleNoteBlur(idx) {
+  ensureNotesInputs()
+  const list = Array.isArray(component.value.notes) ? component.value.notes : []
+  const i = Number(idx)
+  if (!Number.isFinite(i)) return
+  if (i !== list.length - 1) return
+  if (String(list[i] ?? '').trim() !== '') return
+  trimTrailingEmptyNotesInPlace()
 }
 
 watch(
@@ -298,13 +325,23 @@ function uniqueList(list) {
 }
 
 function ensureMaterialArrays() {
+  const baseYarnMeta = normalizeYarnMetaList(materials.value?.yarn)
+  const baseYarnIdMap = yarnMetaIdMap(baseYarnMeta)
+
   const legacyYarn = typeof component.value?.metadata?.yarn === 'string' ? component.value.metadata.yarn : null
   const legacyHook = typeof component.value?.metadata?.hook === 'string' ? component.value.metadata.hook : null
 
-  if (component.value.yarn == null) {
-    component.value.yarn = legacyYarn ? normalizeStringList(legacyYarn) : []
+  const yarnRaw = component.value.yarn == null
+    ? (legacyYarn ? normalizeStringList(legacyYarn) : [])
+    : normalizeStringList(component.value.yarn)
+
+  // If yarn meta exists, store selection as ids.
+  if (baseYarnMeta.length > 0) {
+    const unknownAsTypes = yarnRaw.filter((v) => !baseYarnIdMap.has(String(v ?? '').trim()))
+    const effectiveYarnMeta = mergeYarnMetaWithTypes(baseYarnMeta, unknownAsTypes)
+    component.value.yarn = normalizeComponentYarnSelection(yarnRaw, effectiveYarnMeta)
   } else {
-    component.value.yarn = normalizeStringList(component.value.yarn)
+    component.value.yarn = yarnRaw
   }
 
   if (component.value.hook == null) {
@@ -313,27 +350,37 @@ function ensureMaterialArrays() {
     component.value.hook = normalizeStringList(component.value.hook)
   }
 
-  component.value.metadata.yarn = uniqueList(normalizeStringList(component.value.metadata.yarn))
+  component.value.metadata.yarn = Array.isArray(component.value.yarn) ? component.value.yarn : []
   component.value.metadata.hook = uniqueList(normalizeStringList(component.value.metadata.hook))
 
-  if (component.value.yarn.length === 0) component.value.yarn = ['']
-  if (component.value.hook.length === 0) component.value.hook = ['']
 }
 
 ensureMaterialArrays()
 
-function addUniqueInPlace(list, value) {
-  const v = String(value || '').trim()
-  if (!v) return
-  if (!Array.isArray(list)) return
-  if (!list.includes(v)) list.push(v)
-}
-
 const resolvedYarnList = computed(() => {
-  const values = uniqueList(normalizeStringList(component.value?.yarn))
-  if (values.length > 0) return values
-  if (typeof component.value?.metadata?.yarn === 'string') return normalizeStringList(component.value.metadata.yarn)
-  return uniqueList(normalizeStringList(component.value?.metadata?.yarn))
+  const baseYarnMeta = normalizeYarnMetaList(materials.value?.yarn)
+  if (baseYarnMeta.length === 0) {
+    const values = uniqueList(normalizeStringList(component.value?.yarn))
+    if (values.length > 0) return values
+    if (typeof component.value?.metadata?.yarn === 'string') return normalizeStringList(component.value.metadata.yarn)
+    return uniqueList(normalizeStringList(component.value?.metadata?.yarn))
+  }
+
+  const raw = component.value?.yarn ?? component.value?.metadata?.yarn
+  const ids = normalizeComponentYarnSelection(raw, baseYarnMeta)
+  const idMap = yarnMetaIdMap(baseYarnMeta)
+
+  const out = []
+  const seen = new Set()
+  for (const rawId of Array.isArray(ids) ? ids : []) {
+    const id = String(rawId ?? '').trim()
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    const meta = idMap.get(id)
+    const type = String(meta?.type ?? '').trim()
+    out.push(type || id)
+  }
+  return out
 })
 
 const resolvedHookList = computed(() => {
@@ -343,12 +390,34 @@ const resolvedHookList = computed(() => {
   return uniqueList(normalizeStringList(component.value?.metadata?.hook))
 })
 
-const yarnSuggestions = computed(() => {
-  return uniqueList(normalizeStringList(component.value?.metadata?.yarn))
+function mergeMaterialOptions(base, extra) {
+  return uniqueList([...(Array.isArray(base) ? base : []), ...(Array.isArray(extra) ? extra : [])])
+}
+
+const yarnOptions = computed(() => {
+  const base = normalizeYarnMetaList(materials.value?.yarn)
+  if (base.length === 0) return []
+
+  // Include any legacy string selections as additional meta types so users don't lose them.
+  const selectedRaw = normalizeStringList(component.value?.yarn)
+  const idMap = yarnMetaIdMap(base)
+  const unknownAsTypes = selectedRaw.filter((v) => !idMap.has(String(v ?? '').trim()))
+  const effective = mergeYarnMetaWithTypes(base, unknownAsTypes)
+  return yarnMetaOptions(effective)
 })
 
 const hookSuggestions = computed(() => {
-  return uniqueList(normalizeStringList(component.value?.metadata?.hook))
+  const fromProps = normalizeStringList(materials.value?.hook)
+  const fromMeta = normalizeStringList(component.value?.metadata?.hook)
+  const fromSelected = normalizeStringList(component.value?.hook)
+  return mergeMaterialOptions(mergeMaterialOptions(fromProps, fromMeta), fromSelected)
+})
+
+const hasMaterialOptions = computed(() => yarnOptions.value.length > 0 || hookSuggestions.value.length > 0)
+
+const isSingleMaterialField = computed(() => {
+  const count = (hookSuggestions.value.length > 0 ? 1 : 0) + (yarnOptions.value.length > 0 ? 1 : 0)
+  return count <= 1
 })
 
 if (component.value.count == null) {
@@ -387,37 +456,6 @@ watch(
   () => resetCountDraft(),
   { immediate: true }
 )
-
-function addMaterialInput(kind) {
-  ensureMaterialArrays()
-  if (kind === 'yarn') component.value.yarn.push('')
-  if (kind === 'hook') component.value.hook.push('')
-}
-
-function removeMaterialInput(kind, idx) {
-  ensureMaterialArrays()
-  const list = kind === 'yarn' ? component.value.yarn : component.value.hook
-  if (!Array.isArray(list)) return
-
-  if (list.length <= 1) {
-    list[0] = ''
-    return
-  }
-
-  list.splice(idx, 1)
-  ensureMaterialArrays()
-}
-
-function handleMaterialBlur(kind, idx) {
-  ensureMaterialArrays()
-  const list = kind === 'yarn' ? component.value.yarn : component.value.hook
-  const value = String(list?.[idx] || '').trim()
-  if (value) {
-    list[idx] = value
-    if (kind === 'yarn') addUniqueInPlace(component.value.metadata.yarn, value)
-    if (kind === 'hook') addUniqueInPlace(component.value.metadata.hook, value)
-  }
-}
 
 ensureRowTableFields()
 
@@ -517,6 +555,22 @@ function removeImage() {
   font-size: 1rem;
 }
 
+.label-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.required-badge {
+  background: var(--color-surface-accent);
+  color: var(--color-font-invisible);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.6rem;
+  border-radius: 0.5rem;
+}
+
 .view-section-title {
   margin: 0 0 0.75rem 0;
   font-size: 1rem;
@@ -543,10 +597,27 @@ function removeImage() {
 }
 
 .component-material-row {
-  display: grid;
-  grid-template-columns: 40% 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
   align-items: start;
+}
+
+.component-material-row--single {
+  grid-template-columns: 1fr;
+}
+
+.component-material-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.component-material-field__label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #6b7280;
 }
 
 .component-metadata-view {

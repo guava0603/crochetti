@@ -23,5 +23,6 @@ const iconUrl = computed(() => {
 <style scoped>
 .wish-fab__icon {
   display: block;
+  transform: scale(1.5);
 }
 </style>

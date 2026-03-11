@@ -101,6 +101,14 @@ const CONFIRMATION_PRESETS = {
     confirmClass: 'btn-confirm-delete'
   }),
 
+  removeYarnMetaUsed: (params) => ({
+    title: t('confirmation.removeYarnMetaUsed.title'),
+    message: t('confirmation.removeYarnMetaUsed.message', { type: params?.type || '' }),
+    confirmText: t('confirmation.actions.delete'),
+    cancelText: t('confirmation.actions.cancel'),
+    confirmClass: 'btn-confirm-delete'
+  }),
+
   logout: () => ({
     title: t('confirmation.logout.title'),
     message: t('confirmation.logout.message'),
@@ -184,6 +192,17 @@ const CONFIRMATION_PRESETS = {
       first: params?.first || ''
     }),
     confirmText: t('confirmation.startRecordingNotFirstIncompleteComponent.confirmText'),
+    cancelText: t('confirmation.actions.cancel'),
+    confirmClass: 'btn-confirm'
+  }),
+
+  switchRecordingSession: (params) => ({
+    title: t('confirmation.switchRecordingSession.title'),
+    message: t('confirmation.switchRecordingSession.message', {
+      from: params?.from || '',
+      to: params?.to || ''
+    }),
+    confirmText: t('confirmation.switchRecordingSession.confirmText'),
     cancelText: t('confirmation.actions.cancel'),
     confirmClass: 'btn-confirm'
   }),

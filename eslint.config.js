@@ -10,7 +10,25 @@ export default defineConfig([
     files: ['**/*.{vue,js,mjs,jsx}'],
   },
 
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
+  globalIgnores([
+    '**/dist/**',
+    '**/dist-ssr/**',
+    '**/coverage/**',
+    // iOS app bundles / build artifacts
+    'ios/**/public/assets/**',
+  ]),
+
+  {
+    name: 'functions/node-commonjs',
+    files: ['functions/**/*.{js,cjs}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.commonjs,
+      },
+      sourceType: 'commonjs',
+    },
+  },
 
   {
     languageOptions: {

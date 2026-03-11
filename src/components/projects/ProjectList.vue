@@ -54,7 +54,7 @@ const emit = defineEmits(['open', 'copy', 'share', 'delete'])
   flex: 1;
   border-radius: 0;
   padding: 2rem;
-  padding-bottom: 7rem;
+  padding-bottom: var(--padding-bottom-record-options);
   margin: 0;
   box-shadow: none;
 }

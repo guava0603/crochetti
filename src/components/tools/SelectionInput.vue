@@ -171,6 +171,7 @@ onUnmounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: inherit;
 }
 
 .selection-input__caret {
@@ -191,6 +192,7 @@ onUnmounted(() => {
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
   padding: 0.25rem;
   max-height: 260px;
+  min-width: fit-content;
   overflow: auto;
 }
 

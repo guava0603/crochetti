@@ -20,6 +20,7 @@
         v-else
         class="record-card__mark-icon"
         :src="completeIconUrl"
+        style="transform: scale(2);"
         alt=""
         loading="lazy"
         decoding="async"
@@ -97,15 +98,7 @@ const markPercent = computed(() => {
 })
 
 const coverImageUrl = computed(() => {
-  if (!record.value?.is_completed) return ''
-  const images = Array.isArray(record.value?.images)
-    ? record.value.images
-    : Array.isArray(record.value?.result?.images)
-      ? record.value.result.images
-      : []
-
-  const first = images.find((u) => typeof u === 'string' && u.trim() !== '')
-  return first ? first.trim() : ''
+  return record.value?.coverImageUrl
 })
 
 const recordTimeMs = computed(() => {

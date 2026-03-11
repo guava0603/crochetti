@@ -6,7 +6,7 @@
 
     <div v-else-if="sortedRecords.length" class="records-content">
       <div class="records-filters">
-        <FilterGroup
+        <MultipleButtonGroup
           v-model="filterValue"
           :options="filterOptions"
           aria-label="record filters"
@@ -36,7 +36,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import RecordCard from '@/components/records/RecordCard.vue'
-import FilterGroup from '@/components/ui/FilterGroup.vue'
+import MultipleButtonGroup from '@/components/ui/MultipleButtonGroup.vue'
 import { toMs } from '@/utils/toMs'
 
 const props = defineProps({
@@ -118,7 +118,7 @@ const visibleRecords = computed(() => {
 .records-section {
   border-radius: 0;
   padding: 1rem;
-  padding-bottom: 7rem;
+  padding-bottom: var(--padding-bottom-record-options);
   margin: 0;
   box-shadow: none;
   flex: 1;

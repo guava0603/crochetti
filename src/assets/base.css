@@ -79,8 +79,16 @@
   --color-icon-add: rgb(var(--color-icon-add-rgb));
   --color-icon-add-light: rgb(236, 208, 176);
 
-  /* Primary action color (legacy name kept for compatibility) */
-  --color-buton-add: var(--color-icon-add);
+  /* Primary action color */
+  --color-button-add: var(--color-icon-add);
+
+  /* Legacy misspelling kept for compatibility */
+  --color-buton-add: var(--color-button-add);
+
+  /* Glass UI tokens (used by ProjectView banner) */
+  --glass-bg: rgba(255, 255, 255, 0.22);
+  --glass-border: rgba(255, 255, 255, 0.28);
+  --glass-active: rgba(255, 255, 255, 0.18);
 
   --color-font-light: var(--color-icon-base);
   --color-font-dark: #111827;
@@ -93,17 +101,45 @@
   --safe-viewport-height: calc(100vh - var(--safe-area-top) - var(--safe-area-bottom));
   --bottom-floating-button: calc(24px + var(--safe-area-bottom));
   --color-completed-green: #A3B666;
+  --color-play-and-pause: #EEDD99;
 
   /* Achievement tier colors */
   --tier-brown: #6e5034;
   --tier-silver: #c7c7c7;
   --tier-gold: #F2B50B;
   --tier-special: #458B73;
+
+  /* Global z-index scale (stacking layers)
+     Keep numbers small and meaningful; prefer these tokens over ad-hoc values. */
+  --z-sticky: 50;
+  --z-fixed: 100;
+  --z-float: 200;
+  --z-bottom-toolbar: 300;
+  --z-popover: 600;
+  --z-modal: 1000;
+  --z-modal-high: 1100;
+  --z-modal-top: 1200;
+  --z-toast: 2000;
+  --z-toast-high: 2100;
+
+  --padding-bottom-record-options: 12rem;
 }
 
 html.is-app {
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@supports (height: 100svh) {
+  :root {
+    --safe-viewport-height: calc(100svh - var(--safe-area-top) - var(--safe-area-bottom));
+  }
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --safe-viewport-height: calc(100dvh - var(--safe-area-top) - var(--safe-area-bottom));
+  }
 }
 
 @media (prefers-color-scheme: dark) {

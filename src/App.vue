@@ -1,25 +1,17 @@
 <template>
-  <header>
-    <!-- <div class="app-lang">
-      <label class="app-lang__label" for="app-lang-select">{{ $t('app.language') }}</label>
-      <select
-        id="app-lang-select"
-        class="app-lang__select"
-        :value="locale"
-        :aria-label="$t('app.switchLanguage')"
-        @change="onLocaleChange"
-      >
-        <option v-for="l in SUPPORTED_LOCALES" :key="l.code" :value="l.code">{{ l.label }}</option>
-      </select>
-    </div> -->
-  </header>
+  <div
+    class="app-shell"
+    :class="{
+      'app-shell--bottom-dock': footerType === 'record-options' && !isRecordResultSharing
+    }"
+  >
+    <TopBanner />
 
-  <RouterView />
+    <main class="app-page">
+      <RouterView />
+    </main>
 
-  <!-- Bottom-left floating dock (RecordOptions + WishFab) -->
-  <div class="bottom-left-dock">
-    <div id="bottom-left-dock-before" class="bottom-left-dock__before" />
-    <WishFab v-if="showWishFab" @click="openWishPool" />
+    <FooterHost />
   </div>
 
   <AchievementToastHost />
@@ -32,68 +24,68 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import GlobalConfirmationModal from '@/components/modals/GlobalConfirmationModal.vue'
 import GlobalHelpModal from '@/components/modals/GlobalHelpModal.vue'
 import AchievementToastHost from '@/components/ui/AchievementToastHost.vue'
 import ToastHost from '@/components/ui/ToastHost.vue'
 import ErrorHost from '@/components/ui/ErrorHost.vue'
-import WishFab from '@/components/Wish/WishFab.vue'
-import { computed } from 'vue'
-import { RouterView, useRoute, useRouter } from 'vue-router'
+import TopBanner from '@/components/layout/TopBanner.vue'
+import { RouterView, useRoute } from 'vue-router'
+import { provideFooterContext } from '@/composables/footerContext'
+import FooterHost from '@/components/Footer/FooterHost.vue'
 
 const route = useRoute()
-const router = useRouter()
+provideFooterContext()
 
-const showWishFab = computed(() => {
-  const name = route.name
-  return name !== 'add-project' && name !== 'project-edit' && name !== 'wish-pool'
+const isRecordResultSharing = computed(() => {
+  if (route.name !== 'record') return false
+  return Object.prototype.hasOwnProperty.call(route.query || {}, 'result-sharing')
 })
 
-function openWishPool() {
-  router.push({ name: 'wish-pool' })
-}
+const footerType = computed(() => String(route.meta?.footer || 'none'))
 </script>
 
 <style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
+/*
+  App shell layout:
+  - Safe-area padding at top/bottom so content doesn't go under notch / home indicator.
+  - Fixed banner/footer heights so page body is stable even if a route doesn't render its own.
+*/
+.app-shell {
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
 
-.app-lang {
-  position: fixed;
-  top: 0.75rem;
-  right: 0.75rem;
-  z-index: 2000;
+  /* App shell fixed regions */
+  --app-banner-height: 4rem;
+  --app-footer-height: 5rem;
+
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.6rem;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(6px);
+  flex-direction: column;
+  overflow: hidden;
+
+  /* Default: bottom sheets hug the screen bottom. */
+  --bottom-sheet-bottom: 0px;
 }
 
-.app-lang__label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #374151;
+.app-shell--bottom-dock {
+  /* Keep fixed BottomSheetScroll content above the global footer dock. */
+  --bottom-sheet-bottom: calc(var(--app-footer-height) + var(--safe-area-bottom));
 }
 
-.app-lang__select {
-  appearance: none;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  background: #fff;
-  border-radius: 8px;
-  padding: 0.35rem 0.6rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+.app-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; */
 }
 
 nav {
@@ -122,22 +114,6 @@ nav a:first-of-type {
 }
 
 @media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
   nav {
     text-align: left;
     margin-left: -1rem;

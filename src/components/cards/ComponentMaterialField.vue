@@ -9,6 +9,14 @@
         :class="rowClass"
       >
         <div class="component-material-input-cell">
+          <div
+            v-if="showDelete"
+            class="component-material-input-delete"
+            :aria-label="deleteAriaLabel"
+          >
+            <ButtonDeleteLight @click="() => removeAt(idx)" />
+          </div>
+
           <SelectionInput
             v-if="inputType === 'dropdown'"
             :model-value="getTextValue(item)"
@@ -22,6 +30,7 @@
             :model-value="getTextValue(item)"
             :placeholder="placeholder"
             :suggestions="suggestions"
+            :strict="strict"
             @update:modelValue="(v) => updateTextAt(idx, v)"
             @blur="() => $emit('item-blur', idx)"
           />
@@ -46,6 +55,7 @@
 <script setup>
 import { computed } from 'vue'
 import AddNew from '@/components/buttons/AddNew.vue'
+import ButtonDeleteLight from '@/components/buttons/ButtonDeleteLight.vue'
 import SelectionInput from '@/components/tools/SelectionInput.vue'
 import SelectionInputCombineList from '@/components/Input/SelectionInputCombineList.vue'
 
@@ -71,6 +81,10 @@ const props = defineProps({
   removable: {
     type: Boolean,
     default: true
+  },
+  deleteAriaLabel: {
+    type: String,
+    default: 'Delete'
   },
   placeholder: {
     type: String,
@@ -103,6 +117,10 @@ const props = defineProps({
   itemKey: {
     type: Function,
     default: null
+  },
+  strict: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -122,6 +140,19 @@ function updateTextAt(idx, nextText) {
 const rowClass = computed(() => {
   return props.variant === 'notes' ? 'list-item' : 'component-material-input-row'
 })
+
+const showDelete = computed(() => {
+  return props.removable && props.variant !== 'notes'
+})
+
+function removeAt(idx) {
+  const list = Array.isArray(props.items) ? props.items : []
+  const i = Number(idx)
+  if (!Number.isFinite(i) || i < 0 || i >= list.length) return
+  const next = list.slice(0, i).concat(list.slice(i + 1))
+  emit('update:items', next)
+  emit('remove', i)
+}
 
 const canAddComputed = computed(() => {
   const list = Array.isArray(props.items) ? props.items : []
@@ -168,14 +199,10 @@ const canAddComputed = computed(() => {
 
 .component-material-input-delete {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: -0.5rem;
+  right: -0.5rem;
   z-index: 2;
   line-height: 0;
-}
-
-.component-material-input-cell :deep(.btn-delete__icon) {
-  cursor: pointer;
 }
 
 .list-item-input {

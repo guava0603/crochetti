@@ -42,12 +42,14 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { onAuthStateChanged } from 'firebase/auth'
-import { auth } from '@/firebaseConfig'
-import { fetchUserRecord } from '@/services/firestore/records'
 import { originalStatuses } from '@/constants/status.js'
 import { useRecordContext } from '@/composables/recordContext'
 import { formatStartHourLabel, getStartHourKey } from '@/utils/dateTime'
+
+const props = defineProps({
+  currentUser: { type: Object, default: null },
+  profile: { type: Object, default: null }
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -55,11 +57,10 @@ const { t } = useI18n({ useScope: 'global' })
 
 const recordCtx = useRecordContext()
 
-const recordId = recordCtx?.recordId || ref(route.params.record_id)
 const currentRecord = recordCtx?.recordData || ref(null)
-const currentUser = ref(null)
+const authPending = computed(() => props.currentUser === undefined)
 const currentTime = ref(Date.now())
-const loading = recordCtx?.recordLoading || ref(true)
+const loading = computed(() => authPending.value || Boolean(recordCtx?.recordLoading?.value))
 
 let timerInterval = null
 
@@ -172,42 +173,10 @@ const formatSlotDuration = (slot) => {
   return `${minutes}:${pad2(seconds)}`
 }
 
-const loadRecord = async () => {
-  if (recordCtx) {
-    await recordCtx.loadRecord()
-    return
-  }
-
-  if (!currentUser.value || !recordId.value) return
-  const recordData = await fetchUserRecord(currentUser.value.uid, recordId.value)
-  currentRecord.value = recordData || null
-}
-
 onMounted(() => {
-  if (recordCtx) {
-    loadRecord()
-    timerInterval = setInterval(() => {
-      currentTime.value = Date.now()
-    }, 1000)
-    return
-  }
-
-  const unsubscribe = onAuthStateChanged(auth, async (user) => {
-    currentUser.value = user || null
-    loading.value = true
-
-    try {
-      if (user) {
-        await loadRecord()
-        timerInterval = setInterval(() => {
-          currentTime.value = Date.now()
-        }, 1000)
-      }
-    } finally {
-      loading.value = false
-      unsubscribe()
-    }
-  })
+  timerInterval = setInterval(() => {
+    currentTime.value = Date.now()
+  }, 1000)
 })
 
 onUnmounted(() => {

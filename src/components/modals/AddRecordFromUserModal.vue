@@ -7,13 +7,13 @@
         <p class="message">{{ t('user.addRecord.message') }}</p>
 
         <div class="choice-list">
-          <button class="choice" type="button" @click="step = 'select-project'">
-            {{ t('user.addRecord.actions.selectProject') }}
-          </button>
           <button class="choice" type="button" @click="$emit('add-project')">
             {{ t('user.addRecord.actions.addProject') }}
           </button>
-          <button class="choice choice--primary" type="button" @click="step = 'quick-add'">
+          <button class="choice" type="button" @click="step = 'select-project'">
+            {{ t('user.addRecord.actions.selectProject') }}
+          </button>
+          <button class="choice choice--primary" type="button" @click="onQuickStart">
             {{ t('user.addRecord.actions.quickAddProject', { stitch: t('crochet.stitches.singleCrochet') }) }}
           </button>
         </div>
@@ -51,41 +51,6 @@
         </div>
       </template>
 
-      <template v-else-if="step === 'quick-add'">
-        <form class="form" @submit.prevent="submitQuickAdd">
-          <div class="form-group">
-            <label>{{ t('addProject.info.projectNameLabel') }}</label>
-            <input v-model="quick.name" class="input" type="text" :disabled="loading" />
-          </div>
-
-          <div class="form-group">
-            <label>{{ t('addProject.info.descriptionLabel') }}</label>
-            <input v-model="quick.description" class="input" type="text" :disabled="loading" />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>{{ t('user.addRecord.quick.rowCount') }}</label>
-              <input v-model.number="quick.rowCount" class="input" type="number" min="1" step="1" :disabled="loading" />
-            </div>
-            <div class="form-group">
-              <label>{{ t('user.addRecord.quick.crochetCount', { stitch: t('crochet.stitches.singleCrochet') }) }}</label>
-              <input v-model.number="quick.crochetCount" class="input" type="number" min="1" step="1" :disabled="loading" />
-            </div>
-          </div>
-
-          <p class="hint">{{ t('user.addRecord.quick.hint', { rowCount: quick.rowCount, crochetCount: quick.crochetCount, stitch: t('crochet.stitches.singleCrochet') }) }}</p>
-
-          <div class="modal-actions">
-            <button class="btn-cancel" type="button" :disabled="loading" @click="step = 'choice'">
-              {{ t('common.cancel') }}
-            </button>
-            <button class="btn-confirm" type="submit" :disabled="loading">
-              {{ loading ? t('common.loading') : t('user.addRecord.quick.createAndStart') }}
-            </button>
-          </div>
-        </form>
-      </template>
     </div>
   </div>
 </template>
@@ -93,7 +58,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { openError } from '@/services/ui/error'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -112,17 +76,10 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['cancel', 'add-project', 'select-project', 'quick-add'])
+const emit = defineEmits(['cancel', 'add-project', 'select-project', 'quick-start'])
 
 const step = ref('choice')
 const selectedProjectId = ref('')
-
-const quick = ref({
-  name: '',
-  description: '',
-  rowCount: 10,
-  crochetCount: 6
-})
 
 watch(
   () => props.show,
@@ -148,34 +105,8 @@ watch(
 
 const titleText = computed(() => t('user.addRecord.title'))
 
-const submitQuickAdd = () => {
-  const name = String(quick.value.name || '').trim()
-  const description = String(quick.value.description || '').trim()
-  const rowCount = Number(quick.value.rowCount)
-  const crochetCount = Number(quick.value.crochetCount)
-
-  if (!name) {
-    openError({ title: t('common.error'), message: t('addProject.info.errors.projectNameRequired') })
-    return
-  }
-  if (!Number.isFinite(rowCount) || rowCount < 1) {
-    openError({ title: t('common.error'), message: t('user.addRecord.quick.errors.rowCount') })
-    return
-  }
-  if (!Number.isFinite(crochetCount) || crochetCount < 1) {
-    openError({ title: t('common.error'), message: t('user.addRecord.quick.errors.crochetCount') })
-    return
-  }
-
-  // Use the validated payload.
-  const payload = {
-    name,
-    description,
-    rowCount: Math.floor(rowCount),
-    crochetCount: Math.floor(crochetCount)
-  }
-
-  emit('quick-add', payload)
+function onQuickStart() {
+  emit('quick-start')
 }
 </script>
 
@@ -190,7 +121,7 @@ const submitQuickAdd = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1200;
+  z-index: var(--z-modal-high);
 }
 
 .modal-content {
@@ -239,11 +170,7 @@ const submitQuickAdd = () => {
   display: block;
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
+
 
 .form-group {
   margin-bottom: 0.75rem;
@@ -309,8 +236,6 @@ const submitQuickAdd = () => {
 }
 
 @media (max-width: 420px) {
-  .form-row {
-    grid-template-columns: 1fr;
-  }
+  /* keep for future layout tweaks */
 }
 </style>

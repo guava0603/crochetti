@@ -18,7 +18,7 @@ const err = useErrorState()
 
 <style scoped>
 .error-host {
-  z-index: 3500;
+  z-index: var(--z-toast-high);
   pointer-events: none;
 }
 

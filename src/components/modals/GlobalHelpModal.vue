@@ -101,7 +101,7 @@ onUnmounted(() => {
 .help-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: var(--z-modal);
   display: flex;
   align-items: flex-start;
   justify-content: center;

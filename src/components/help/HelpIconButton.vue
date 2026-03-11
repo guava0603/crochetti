@@ -5,7 +5,7 @@
     :aria-label="resolvedAriaLabel"
     @click.stop="handleClick"
   >
-    <img class="help-icon-btn__icon" :src="iconUrl" alt="" />
+    <img class="help-icon-btn__icon" :src="iconUrl" alt="" style="transform: scale(2);" />
   </button>
 </template>
 
@@ -66,8 +66,8 @@ function handleClick() {
 }
 
 .help-icon-btn__icon {
-  width: 200%;
-  height: 200%;
+  width: 100%;
+  height: 100%;
   display: block;
 }
 </style>

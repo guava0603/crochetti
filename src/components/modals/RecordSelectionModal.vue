@@ -5,12 +5,14 @@
 
       <!-- Resume existing record selection -->
       <div v-if="existingRecords.length > 1" class="form-group">
-        <label>{{ t('recordSelection.selectToResume') }}</label>
-        <select v-model="selectedRecordIndex" class="record-select">
-          <option v-for="(record, index) in existingRecords" :key="index" :value="index">
-            {{ formatRecordStart(record) }}
-          </option>
-        </select>
+        <label :for="recordInputId">{{ t('recordSelection.selectToResume') }}</label>
+        <SelectionInputCombineList
+          :input-id="recordInputId"
+          :aria-label="t('recordSelection.selectToResume')"
+          v-model="selectedRecordOption"
+          :suggestions="recordOptions"
+          :placeholder="t('recordSelection.selectPlaceholder')"
+        />
       </div>
 
       <p v-if="message" class="message">{{ message }}</p>
@@ -39,9 +41,10 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { formatDateTimeNoSeconds } from '@/utils/dateTime'
+import SelectionInputCombineList from '@/components/Input/SelectionInputCombineList.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -79,17 +82,53 @@ const props = defineProps({
 defineEmits(['cancel', 'resume', 'start-new'])
 
 const selectedRecordIndex = ref(0)
+const selectedRecordOption = ref('')
+const recordInputId = 'record-select-input'
 
 // Reset selection when modal opens
 watch(() => props.show, (newVal) => {
   if (newVal) {
     selectedRecordIndex.value = 0
+    selectedRecordOption.value = recordOptions.value?.[0] || ''
   }
+})
+
+watch(selectedRecordOption, (value) => {
+  const idx = parseRecordOptionIndex(value)
+  if (idx == null) return
+  selectedRecordIndex.value = idx
+})
+
+watch(() => props.existingRecords, () => {
+  if (!props.show) return
+  if (selectedRecordOption.value) return
+  selectedRecordOption.value = recordOptions.value?.[0] || ''
 })
 
 const formatRecordStart = (record) => {
   if (!record?.time_slots?.[0]?.start) return t('recordSelection.unknown')
   return formatDateTimeNoSeconds(record.time_slots[0].start)
+}
+
+const recordOptions = computed(() => {
+  const list = Array.isArray(props.existingRecords) ? props.existingRecords : []
+  return list.map((record, index) => {
+    const label = formatRecordStart(record)
+    return `${index + 1}. ${label}`
+  })
+})
+
+function parseRecordOptionIndex(raw) {
+  const text = String(raw ?? '').trim()
+  if (!text) return null
+  const m = text.match(/^\s*(\d+)\s*[.)、\-:：]/)
+  if (!m) return null
+  const n = Number(m[1])
+  if (!Number.isFinite(n)) return null
+  const idx = n - 1
+  if (idx < 0) return 0
+  const max = Math.max(0, (props.existingRecords?.length || 0) - 1)
+  return Math.min(idx, max)
 }
 </script>
 
@@ -104,7 +143,7 @@ const formatRecordStart = (record) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-modal);
 }
 
 .modal-content {
@@ -139,20 +178,6 @@ const formatRecordStart = (record) => {
   font-weight: 500;
 }
 
-.record-select {
-  width: 100%;
-  padding: 0.625rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  background: white;
-}
-
-.record-select:focus {
-  outline: none;
-  border-color: var(--color-icon-add);
-  box-shadow: 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.1);
-}
 
 .modal-actions {
   display: flex;

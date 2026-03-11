@@ -5,9 +5,9 @@
     @click="$emit('click', $event)"
   >
     <svg :width="iconSize" :height="iconSize" viewBox="0 0 28 28" fill="none">
-      <circle cx="14" cy="14" r="14" fill="#f59e42" />
-      <rect x="9" y="8" width="3" height="12" rx="1" fill="#fff" />
-      <rect x="16" y="8" width="3" height="12" rx="1" fill="#fff" />
+      <circle cx="14" cy="14" r="14" />
+      <rect x="9" y="8" width="3" height="12" rx="1" fill="#5A524B" />
+      <rect x="16" y="8" width="3" height="12" rx="1" fill="#5A524B" />
     </svg>
   </button>
 </template>
@@ -25,16 +25,14 @@ defineEmits(['click'])
 
 <style scoped>
 .record-action-btn {
-  background: transparent;
+  background: var(--color-play-and-pause);
+  color: brown;
+  border-radius: 50%;
   border: none;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-}
-
-.record-action-btn:disabled {
-  cursor: not-allowed;
 }
 </style>

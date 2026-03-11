@@ -1,5 +1,55 @@
 <template>
-  <div class="image-uploader">
+  <!--
+    When used inside an existing parent grid (e.g. existing-images__grid), avoid nesting another grid.
+    We render tiles as direct children so they occupy the next empty slot naturally.
+  -->
+  <template v-if="useParentGrid">
+    <input
+      :id="inputId"
+      ref="inputRef"
+      class="image-uploader__input"
+      type="file"
+      :accept="accept"
+      :multiple="multiple"
+      @change="handleChange"
+    />
+
+    <div v-for="(preview, idx) in previews" :key="preview.key" class="image-preview-item">
+      <ButtonDeleteLight
+        class="image-preview-item__delete"
+        :disabled="disabled"
+        :aria-label="removeText"
+        @click="removeAt(idx)"
+      />
+
+      <div class="image-preview-frame">
+        <ImageBox
+          class="image-preview"
+          :image-url="preview.url"
+          :alt="getAltText(idx)"
+          :aria-label="getAltText(idx)"
+          :disabled="disabled"
+          :openable="true"
+          :stop-propagation="true"
+        />
+      </div>
+    </div>
+
+    <div v-if="canPickMore" class="image-preview-item image-preview-item--empty">
+      <button
+        type="button"
+        class="image-preview-upload"
+        :disabled="disabled"
+        @click="openFileDialog"
+      >
+        <ButtonUploadImage class="image-preview-upload__icon" />
+      </button>
+    </div>
+
+    <div v-if="localError" class="image-uploader__error">{{ localError }}</div>
+  </template>
+
+  <div v-else class="image-uploader">
     <input
       :id="inputId"
       ref="inputRef"
@@ -18,18 +68,24 @@
         :class="{ 'image-preview-item--empty': slotIdx == previews.length }"
       >
         <template v-if="slotIdx < previews.length">
-          <ImageBox
-            class="image-preview"
-            :image-url="previews[slotIdx].url"
-            :alt="getAltText(slotIdx)"
-            :aria-label="getAltText(slotIdx)"
+          <ButtonDeleteLight
+            class="image-preview-item__delete"
             :disabled="disabled"
-            :openable="true"
-            :stop-propagation="true"
-            :show-delete="true"
-            :delete-aria-label="removeText"
-            @delete="removeAt(slotIdx)"
+            :aria-label="removeText"
+            @click="removeAt(slotIdx)"
           />
+
+          <div class="image-preview-frame">
+            <ImageBox
+              class="image-preview"
+              :image-url="previews[slotIdx].url"
+              :alt="getAltText(slotIdx)"
+              :aria-label="getAltText(slotIdx)"
+              :disabled="disabled"
+              :openable="true"
+              :stop-propagation="true"
+            />
+          </div>
         </template>
 
         <button
@@ -51,6 +107,7 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import ButtonUploadImage from '@/components/buttons/svg/ButtonUploadImage.vue'
+import ButtonDeleteLight from '@/components/buttons/ButtonDeleteLight.vue'
 import ImageBox from '@/components/Image/ImageBox.vue'
 
 const props = defineProps({
@@ -93,6 +150,10 @@ const props = defineProps({
   maxErrorText: {
     type: String,
     default: ''
+  },
+  useParentGrid: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -104,6 +165,11 @@ const localError = ref('')
 const inputId = computed(() => `image-uploader-${Math.random().toString(36).slice(2, 10)}`)
 
 const previews = ref([])
+
+const canPickMore = computed(() => {
+  const max = Number.isFinite(props.max) ? props.max : 3
+  return previews.value.length < max
+})
 
 const slotIndices = computed(() => {
   const max = Number.isFinite(props.max) ? props.max : 3
@@ -238,13 +304,35 @@ onBeforeUnmount(() => {
   gap: 10px;
 }
 
+.image-preview-uploader-conteiner--contents {
+  display: contents;
+}
+
+.image-uploader--parent-grid {
+  display: contents;
+}
+
 .image-preview-item {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.75);
+  overflow: visible;
+}
+
+.image-preview-frame {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
   overflow: hidden;
+}
+
+.image-preview-item__delete {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  z-index: 2;
 }
 
 .image-preview {
@@ -287,5 +375,6 @@ onBeforeUnmount(() => {
   padding: 0.75rem;
   background: #f8d7da;
   border-radius: 4px;
+  grid-column: 1 / -1;
 }
 </style>

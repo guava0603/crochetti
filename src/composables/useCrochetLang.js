@@ -15,11 +15,19 @@ let _unsubscribeAuth = null
 let unsubscribeProfile = null
 let currentUserId = null
 
+const normalizeCrochetLang = (value) => {
+  const next = Number(value)
+  if (!Number.isFinite(next)) return CROCHET_LANG.symbol_jp
+  if (next === CROCHET_LANG.symbol_jp) return CROCHET_LANG.symbol_jp
+  if (next === CROCHET_LANG.text_zh) return CROCHET_LANG.text_zh
+  if (next === CROCHET_LANG.icon) return CROCHET_LANG.icon
+  return CROCHET_LANG.symbol_jp
+}
+
 function loadInitial() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    const parsed = Number(raw)
-    return Number.isFinite(parsed) ? parsed : CROCHET_LANG.symbol_jp
+    return normalizeCrochetLang(raw)
   } catch {
     return CROCHET_LANG.symbol_jp
   }
@@ -59,11 +67,9 @@ function start() {
         userId: currentUserId,
         fallbackProfile: {},
         onData: (profile) => {
-          const next = Number(profile?.crochet_lang)
-          if (Number.isFinite(next)) {
-            crochetLang.value = next
-            saveLocal(next)
-          }
+          const next = normalizeCrochetLang(profile?.crochet_lang)
+          crochetLang.value = next
+          saveLocal(next)
           isReady.value = true
         },
         onError: () => {
@@ -80,8 +86,7 @@ export function useCrochetLang() {
   start()
 
   const setCrochetLang = async (nextValue) => {
-    const next = Number(nextValue)
-    const safe = Number.isFinite(next) ? next : CROCHET_LANG.symbol_jp
+    const safe = normalizeCrochetLang(nextValue)
 
     crochetLang.value = safe
     saveLocal(safe)

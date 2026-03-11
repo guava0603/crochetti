@@ -1,9 +1,9 @@
 <template>
   <BottomSheetScroll
     class="user-tab-sheet"
-    :min-vh="60"
-    :max-vh="90"
-    :initial-vh="60"
+    :min-pct="60"
+    :max-pct="90"
+    :initial-pct="60"
     :snap-on-first-gesture="true"
     :style="{ '--bottom-sheet-max-width': '1200px', '--bottom-sheet-z': '60' }"
   >
@@ -26,65 +26,66 @@
     </template>
 
     <div class="user-tab-content">
-      <ProjectList
-        v-if="tabValue === 'design'"
-        :projects="userProjects"
-        :is-my-page="isMyPage"
-        :copying-project-id="copyingProjectId"
-        @open="(p) => $emit('open-project', p)"
-        @copy="(p) => $emit('copy-project', p)"
-        @share="(p) => $emit('share-project', p)"
-        @delete="(p) => $emit('delete-project', p)"
-      />
-
-      <ProjectList
-        v-else-if="tabValue === 'saved'"
-        :projects="savedProjects"
-        :is-my-page="false"
-        @open="(p) => $emit('open-project', p)"
-        @copy="(p) => $emit('copy-project', p)"
-        @share="(p) => $emit('share-project', p)"
-      />
-
-      <RecordList
-        v-else-if="tabValue === 'record'"
-        :records="userRecords"
-        :loading="recordsLoading"
-        :is-my-page="isMyPage"
-        @open="(r) => $emit('open-record', r)"
-      />
-
-      <div v-else-if="tabValue === 'following'" class="following-tab">
-        <div v-if="followingLoading" class="following-tab__state">
-          <p>{{ t('common.loading') }}</p>
-        </div>
-
-        <div v-else-if="!followingUsers || followingUsers.length === 0" class="following-tab__state">
-          <p>{{ t('user.followingListEmpty') }}</p>
-        </div>
-
-        <div v-else class="following-tab__list">
-          <UserBlock
-            v-for="u in followingUsers"
-            :key="u.id"
-            :user="u"
-            @select="(id) => $emit('open-user', id)"
-          />
-        </div>
+      <div v-if="showPrivacyNotice" class="privacy-notice">
+        <p>{{ t('user.privacy.privateNotice') }}</p>
       </div>
+
+      <template v-else>
+        <ProjectList
+          v-if="tabValue === 'design'"
+          :projects="userProjects"
+          :is-my-page="isMyPage"
+          :copying-project-id="copyingProjectId"
+          @open="(p) => $emit('open-project', p)"
+          @copy="(p) => $emit('copy-project', p)"
+          @share="(p) => $emit('share-project', p)"
+          @delete="(p) => $emit('delete-project', p)"
+        />
+
+        <ProjectList
+          v-else-if="tabValue === 'saved'"
+          :projects="savedProjects"
+          :is-my-page="false"
+          @open="(p) => $emit('open-project', p)"
+          @copy="(p) => $emit('copy-project', p)"
+          @share="(p) => $emit('share-project', p)"
+        />
+
+        <RecordList
+          v-else-if="tabValue === 'record'"
+          :records="userRecords"
+          :loading="recordsLoading"
+          :is-my-page="isMyPage"
+          @open="(r) => $emit('open-record', r)"
+        />
+
+        <div v-else-if="tabValue === 'following'" class="following-tab">
+          <div v-if="followingLoading" class="following-tab__state">
+            <p>{{ t('common.loading') }}</p>
+          </div>
+
+          <div v-else-if="!followingUsers || followingUsers.length === 0" class="following-tab__state">
+            <p>{{ t('user.followingListEmpty') }}</p>
+          </div>
+
+          <div v-else class="following-tab__list">
+            <UserBlock
+              v-for="u in followingUsers"
+              :key="u.id"
+              :user="u"
+              @select="(id) => $emit('open-user', id)"
+            />
+          </div>
+        </div>
+      </template>
     </div>
   </BottomSheetScroll>
 
-  <AddRecordLauncher
-    v-if="showAddLauncher"
-    :active-tab="tabValue"
+  <UserFabLauncher
+    v-if="isMyPage"
+    :is-my-page="isMyPage"
     :projects="userProjects"
     @project-created="(p) => emit('project-created', p)"
-  />
-
-  <SearchUserLauncher
-    v-if="showSearchUserLauncher"
-    :active-tab="tabValue"
     @open-user="(id) => emit('open-user', id)"
   />
 </template>
@@ -95,8 +96,7 @@ import { useI18n } from 'vue-i18n'
 import BottomSheetScroll from '@/components/layout/BottomSheetScroll.vue'
 import ProjectList from '@/components/projects/ProjectList.vue'
 import RecordList from '@/components/records/RecordList.vue'
-import AddRecordLauncher from '@/components/User/UserView/AddRecordLauncher.vue'
-import SearchUserLauncher from '@/components/User/UserView/SearchUserLauncher.vue'
+import UserFabLauncher from '@/components/User/UserView/UserFabLauncher.vue'
 import UserBlock from '@/components/User/UserBlock.vue'
 
 defineOptions({
@@ -143,6 +143,10 @@ const props = defineProps({
   copyingProjectId: {
     type: [String, Number],
     default: null
+  },
+  userIsPrivacy: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -171,16 +175,9 @@ const setTab = (key) => {
   tabValue.value = key
 }
 
-const showAddLauncher = computed(() => {
-  if (!props.isMyPage) return false
-  // Only show on tabs that support adding.
-  return tabValue.value === 'design' || tabValue.value === 'record'
-})
+const isMyPage = computed(() => Boolean(props.isMyPage))
 
-const showSearchUserLauncher = computed(() => {
-  if (!props.isMyPage) return false
-  return tabValue.value === 'following'
-})
+const showPrivacyNotice = computed(() => Boolean(props.userIsPrivacy) && !isMyPage.value)
 </script>
 
 <style scoped>
@@ -275,6 +272,19 @@ const showSearchUserLauncher = computed(() => {
   min-width: 0;
   display: flex;
   flex: 1;
+}
+
+.privacy-notice {
+  flex: 1;
+  width: 100%;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  color: rgba(17, 24, 39, 0.75);
+  text-align: center;
+  font-weight: 800;
 }
 
 .user-tab-sheet :deep(.tab__content) {

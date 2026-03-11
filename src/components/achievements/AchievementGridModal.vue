@@ -83,8 +83,8 @@ function tierClass(a) {
 .ach-grid-modal {
   position: fixed;
   inset: 0;
-  /* Keep above cabinet-full and in-page tab UI, but below app-level 9999 modals. */
-  z-index: 9991;
+  /* Keep above cabinet-full and in-page tab UI, but below high-priority app modals. */
+  z-index: calc(var(--z-modal) + 1);
   display: grid;
   place-items: center;
   background: rgba(17, 24, 39, 0.35);

@@ -366,7 +366,7 @@ defineExpose({
   overflow-x: auto;
   overflow-y: hidden;
   padding: 1.2rem 10px 0;
-  scroll-snap-type: x proximity;
+  scroll-snap-type: x mandatory;
   scroll-padding-left: 5%;
   scroll-padding-right: 5%;
   -webkit-overflow-scrolling: touch;
@@ -389,5 +389,6 @@ defineExpose({
 .carousel__item {
   flex: 0 0 auto;
   scroll-snap-align: center;
+  scroll-snap-stop: always;
 }
 </style>

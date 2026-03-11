@@ -14,13 +14,13 @@ import {
 import { Capacitor } from "@capacitor/core";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCfpdDjvsnbqSRyAdMP1B9AoKkQznGJU5g",
-  authDomain: "corchetti-ec876.firebaseapp.com",
-  projectId: "corchetti-ec876",
-  storageBucket: "corchetti-ec876.firebasestorage.app",
-  messagingSenderId: "341091983242",
-  appId: "1:341091983242:web:865e85c311510bc8cd3273",
-  measurementId: "G-BYYQV4NEZS"
+  apiKey: "AIzaSyDPW7mIWU2BkEgxpyFya_gYVtXBEZ_Ia_o",
+  authDomain: "crochetti-a8cd5.firebaseapp.com",
+  projectId: "crochetti-a8cd5",
+  storageBucket: "crochetti-a8cd5.firebasestorage.app",
+  messagingSenderId: "961609224168",
+  appId: "1:961609224168:web:942ac0168280b7eb4c1e5d",
+  measurementId: "G-RFKS5HQ7RY"
 };
 
 const app = initializeApp(firebaseConfig);

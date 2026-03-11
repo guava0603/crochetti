@@ -7,6 +7,7 @@ import { setUserRecord } from '@/services/firestore/records'
 export function buildNewRecordForProject({
   projectId,
   projectName,
+  projectImage,
   componentList,
   nowIso = new Date().toISOString(),
   recordId = uuidv4(),
@@ -15,22 +16,27 @@ export function buildNewRecordForProject({
   if (!pid) throw new Error('buildNewRecordForProject: projectId is required')
 
   const name = String(projectName || '')
+  const image = projectImage != null ? String(projectImage).trim() : ''
   const list = Array.isArray(componentList) ? componentList : []
+
+  const recordData = {
+    project_id: pid,
+    project_name: name,
+    component_list: normalizeComponentListForRecord(list),
+    time_slots: [],
+    self_defined_status: [],
+    // Use client timestamp for immediate achievement evaluation.
+    created_at: nowIso,
+    // Used to determine whether "更新專案" should be enabled.
+    // On create, treat the record as synced to its initial project snapshot.
+    synced_at: nowIso,
+  }
+
+  if (image) recordData.project_image = image
 
   return {
     recordId,
-    recordData: {
-      project_id: pid,
-      project_name: name,
-      component_list: normalizeComponentListForRecord(list),
-      time_slots: [],
-      self_defined_status: [],
-      // Use client timestamp for immediate achievement evaluation.
-      created_at: nowIso,
-      // Used to determine whether "更新專案" should be enabled.
-      // On create, treat the record as synced to its initial project snapshot.
-      synced_at: nowIso,
-    },
+    recordData,
   }
 }
 
@@ -38,6 +44,7 @@ export async function startRecordForProject({
   uid,
   projectId,
   projectName,
+  projectImage,
   componentList,
   nowIso,
 } = {}) {
@@ -47,6 +54,7 @@ export async function startRecordForProject({
   const { recordId, recordData } = buildNewRecordForProject({
     projectId,
     projectName,
+    projectImage,
     componentList,
     nowIso,
   })

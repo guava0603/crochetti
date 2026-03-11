@@ -32,14 +32,16 @@ const toggleStar = () => {
 
 <style scoped>
 .button-star {
-  width: 24px;
-  height: 24px;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
   cursor: pointer;
   user-select: none;
   color: var(--color-icon-base);
 }
 
-.button > svg {
+.button-star > svg {
   transition: all 0.2s;
+  transform: scale(0.55);
 }
 </style>

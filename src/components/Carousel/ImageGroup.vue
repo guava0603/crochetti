@@ -69,8 +69,21 @@ const computedAriaLabel = computed(() => props.ariaLabel || t('image.projectImag
 const urls = computed(() => {
   const raw = Array.isArray(props.images) ? props.images : []
   return raw
-    .filter((x) => typeof x === 'string')
-    .map((x) => x.trim())
+    .map((x) => {
+      if (typeof x === 'string') return x.trim()
+      if (x && typeof x === 'object') {
+        const candidate =
+          x.url ||
+          x.src ||
+          x.href ||
+          x.uri ||
+          x.downloadURL ||
+          x.downloadUrl ||
+          x.download_url
+        return typeof candidate === 'string' ? candidate.trim() : ''
+      }
+      return ''
+    })
     .filter(Boolean)
 })
 
@@ -138,10 +151,10 @@ watch(
 <style scoped>
 .image-carousel {
   position: relative;
-  width: 100vw;
+  width: 100%;
   height: min(100vw, 40vh);
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  margin-left: 0;
+  margin-right: 0;
   background: rgba(0, 0, 0, 0.04);
 }
 
@@ -165,7 +178,7 @@ watch(
   scroll-snap-align: center;
 }
 
-.image-carousel__image {
+.image-carousel :deep(.image-carousel__image) {
   width: 100%;
   height: 100%;
   border-radius: 0;

@@ -9,6 +9,7 @@
     <img
       v-if="effectiveUrlWithBust"
       class="avatar-circle__img"
+      :class="imgClass"
       :src="effectiveUrlWithBust"
       :alt="alt"
       loading="eager"
@@ -27,6 +28,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { avatarIdFromValue, avatarSrcFromId } from '@/constants/avatarPresets'
 
 const props = defineProps({
   imageUrl: { type: String, default: '' },
@@ -39,17 +41,35 @@ const props = defineProps({
   size: { type: [Number, String], default: 40 },
 
   // Border and background are owned by this component.
-  border: { type: String, default: '2px solid #e5e7eb' },
-  background: { type: String, default: 'var(--color-icon-add)' },
+  border: { type: String, default: '0.25rem solid var(--color-background-mute)' },
+  background: { type: String, default: 'white' },
   color: { type: String, default: '#ffffff' },
 
   rootClass: { type: [String, Array, Object], default: '' }
 })
 
-const resolvedUrl = computed(() => {
+const rawAvatarValue = computed(() => {
   const raw = props.imageUrl || props.image_url
-  const url = typeof raw === 'string' ? raw.trim() : ''
+  return typeof raw === 'string' ? raw.trim() : ''
+})
+
+const presetId = computed(() => avatarIdFromValue(rawAvatarValue.value))
+const isPresetAvatar = computed(() => Boolean(presetId.value))
+
+const resolvedUrl = computed(() => {
+  if (presetId.value) {
+    return avatarSrcFromId(presetId.value) || null
+  }
+
+  const url = rawAvatarValue.value
   return url || null
+})
+
+const imgClass = computed(() => {
+  return {
+    'avatar-circle__img--preset': isPresetAvatar.value,
+    'avatar-circle__img--photo': !isPresetAvatar.value
+  }
 })
 
 const imgFailed = ref(false)
@@ -99,12 +119,13 @@ const fallbackLetter = computed(() => {
 
 const rootStyle = computed(() => {
   const size = typeof props.size === 'number' ? `${props.size}px` : String(props.size || '40px')
+  const isFallback = !effectiveUrlWithBust.value
   return {
     width: size,
     height: size,
     border: props.border,
-    background: props.background,
-    color: props.color
+    background: isFallback ? 'var(--color-button-add)' : props.background,
+    color: isFallback ? 'var(--color-white)' : props.color
   }
 })
 </script>
@@ -124,6 +145,15 @@ const rootStyle = computed(() => {
   height: 100%;
   display: block;
   object-fit: cover;
+}
+
+.avatar-circle__img--preset {
+  transform: scale(0.9);
+  transform-origin: center;
+}
+
+.avatar-circle__img--photo {
+  transform: none;
 }
 
 .avatar-circle__fallback {

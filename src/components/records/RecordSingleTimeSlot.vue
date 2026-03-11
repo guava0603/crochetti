@@ -76,13 +76,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { onAuthStateChanged } from 'firebase/auth'
-
-import { auth } from '@/firebaseConfig'
-import { fetchUserRecord, setUserRecord } from '@/services/firestore/records'
+import { setUserRecord } from '@/services/firestore/records'
 import { openConfirmation } from '@/services/ui/confirmation'
 import { openError } from '@/services/ui/notice'
 import { originalStatuses } from '@/constants/status.js'
@@ -91,6 +88,11 @@ import { datetimeLocalToIso, isoToDatetimeLocal } from '@/utils/dateTime'
 
 import UpdateStatus from '@/components/modals/UpdateStatus.vue'
 import ButtonDelete from '@/components/buttons/ButtonDelete.vue'
+
+const props = defineProps({
+  currentUser: { type: Object, default: null },
+  profile: { type: Object, default: null }
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -108,8 +110,9 @@ const timeSlotId = computed(() => {
 const slotIndex = computed(() => (timeSlotId.value == null ? -1 : timeSlotId.value - 1))
 
 const currentRecord = recordCtx?.recordData || ref(null)
-const currentUser = ref(null)
-const loading = ref(true)
+const currentUser = computed(() => props.currentUser)
+const authPending = computed(() => currentUser.value === undefined)
+const loading = computed(() => authPending.value || Boolean(recordCtx?.recordLoading?.value))
 const saving = ref(false)
 
 const editing = reactive({ status: false, start: false, end: false })
@@ -146,16 +149,6 @@ const slotStartAtText = computed(() => {
   if (totalComponentCount.value <= 0) return ''
   return t('record.slotStartAt', { n: slotStartComponentCount.value, total: totalComponentCount.value })
 })
-
-const loadRecord = async () => {
-  if (recordCtx) {
-    await recordCtx.loadRecord()
-    return
-  }
-  if (!currentUser.value || !recordId.value) return
-  const recordData = await fetchUserRecord(currentUser.value.uid, recordId.value)
-  currentRecord.value = recordData || null
-}
 
 const selfDefinedStatuses = computed(() => currentRecord.value?.self_defined_status || [])
 const statusNotes = computed(() => currentRecord.value?.self_defined_status_notes || [])
@@ -391,23 +384,6 @@ const confirmSave = async () => {
   }
 }
 
-onMounted(() => {
-  const unsubscribe = onAuthStateChanged(auth, async (user) => {
-    currentUser.value = user || null
-    loading.value = true
-
-    try {
-      if (user) {
-        await loadRecord()
-      } else {
-        currentRecord.value = null
-      }
-    } finally {
-      loading.value = false
-      unsubscribe()
-    }
-  })
-})
 </script>
 
 <style scoped>

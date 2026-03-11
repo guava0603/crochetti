@@ -50,6 +50,10 @@ const props = defineProps({
     type: Number,
     required: true
   },
+  autoFocus: {
+    type: Boolean,
+    default: true
+  },
   size: {
     type: String,
     default: 'md',
@@ -200,7 +204,7 @@ const handleBlur = (event) => {
 onMounted(async () => {
   await nextTick()
   scrollToValue(props.modelValue)
-  rootRef.value?.focus?.()
+  if (props.autoFocus) rootRef.value?.focus?.()
 })
 
 watch(
@@ -258,6 +262,10 @@ watch(
   height: 100%;
   width: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
   overscroll-behavior: contain;
   scroll-snap-type: y mandatory;
   scrollbar-width: none;

@@ -1,0 +1,16 @@
+.created-time-pill {
+  text-align: right;
+  align-self: flex-end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  margin-right: 1.5rem;
+  margin-top: 1rem;
+}
+
+.created-time-pill__row {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-border-hover);
+}

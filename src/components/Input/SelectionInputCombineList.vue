@@ -2,6 +2,8 @@
   <div class="selection-combine" @keydown.esc.prevent="closeMenu">
     <input
       ref="inputRef"
+      :id="inputId || null"
+      :aria-label="ariaLabel || null"
       :value="modelValue"
       class="selection-combine__input"
       :placeholder="placeholder"
@@ -38,6 +40,14 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  inputId: {
+    type: String,
+    default: ''
+  },
+  ariaLabel: {
+    type: String,
+    default: ''
+  },
   suggestions: {
     type: Array,
     default: () => []
@@ -53,6 +63,10 @@ const props = defineProps({
   maxItems: {
     type: Number,
     default: 10
+  },
+  strict: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -77,6 +91,12 @@ function handleInput(e) {
 }
 
 function handleBlur(e) {
+  if (props.strict) {
+    const current = String(props.modelValue ?? '').trim()
+    const ok = !current || normalizedSuggestions.value.includes(current)
+    if (!ok) emit('update:modelValue', '')
+  }
+
   // Allow click selection from menu before closing.
   window.setTimeout(() => {
     closeMenu()
@@ -127,7 +147,7 @@ const showMenu = computed(() => {
 .selection-combine__input {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border-warm);
+  border: 1px solid var(--color-border-edit-project, var(--color-border));
   border-radius: 8px;
   font-size: 0.95rem;
   font-family: inherit;

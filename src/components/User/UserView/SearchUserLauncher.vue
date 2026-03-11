@@ -1,6 +1,8 @@
 <template>
-  <ButtonAddIcon
+  <FloatDockedButton
     class="user-fab"
+    image-src="assets/image/settings/015__circle_plus.svg"
+    :invert-icon="true"
     :aria-label="t('user.fab.searchUser')"
     @click="showModal = true"
   />
@@ -16,7 +18,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ButtonAddIcon from '@/components/buttons/svg/ButtonAdd.vue'
+import FloatDockedButton from '@/components/buttons/FloatDockedButton.vue'
 import SearchUserByIdModal from '@/components/modals/SearchUserByIdModal.vue'
 
 const props = defineProps({

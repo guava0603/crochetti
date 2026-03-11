@@ -9,11 +9,11 @@
     @touchend.stop
     @wheel.stop.prevent
   >
-    <ButtonGroup
-      type="toggle"
+    <SelectionButtonGroup
       v-model="langKey"
-      :items="langItems"
-      :aria-label="t('toolbar.editRow.crochetLang')"
+      :options="langItems"
+      :aria-label="ariaLabel"
+      :disabled="disabled"
     />
   </div>
 </template>
@@ -21,18 +21,54 @@
 <script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import ButtonGroup from '@/components/buttons/ButtonGroup.vue'
+import SelectionButtonGroup from '@/components/Selection/ButtonGroup.vue'
 import { useCrochetLang } from '@/composables/useCrochetLang'
+import { CROCHET_LANG } from '@/constants/crochetData'
+
+const props = defineProps({
+  modelValue: { type: String, default: undefined },
+  ariaLabel: { type: String, default: '' },
+  disabled: { type: Boolean, default: false }
+})
+
+const emit = defineEmits(['update:modelValue'])
 
 const { t } = useI18n({ useScope: 'global' })
 const { crochetLang: crochetLangRef, setCrochetLang } = useCrochetLang()
 
-const crochetLang = computed(() => Number(crochetLangRef.value) || 0)
+const ariaLabel = computed(() => props.ariaLabel || t('toolbar.editRow.crochetLang'))
+
+const crochetLang = computed(() => Number(crochetLangRef.value) || CROCHET_LANG.symbol_jp)
 
 const langKey = computed({
-  get: () => (crochetLang.value === 1 ? 'zh' : 'jp'),
+  get: () => {
+    // Controlled mode: used by SystemSettings draft state.
+    if (props.modelValue !== undefined) {
+      if (props.modelValue === 'text') return 'text'
+      if (props.modelValue === 'icon') return 'icon'
+      return 'jp'
+    }
+
+    // Uncontrolled mode: reflect global crochetLang.
+    if (crochetLang.value === CROCHET_LANG.text_zh) return 'text'
+    if (crochetLang.value === CROCHET_LANG.icon) return 'icon'
+    return 'jp'
+  },
   set: (next) => {
-    const nextId = next === 'zh' ? 1 : 0
+    const key = next === 'text' ? 'text' : next === 'icon' ? 'icon' : 'jp'
+
+    // Controlled: only emit.
+    if (props.modelValue !== undefined) {
+      emit('update:modelValue', key)
+      return
+    }
+
+    // Uncontrolled: persist immediately.
+    const nextId = key === 'text'
+      ? CROCHET_LANG.text_zh
+      : key === 'icon'
+        ? CROCHET_LANG.icon
+        : CROCHET_LANG.symbol_jp
     void setCrochetLang(nextId)
   }
 })
@@ -40,20 +76,22 @@ const langKey = computed({
 const langItems = computed(() => ([
   {
     key: 'jp',
-    label: t('toolbar.editRow.crochetLangSymbolJp'),
-    ariaLabel: t('toolbar.editRow.crochetLangSymbolJp')
+    label: t('toolbar.editRow.crochetLangSymbolJp')
   },
   {
-    key: 'zh',
-    label: t('toolbar.editRow.crochetLangTextZh'),
-    ariaLabel: t('toolbar.editRow.crochetLangTextZh')
+    key: 'text',
+    label: t('toolbar.editRow.crochetLangTextZh')
+  },
+  {
+    key: 'icon',
+    label: t('toolbar.editRow.crochetLangIcon')
   }
 ]))
 </script>
 
 <style scoped>
 .translate-toggle {
-  display: inline-flex;
+  display: flex;
   flex: none;
 }
 </style>

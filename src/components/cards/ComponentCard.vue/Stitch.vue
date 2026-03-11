@@ -43,6 +43,7 @@
       :set-text="(_n, v) => String(v ?? '')"
       @add="addStitchNote"
       @remove="removeStitchNote"
+      @item-blur="(idx) => handleNoteBlur(idx)"
     />
   </div>
 
@@ -116,10 +117,28 @@ function ensureStitchFields() {
   component.value.notes = component.value.notes
     .filter((n) => n != null)
     .map((n) => (typeof n === 'string' ? n : String(n?.description ?? '')))
+}
 
-  if (isEditing.value && component.value.notes.length === 0) {
-    component.value.notes.push('')
-  }
+function trimTrailingEmptyNotesInPlace() {
+  if (!Array.isArray(component.value.notes)) component.value.notes = []
+  const list = component.value.notes
+    .filter((n) => n != null)
+    .map((n) => (typeof n === 'string' ? n : String(n?.description ?? '')))
+    .map((n) => String(n ?? ''))
+
+  let end = list.length
+  while (end > 0 && String(list[end - 1] ?? '').trim() === '') end -= 1
+  component.value.notes = list.slice(0, end)
+}
+
+function handleNoteBlur(idx) {
+  if (!Array.isArray(component.value.notes)) component.value.notes = []
+  const list = component.value.notes
+  const i = Number(idx)
+  if (!Number.isFinite(i)) return
+  if (i !== list.length - 1) return
+  if (String(list[i] ?? '').trim() !== '') return
+  trimTrailingEmptyNotesInPlace()
 }
 
 const stitchOrderN = computed(() => {
@@ -255,7 +274,6 @@ function addStitchNote() {
 function removeStitchNote(index) {
   ensureStitchFields()
   component.value.notes.splice(index, 1)
-  if (component.value.notes.length === 0) component.value.notes.push('')
 }
 </script>
 

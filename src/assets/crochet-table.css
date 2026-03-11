@@ -13,12 +13,10 @@
   flex-direction: column;
   margin-top: 1rem;
   overflow: visible;
-  border: 1px solid var(--color-border-warm);
-  background: var(--color-surface-sheet);
 }
 
 .crochet-table.row-list-vertical .row-container--header {
-  border-bottom: 1px solid var(--color-border-warm);
+  border: 1px solid var(--color-border-warm);
 }
 
 .crochet-table .row-container {
@@ -85,15 +83,16 @@
 
 /* Row repeat reminder */
 .crochet-table .repeat-reminder {
-  margin: 0.25rem 0.75rem 0.75rem;
-  color: #9ca3af;
+  padding: 0.25rem 0.75rem 0.75rem;
+  color: var(--color-font-invisible);
   font-size: 0.85rem;
+  border-bottom: 2px solid var(--color-border);
 }
 
 /* CrochetRow layout */
 .crochet-table .row-table {
   display: grid;
-  grid-template-columns: 56px 1fr 72px;
+  grid-template-columns: 3rem 1fr 4rem;
   width: 100%;
   align-items: stretch;
 }
@@ -170,9 +169,9 @@
   width: 100%;
   background: white;
   border: 2px solid var(--color-icon-add);
-  border-radius: 6px;
   padding: 0;
   overflow: visible;
+  transform: scale(1.02);
 }
 
 .crochet-table .row-number-editor {
@@ -188,7 +187,8 @@
   height: 100%;
   transition: all 0.2s;
   overflow: visible;
-  border: 0.5px solid var(--color-border-warm);
+  border: 1px solid var(--color-border-warm);
+  border-top: none;
 }
 
 .crochet-table .row-card.clickable:hover {

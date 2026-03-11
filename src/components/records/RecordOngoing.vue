@@ -25,6 +25,21 @@
               <div class="component-section">
                 <span v-if="isRecordableComponent(item)" class="component-progress-tag">{{ getComponentProgress(index) }}%</span>
                 <div class="component-label">{{ getComponentLabel(item, index) }}</div>
+
+                <div
+                  v-if="hasProjectMeta && (getComponentHookLines(item).length > 0 || getComponentYarnLines(item).length > 0)"
+                  class="component-meta"
+                >
+                  <div v-if="getComponentHookLines(item).length" class="component-meta__row">
+                    <span class="component-meta__label">{{ $t('project.componentMetadata.hook') }}</span>
+                    <span class="component-meta__value">{{ getComponentHookLines(item).join('、') }}</span>
+                  </div>
+                  <div v-if="getComponentYarnLines(item).length" class="component-meta__row">
+                    <span class="component-meta__label">{{ $t('project.componentMetadata.yarn') }}</span>
+                    <span class="component-meta__value">{{ getComponentYarnLines(item).join('、') }}</span>
+                  </div>
+                </div>
+
                 <RecordingTable
                   v-if="isRecordableComponent(item)"
                   :ref="setComponentTableRef(index)"
@@ -71,38 +86,6 @@
         :confirmAddCustomStatus="confirmAddCustomStatus"
       />
     </div>
-
-    <Teleport to="#bottom-left-dock-before">
-      <div class="home-latest-record-dock">
-        <div
-          class="home-latest-record-panel"
-          :class="{ 'is-hidden': recordDockCollapsed }"
-        >
-          <RecordOptions
-            :context="recordOptionsContext"
-            :actions="recordOptionsActions"
-            docked
-          />
-        </div>
-
-        <div class="home-latest-record-mini-outer">
-          <button
-            type="button"
-            class="home-latest-record-mini"
-            :aria-label="recordDockCollapsed ? 'Show record options' : 'Hide record options'"
-            :title="recordDockCollapsed ? 'Show record options' : 'Hide record options'"
-            @click="recordDockCollapsed = !recordDockCollapsed"
-          >
-            <img
-              class="home-latest-record-mini__icon"
-              :src="crochetIconUrl"
-              alt=""
-              aria-hidden="true"
-            />
-          </button>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -111,16 +94,14 @@ import UpdateStatus from '@/components/modals/UpdateStatus.vue'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { auth } from '@/firebaseConfig'
-import { onAuthStateChanged } from 'firebase/auth'
-import { addRecordToProjectOngoing, completeProjectRecord } from '@/services/firestore/projects'
-import { fetchUserRecord, mergeUserRecord, setUserRecord } from '@/services/firestore/records'
+import { completeProjectRecord } from '@/services/firestore/projects'
+import { mergeUserRecord, setUserRecord } from '@/services/firestore/records'
 import { openConfirmation } from '@/services/ui/confirmation'
-import { openError } from '@/services/ui/notice'
 import { formatDateTimeCompact } from '@/utils/dateTime'
 import { useRecordContext } from '@/composables/recordContext'
 import { useSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
 import { useAchievementStore } from '@/stores/achievementStore'
+import { useLatestRecordStore } from '@/stores/latestRecordStore'
 
 import { endAtToSelectionList } from '@/utils/crochetPosition.js'
 import {
@@ -130,11 +111,16 @@ import {
   getComponentProgressPercent
 } from '@/utils/recordProgressGenerate.js'
 import RecordingTable from '@/components/CrochetTable/RecordingTable.vue'
-import RecordOptions from '@/components/FloatingTransparentBox/RecordOptions.vue'
 import CarouselWithDot from '@/components/Carousel/CarouselWithDot.vue'
 import ComponentCardStitch from '@/components/cards/ComponentCard.vue/Stitch.vue'
 import ButtonTranslate from '@/components/buttons/svg/ButtonTranslate.vue'
 import { originalStatuses } from '@/constants/status.js'
+import { yarnDisplayLines } from '@/utils/yarnMeta'
+
+const props = defineProps({
+  currentUser: { type: Object, default: null },
+  profile: { type: Object, default: null }
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -143,19 +129,68 @@ const { t } = useI18n({ useScope: 'global' })
 const recordCtx = useRecordContext()
 const selfDefinedCtx = useSelfDefinedStitchesContext()
 const achievementStore = useAchievementStore()
+const latestRecordStore = useLatestRecordStore()
 
-const recordDockCollapsed = ref(false)
-const crochetIconUrl = computed(() => {
-  const base = import.meta.env.BASE_URL || '/'
-  return `${base}assets/image/achievement/noun-crochet-5351977-FFFFFF.svg`
+const projectMaterials = computed(() => {
+  const pm = recordCtx?.projectMaterials
+  if (!pm) return null
+  return (pm && typeof pm === 'object' && 'value' in pm) ? pm.value : pm
 })
+
+const projectYarnMetaList = computed(() => {
+  const m = projectMaterials.value
+  return Array.isArray(m?.yarn) ? m.yarn : []
+})
+
+const projectHookMetaList = computed(() => {
+  const m = projectMaterials.value
+  return Array.isArray(m?.hook) ? m.hook : []
+})
+
+const hasProjectMeta = computed(() => {
+  return projectYarnMetaList.value.length > 0 || projectHookMetaList.value.length > 0
+})
+
+function uniqueTextList(raw) {
+  const list = Array.isArray(raw) ? raw : []
+  const seen = new Set()
+  const out = []
+  for (const v of list) {
+    const text = String(v ?? '').trim()
+    if (!text) continue
+    if (seen.has(text)) continue
+    seen.add(text)
+    out.push(text)
+  }
+  return out
+}
+
+function getComponentHookLines(component) {
+  const base = Array.isArray(component?.hook)
+    ? component.hook
+    : Array.isArray(component?.metadata?.hook)
+      ? component.metadata.hook
+      : []
+  return uniqueTextList(base)
+}
+
+function getComponentYarnLines(component) {
+  const selection = Array.isArray(component?.yarn)
+    ? component.yarn
+    : Array.isArray(component?.metadata?.yarn)
+      ? component.metadata.yarn
+      : []
+  const idsOrTypes = uniqueTextList(selection)
+  if (projectYarnMetaList.value.length === 0) return idsOrTypes
+  return yarnDisplayLines(idsOrTypes, projectYarnMetaList.value)
+}
+
 
 const recordId = recordCtx?.recordId || ref(route.params.record_id)
 const currentRecord = recordCtx?.recordData || ref(null)
 const isRecording = ref(false)
 const currentTime = ref(Date.now())
-const currentUser = ref(null)
-const hasEnsuredProjectOngoing = ref(false)
+const currentUser = computed(() => props.currentUser)
 
 const recordViewRef = ref(null)
 const componentCarouselRef = ref(null)
@@ -199,7 +234,6 @@ const clampComponentIndex = (idx) => {
 }
 
 const selectedComponentIndex = ref(0)
-const activeComponent = computed(() => componentList.value?.[selectedComponentIndex.value] || null)
 
 const hasInitializedComponentSelection = ref(false)
 
@@ -303,11 +337,21 @@ function openModal(type) {
       confirmText: t('common.confirm'),
       confirmClass: 'btn-confirm',
       onConfirm: (payload) => {
-        currentStatusId.value = modalStatusId.value
-        if (payload && typeof payload === 'object' && 'status_note' in payload) {
-          currentStatusNote.value = String(payload.status_note || '').trim()
-        }
+        const prevFromSlot = currentTimeSlot.value
+        const prevStatusId = Number(prevFromSlot?.status_id ?? currentStatusId.value)
+        const prevStatusNote = String(prevFromSlot?.status_note ?? currentStatusNote.value ?? '').trim()
+
+        const rawNextId = Number(modalStatusId.value)
+        const nextStatusId = Number.isFinite(rawNextId) ? rawNextId : prevStatusId
+        const nextStatusNote = (payload && typeof payload === 'object' && 'status_note' in payload)
+          ? String(payload.status_note || '').trim()
+          : String(currentStatusNote.value || '').trim()
+
+        currentStatusId.value = nextStatusId
+        currentStatusNote.value = nextStatusNote
         modalState.value.show = false
+
+        void applyStatusChange({ nextStatusId, nextStatusNote, prevStatusId, prevStatusNote })
       },
       onCancel: () => {
         modalState.value.show = false
@@ -317,10 +361,84 @@ function openModal(type) {
   }
 }
 
+watch(
+  () => ({
+    hasUpdateStatusQuery: Object.prototype.hasOwnProperty.call(route.query, 'update-status'),
+    hasRecord: Boolean(currentRecord.value)
+  }),
+  ({ hasUpdateStatusQuery, hasRecord }) => {
+    if (!hasUpdateStatusQuery || !hasRecord) return
+    if (modalState.value?.show) return
+
+    openModal('update-status')
+
+    const nextQuery = { ...route.query }
+    delete nextQuery['update-status']
+    router.replace({ query: nextQuery }).catch(() => {})
+  },
+  { immediate: true }
+)
+
 const currentStatusId = ref(0)
 const currentStatusNote = ref('')
 const modalStatusId = ref(currentStatusId.value)
 const modalStatusNote = ref(currentStatusNote.value)
+
+const syncLatestRecordStoreIfNeeded = () => {
+  const dockRef = latestRecordStore?.latestRecordData
+  if (!dockRef || typeof dockRef !== 'object' || !('value' in dockRef)) return
+
+  const record = currentRecord.value
+  if (!record || typeof record !== 'object') return
+
+  const dockId = String(dockRef.value?.id || '').trim()
+  const rid = String(recordId.value || '').trim()
+  if (!dockId || !rid || dockId !== rid) return
+
+  latestRecordStore.setLatestRecordData({ ...record, id: dockId })
+}
+
+const applyStatusChange = async ({ nextStatusId, nextStatusNote, prevStatusId, prevStatusNote }) => {
+  if (!currentRecord.value) return
+  if (!Array.isArray(currentRecord.value.time_slots)) currentRecord.value.time_slots = []
+
+  const slots = currentRecord.value.time_slots
+  const lastIdx = slots.length - 1
+  const last = lastIdx >= 0 ? slots[lastIdx] : null
+
+  // 1) If playing: end current slot (keep previous status), then start a new slot immediately.
+  if (currentTimeSlot.value && last && last.end === null) {
+    const nowIso = new Date().toISOString()
+
+    slots[lastIdx] = {
+      ...last,
+      end: nowIso,
+      status_id: prevStatusId,
+      status_note: prevStatusNote
+    }
+
+    slots.push({
+      start: nowIso,
+      end: null,
+      status_id: nextStatusId,
+      status_note: nextStatusNote,
+      end_at_list: (currentRecord.value?.component_list || []).map((comp) => (comp?.end_at ? { ...comp.end_at } : null))
+    })
+
+    isRecording.value = true
+    await saveRecord()
+    syncLatestRecordStoreIfNeeded()
+    return
+  }
+
+  // 2) If not playing: just edit the last slot's status.
+  if (last) {
+    last.status_id = nextStatusId
+    last.status_note = nextStatusNote
+    await saveRecord()
+    syncLatestRecordStoreIfNeeded()
+  }
+}
 
 // Handler for status select in modal
 function handleModalStatusChange(event) {
@@ -343,31 +461,6 @@ watch(() => modalState.value.isStatusSelect && modalState.value.show, (showing) 
 const selfDefinedStatuses = computed(() => {
   return currentRecord.value?.self_defined_status || []
 })
-
-const recordOptionsContext = computed(() => ({
-  recording: {
-    isRecording: isRecording.value,
-    timeSlot: lastTimeSlot.value
-  },
-  status: {
-    id: currentStatusId.value,
-    note: currentStatusNote.value,
-    originalStatuses,
-    selfDefinedStatuses: selfDefinedStatuses.value
-  },
-  selected: {
-    name: activeComponent.value ? getComponentLabel(activeComponent.value, selectedComponentIndex.value) : '',
-    endAt: activeComponent.value?.end_at || null,
-    isCompleted: activeComponent.value?.is_completed === true
-  }
-}))
-
-const recordOptionsActions = {
-  startRecording: () => startRecording(),
-  pauseRecording: () => pauseRecording(),
-  openStatusModal: () => openModal('update-status'),
-  finishComponent: () => handleFinishComponent()
-}
 
 const statusNotes = computed(() => {
   return currentRecord.value?.self_defined_status_notes || []
@@ -504,102 +597,6 @@ const currentTimeSlot = computed(() => {
   return lastTimeSlot.value && lastTimeSlot.value.end === null ? lastTimeSlot.value : null
 })
 
-const ensureProjectOngoing = async () => {
-  if (hasEnsuredProjectOngoing.value) return
-  hasEnsuredProjectOngoing.value = true
-
-  const projectId = currentRecord.value?.project_id
-  if (!projectId) return
-
-  try {
-    await addRecordToProjectOngoing(String(projectId), String(recordId.value))
-  } catch (error) {
-    // Non-blocking; may fail due to rules (e.g. private projects).
-    console.warn('[project record tracking] failed to add ongoing record:', error)
-  }
-}
-
-const componentNotStartedYet = (component) => {
-  if (!component || typeof component !== 'object') return true
-  if (component.is_completed === true) return false
-  const endAt = component.end_at
-  if (!endAt) return true
-  const rowIndex = Number(endAt?.row_index)
-  const crochetCount = Number(endAt?.crochet_count)
-  return (!Number.isFinite(rowIndex) || rowIndex <= 1) && (!Number.isFinite(crochetCount) || crochetCount <= 0)
-}
-
-const ensureComponentHasStartEndAt = (component) => {
-  if (!component || typeof component !== 'object') return
-  if (component.is_completed === true) return
-
-  const endAt = component.end_at
-  const rowIndex = Number(endAt?.row_index)
-  const crochetCount = Number(endAt?.crochet_count)
-
-  // If the component has never started (or end_at is malformed), initialize to the first position.
-  if (!endAt || !Number.isFinite(rowIndex) || rowIndex < 1 || !Number.isFinite(crochetCount) || crochetCount < 0) {
-    component.end_at = { row_index: 1, crochet_count: 0 }
-  }
-}
-
-const startRecording = async () => {
-  if (!currentRecord.value) return
-
-  const targetIdx = clampComponentIndex(selectedComponentIndex.value)
-  const list = currentRecord.value?.component_list
-  if (!Array.isArray(list) || !list[targetIdx]) return
-
-  const target = list[targetIdx]
-
-  // (1) If starting on a completed component, confirm and (if insisted) reset completion.
-  if (target?.is_completed === true) {
-    const ok = await openConfirmation({
-      type: {
-        id: 'startRecordingOnCompletedComponent',
-        params: { name: getComponentLabel(target, targetIdx) }
-      }
-    })
-    if (!ok) return
-
-    target.is_completed = false
-    target.end_at = getLastEndAtForComponent(target)
-  }
-
-  // (2) If not starting on the first incomplete component, confirm.
-  if (componentNotStartedYet(target)) {
-    const firstIdx = firstIncompleteIdx.value
-    if (firstIdx != null && firstIdx !== targetIdx) {
-      const first = list[firstIdx]
-      const ok = await openConfirmation({
-        type: {
-          id: 'startRecordingNotFirstIncompleteComponent',
-          params: {
-            name: getComponentLabel(target, targetIdx),
-            first: getComponentLabel(first, firstIdx)
-          }
-        }
-      })
-      if (!ok) return
-    }
-  }
-
-  // Requirement: once recording successfully starts on a component, initialize end_at
-  // to the first row/first crochet if it wasn't started yet.
-  ensureComponentHasStartEndAt(target)
-
-  void ensureProjectOngoing()
-  currentRecord.value.time_slots.push({
-    start: new Date().toISOString(),
-    end: null,
-    status_id: currentStatusId.value,
-    status_note: currentStatusNote.value,
-    end_at_list: (currentRecord.value?.component_list || []).map((comp) => (comp?.end_at ? { ...comp.end_at } : null))
-  })
-  isRecording.value = true
-  await saveRecord()
-}
-
 const pauseRecording = async () => {
   if (!currentTimeSlot.value) {
     console.warn('No active time slot to pause')
@@ -639,14 +636,7 @@ const findNextIncompleteComponentIndex = (fromIndex) => {
 }
 
 const handleFinishComponent = async () => {
-  if (!currentUser.value) {
-    openError({
-      title: t('common.error'),
-      message: t('auth.loginRequired'),
-      confirmText: t('common.ok')
-    })
-    return
-  }
+  if (!currentUser.value) return
   if (!currentRecord.value) return
 
   const targetIdx = clampComponentIndex(selectedComponentIndex.value)
@@ -764,6 +754,9 @@ const handleUpdateEndAt = async (componentId, rowIndex, crochetCount) => {
     return
   }
 
+  // Align selection to the component being edited.
+  selectedComponentIndex.value = clampComponentIndex(componentId)
+
   const component = currentRecord.value?.component_list?.[componentId]
   if (!component) {
     isComponentEditing.value = false
@@ -825,6 +818,18 @@ const handleUpdateEndAt = async (componentId, rowIndex, crochetCount) => {
   } catch (error) {
     console.error('[handleUpdateEndAt] Error updating Firestore:', error)
   }
+
+  // If the user records the last stitch of the last row while recording,
+  // auto-trigger the finish flow.
+  if (isRecording.value) {
+    const last = getLastEndAtForComponent(component)
+    if (
+      Number(last?.row_index) === Number(rowIndex) &&
+      Number(last?.crochet_count) === Number(safeCrochetCount)
+    ) {
+      await handleFinishComponent()
+    }
+  }
 }
 
 const getComponentProgress = (cIndex) => {
@@ -837,24 +842,39 @@ const getComponentProgress = (cIndex) => {
 
 
 let timerInterval = null
-onMounted(() => {
-  const unsubscribe = onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      currentUser.value = user
-      await loadRecord()
-      timerInterval = setInterval(() => {
-        currentTime.value = Date.now()
-      }, 1000)
+let stopReadyWatch = null
 
-      nextTick(() => {
-        applySelectionForSelectedComponent()
-      })
-      unsubscribe()
-    }
-  })
+onMounted(() => {
+  stopReadyWatch = watch(
+    () => [currentUser.value, recordId.value],
+    async ([user, rid]) => {
+      if (user === undefined) return
+      const uid = user?.uid
+      if (!uid) return
+      if (!rid) return
+
+      await loadRecord()
+
+      if (!timerInterval) {
+        timerInterval = setInterval(() => {
+          currentTime.value = Date.now()
+        }, 1000)
+      }
+
+      await nextTick()
+      applySelectionForSelectedComponent()
+
+      if (typeof stopReadyWatch === 'function') {
+        stopReadyWatch()
+        stopReadyWatch = null
+      }
+    },
+    { immediate: true }
+  )
 })
 
 onUnmounted(() => {
+  if (typeof stopReadyWatch === 'function') stopReadyWatch()
   if (timerInterval) clearInterval(timerInterval)
 })
 
@@ -867,16 +887,16 @@ const loadRecord = async () => {
       return
     }
 
-    if (recordCtx) {
-      await recordCtx.loadRecord()
-    } else {
-      const recordData = await fetchUserRecord(currentUser.value.uid, recordId.value)
-      if (recordData) {
-        currentRecord.value = recordData
-      } else {
-        router.push(-1)
-        return
-      }
+    if (!recordCtx) {
+      console.warn('RecordOngoing: record context missing; cannot load record')
+      router.push(-1)
+      return
+    }
+
+    await recordCtx.loadRecord()
+    if (!currentRecord.value) {
+      router.push(-1)
+      return
     }
 
     if (lastTimeSlot.value) {
@@ -915,7 +935,7 @@ watch(isComponentEditing, async (isEditing) => {
 }
 
 .page-content {
-  padding-bottom: 12em;
+  padding-bottom: var(--padding-bottom-record-options);
 }
 
 .header-with-time {
@@ -932,7 +952,7 @@ watch(isComponentEditing, async (isEditing) => {
   width: 100%;
   text-align: right;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-border-hover);
   font-weight: 500;
   padding: 0.4rem 0;
 }
@@ -945,7 +965,6 @@ watch(isComponentEditing, async (isEditing) => {
 
 .record-panel-actions {
   display: flex;
-  justify-content: flex-end;
   padding: 0 0.25rem;
 }
 
@@ -981,6 +1000,33 @@ watch(isComponentEditing, async (isEditing) => {
   font-weight: 600;
   margin-bottom: 1rem;
   color: #111827;
+}
+
+.component-meta {
+  margin-top: -0.25rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.component-meta__row {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.component-meta__label {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.component-meta__value {
+  font-size: 0.95rem;
+  color: #111827;
+  white-space: pre-wrap;
 }
 
 .component-not-recordable {
@@ -1022,13 +1068,13 @@ watch(isComponentEditing, async (isEditing) => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .home-latest-record-panel {
   position: absolute;
   left: 0;
-  bottom: calc(64px + 10px);
+  bottom: calc(4rem + 0.625rem);
   width: 100%;
   z-index: 1;
 }
@@ -1039,28 +1085,4 @@ watch(isComponentEditing, async (isEditing) => {
   pointer-events: none;
 }
 
-.home-latest-record-mini {
-  width: 64px;
-  height: 64px;
-  border-radius: 9999px;
-  border: none;
-  background: var(--color-icon-add);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  padding: 0;
-}
-
-.home-latest-record-mini__icon {
-  width: 30px;
-  height: 30px;
-  display: block;
-}
-
-.home-latest-record-mini:active {
-  transform: translateY(1px);
-}
 </style>

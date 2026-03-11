@@ -162,8 +162,8 @@ function onItemClick(a) {
   right: 0;
   top: var(--visual-viewport-offset-top, 0px);
   height: var(--visual-viewport-height, 100dvh);
-  /* Keep above in-page tabs/toolbars, but below app-level 9999 modals. */
-  z-index: 9990;
+  /* Keep above in-page tabs/toolbars, but below high-priority app modals. */
+  z-index: var(--z-modal);
   display: grid;
   place-items: center;
   box-sizing: border-box;

@@ -261,7 +261,7 @@ h4 {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
+  z-index: var(--z-modal);
 }
 
 .bundle-wizard {

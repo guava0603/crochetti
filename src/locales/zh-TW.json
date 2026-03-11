@@ -8,6 +8,7 @@
   "common": {
     "cancel": "取消",
     "back": "上一步",
+    "home": "首頁",
     "confirm": "確認",
     "search": "搜尋",
     "ok": "確定",
@@ -37,7 +38,8 @@
     "timeUnitSecond": "秒",
     "timeUnitMinute": "分",
     "timeUnitHour": "時",
-    "timeUnitDay": "天"
+    "timeUnitDay": "天",
+    "required": "必填"
   },
   "help": {
     "open": "說明",
@@ -344,7 +346,7 @@
       },
       "special_same_project_5_in_day": {
         "name": "人型影印機",
-        "description": "天啊，你不會是一台影印機吧？\n在一天內完成同設計的 5 個作品。"
+        "description": "天啊！你是一台影印機嗎？\n在一天內完成同設計的 5 個作品。"
       },
       "special_start_record_with_10_ongoing": {
         "name": "忘了我嗎？",
@@ -425,6 +427,10 @@
       "title": "刪除部位？",
       "message": "確定要刪除 \"{name}\" 嗎？"
     },
+    "removeYarnMetaUsed": {
+      "title": "刪除毛線類型？",
+      "message": "這個毛線類型已被一個或多個部件使用：{type}。刪除後會同時從所有部件移除。確定要繼續嗎？"
+    },
     "logout": {
       "title": "要登出嗎？",
       "message": "確定要登出嗎？",
@@ -474,6 +480,11 @@
       "title": "不是第一個未完成部件",
       "message": "你要從「{name}」開始，但第一個未完成的部件是「{first}」。仍要開始嗎？",
       "confirmText": "開始"
+    },
+    "switchRecordingSession": {
+      "title": "切換記錄？",
+      "message": "你正在「{from}」錄製中。要先結束上一段，再進入「{to}」嗎？",
+      "confirmText": "結束並繼續"
     },
     "endAtBeforeCurrent": {
       "title": "要往前移動進度嗎？",
@@ -540,8 +551,9 @@
       "rowLabel": "第 {n} 行",
       "selectMultipleRows": "選擇多行",
       "crochetLang": "針法顯示",
-      "crochetLangSymbolJp": "日文符號",
-      "crochetLangTextZh": "中文",
+      "crochetLangSymbolJp": "日式符號",
+      "crochetLangTextZh": "文字",
+      "crochetLangIcon": "圖示",
       "copyRow": "複製至最新行",
       "moveUp": "向上",
       "moveDown": "向下",
@@ -594,7 +606,8 @@
     "noNotesAddedYet": "尚未新增備註。",
     "notFound": "找不到此設計稿。",
     "namePlaceholder": "設計稿名稱",
-    "descriptionPlaceholder": "設計稿簡介（選填）",
+    "descriptionPlaceholder": "設計稿簡介",
+    "startMakingCta": "開始製作！",
     "startRecording": "開始記錄",
     "resume": "繼續",
     "startNew": "開始新的記錄",
@@ -620,6 +633,10 @@
       "title": "材料",
       "yarn": "毛線",
       "hook": "鉤針",
+      "yarnType": "類型",
+      "yarnAmount": "數量",
+      "yarnTypePlaceholder": "例：Zebra #6 1.5捲",
+      "yarnAmountPlaceholder": "例：100g、1捲",
       "yarnPlaceholder": "例：Zebra #6 1.5捲",
       "hookPlaceholder": "例：3.5mm"
     },
@@ -661,6 +678,8 @@
       "unsavedProject": "已取消收藏"
     },
     "errors": {
+      "recordNotFound": "找不到此記錄，請再試一次。",
+      "startRecordFailed": "建立新記錄失敗，請再試一次。",
       "copyLinkFailed": "複製連結失敗",
       "updateSavedFailed": "更新收藏失敗，請再試一次",
       "shareLinkFailed": "分享連結失敗",
@@ -680,8 +699,10 @@
   },
   "record": {
     "record": "作品紀錄",
+    "ongoingTitle": "編織中",
+    "resultSharingTitle": "成果結算",
     "startAt": "開始於：",
-    "goToProject": "前往專案",
+    "goToProject": "前往原設計",
     "watchResult": "查看成果",
     "modifyResult": "修改圖片與心得",
     "recordDetails": "詳細資料",
@@ -713,7 +734,7 @@
     "deleteSuccessNotice": "已刪除記錄。",
     "showTimeSlots": "顯示時間區段",
     "backToRecord": "返回紀錄",
-    "timeSlotsTitle": "時間區段",
+    "timeSlotsTitle": "成果細項",
     "noTimeSlots": "目前尚無時間區段",
     "slotStart": "開始",
     "slotEnd": "結束",
@@ -732,6 +753,7 @@
     "notRecordableDesc": "此部件沒有逐行表格，因此此處無法追蹤進度。"
   },
   "recordResult": {
+    "shareOrDownload": "分享／下載",
     "editResultTitle": "修改成果",
     "imagesLabel": "照片（最多 3 張）",
     "thoughtLabel": "心得",
@@ -766,6 +788,7 @@
     "titleResumeOrStart": "要繼續既有作品記錄，或開始一個新的作品記錄？",
     "messageHasExisting": "這個專案已有既有的作品紀錄。",
     "messageStartPrompt": "要開始製作這個織品嗎？",
+    "selectPlaceholder": "輸入關鍵字篩選…",
     "selectToResume": "選擇要繼續的紀錄：",
     "unknown": "未知"
   },
@@ -830,7 +853,18 @@
       "copyUserId": "複製個人ID",
       "userIdCopied": "已複製個人ID",
       "copyUserIdPrompt": "複製這個個人ID：",
-      "copyUserIdFailed": "複製個人ID失敗，請再試一次。"
+      "copyUserIdFailed": "複製個人ID失敗，請再試一次。",
+      "systemSettings": "更改系統設定"
+    },
+    "systemSettings": {
+      "title": "系統設定",
+      "languageLabel": "語言",
+      "crochetDisplayLabel": "針法顯示",
+      "langZhTw": "繁體中文",
+      "langEn": "英文",
+      "crochetSymbolJp": "日式符號簡寫",
+      "crochetText": "文字",
+      "close": "關閉"
     },
     "searchUser": {
       "title": "搜尋使用者",
@@ -845,9 +879,9 @@
       "title": "開始一筆紀錄",
       "message": "請選擇要如何開始新的作品紀錄。",
       "actions": {
-        "selectProject": "選擇既有設計稿",
+        "selectProject": "從舊設計稿開始",
         "addProject": "新增設計稿",
-        "quickAddProject": "快速新增設計稿（全為{stitch}）"
+        "quickAddProject": "快速開始（僅填針數與行數）"
       },
       "selectProjectLabel": "設計稿",
       "componentFallbackName": "部位 {n}",
@@ -856,12 +890,21 @@
       "startRecord": "開始記錄",
       "quick": {
         "rowCount": "行數",
-        "crochetCount": "每行針數（{stitch}）",
+        "rowCountShort": "行數",
+        "crochetCount": "每行針數（紀錄為{stitch}）",
+        "crochetCountShort": "每行針數",
+        "addGroup": "新增一組",
+        "groupsTitle": "每行針數 × 行數",
+        "hintRowsMade": "已製作 {rowCount} 行",
         "hint": "會建立 {rowCount} 行，每行 {crochetCount} 個{stitch}。",
+        "hintGroups": "會建立 {rowCount} 行：{summary}（紀錄為{stitch}）。",
         "createAndStart": "建立設計稿並開始記錄",
+        "submitBarAria": "快速開始操作列",
         "errors": {
           "rowCount": "行數至少要 1。",
-          "crochetCount": "每行針數至少要 1。"
+          "crochetCount": "每行針數至少要 1。",
+          "groupsRequired": "請至少新增一組「每行針數 × 行數」。",
+          "groupIncomplete": "請先填完上一組「每行針數 × 行數」。"
         }
       },
       "errors": {
@@ -872,7 +915,7 @@
     },
     "settings": {
       "label": "設定",
-      "editProfile": "更改個人設定",
+      "editProfile": "修改個人帳號",
       "follow": "追蹤",
       "followNotImplemented": "追蹤功能尚未開放。",
       "profileSaved": "已儲存個人設定。",
@@ -880,7 +923,7 @@
     },
     "profile": {
       "name": "名稱",
-      "avatarUrl": "上傳大頭貼"
+      "avatarUrl": "大頭照"
     },
     "profileSettingsModal": {
       "title": "個人設定",
@@ -888,7 +931,17 @@
       "avatarLabel": "上傳大頭貼",
       "avatarPlaceholder": "https://...",
       "avatarAlt": "大頭貼 {n}",
-      "avatarUploadFailed": "上傳大頭貼失敗，請再試一次。"
+      "avatarUploadFailed": "上傳大頭貼失敗，請再試一次。",
+      "privacyLabel": "隱私設定",
+      "privacyPublic": "公開",
+      "privacyPrivate": "不公開"
+    },
+    "privacy": {
+      "privateNotice": "此帳號不公開"
+    },
+    "avatarPicker": {
+      "title": "選擇大頭照",
+      "default": "預設"
     }
   },
   "addProject": {
@@ -1034,7 +1087,7 @@
     "descriptionPlaceholder": "請輸入你的建議或願望…",
     "wordCount": "{n}/{max} 字",
     "allowContact": "我願意留下 Email 讓開發者聯絡我",
-    "emailLabel": "Email（選填）",
+    "emailLabel": "Email",
     "emailPlaceholder": "name@example.com",
     "emailHint": "僅用於回覆或聯絡，不會公開。",
     "submit": "送出",

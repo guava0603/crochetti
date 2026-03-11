@@ -1,11 +1,5 @@
 <template>
   <div class="project-wizard-layout">
-    <TopBanner
-      v-if="showBanner"
-      :title="title"
-      @last-page="handleLastPage"
-    />
-
     <slot name="status" />
 
     <div v-if="showSteps" class="progress-steps">
@@ -28,9 +22,9 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted } from 'vue'
-import TopBanner from '@/components/layout/TopBanner.vue'
+import { onBeforeUnmount, onMounted, watch } from 'vue'
 import { openConfirmation } from '@/services/ui/confirmation'
+import { useAppBanner } from '@/composables/appBanner'
 
 defineOptions({
   name: 'ProjectWizardLayout'
@@ -73,6 +67,8 @@ const props = defineProps({
 
 const emit = defineEmits(['last-page'])
 
+const appBanner = useAppBanner()
+
 async function handleLastPage() {
   if (!props.isDirty) {
     emit('last-page')
@@ -81,6 +77,16 @@ async function handleLastPage() {
 
   const ok = await openConfirmation({ type: 'discardChanges' })
   if (ok) emit('last-page')
+}
+
+function syncBanner() {
+  if (!appBanner) return
+  appBanner.setBanner({
+    visible: props.showBanner,
+    title: props.title,
+    showBack: props.showBanner,
+    onBack: props.showBanner ? handleLastPage : null
+  })
 }
 
 function applyHideScrollbar(on) {
@@ -99,16 +105,44 @@ function applyHideScrollbar(on) {
   }
 }
 
-onMounted(() => applyHideScrollbar(true))
+onMounted(() => {
+  syncBanner()
+  applyHideScrollbar(true)
+})
+
+watch(
+  () => [props.title, props.showBanner],
+  () => syncBanner()
+)
+
 onBeforeUnmount(() => applyHideScrollbar(false))
+
+onBeforeUnmount(() => {
+  appBanner?.resetHandlers()
+})
 </script>
 
 <style scoped>
 .project-wizard-layout {
+  --color-border-edit-project: var(--color-border);
+
+  flex: 1 1 auto;
+  min-height: 0;
   max-width: 1000px;
-  margin: 0 auto;
   padding: 1rem 1.5rem;
   position: relative;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge legacy */
+}
+
+.project-wizard-layout::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .progress-steps {
@@ -125,6 +159,7 @@ onBeforeUnmount(() => applyHideScrollbar(false))
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  min-width: min(4rem, 40%);
 }
 
 .step-number {
@@ -175,18 +210,17 @@ onBeforeUnmount(() => applyHideScrollbar(false))
 
 :deep(.step-form) {
   background: rgba(255, 255, 255, 0.6);
-  /* border: 1px solid var(--color-border-warm); */
   border-radius: 8px;
-  /* padding: 1.5rem 1rem; */
 }
 
 :deep(.form-group) {
-  margin-bottom: 1.5rem;
+  margin-top: 1.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 :deep(label) {
   display: block;
-  margin-bottom: 0.5rem;
   font-weight: 600;
   font-size: 0.875rem;
 }
@@ -196,12 +230,16 @@ onBeforeUnmount(() => applyHideScrollbar(false))
 :deep(select) {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid var(--color-border-warm);
+  border: 1px solid var(--color-border-edit-project);
   border-radius: 12px;
   font-size: 1rem;
   font-family: inherit;
   background: rgba(255, 255, 255, 0.75);
   color: var(--color-font-dark);
+}
+
+:deep(.project-wizard-layout textarea) {
+  border-color: var(--color-border-edit-project);
 }
 
 :deep(input[type='checkbox']) {
@@ -225,5 +263,23 @@ onBeforeUnmount(() => applyHideScrollbar(false))
   padding: 0.75rem;
   background: #f8d7da;
   border-radius: 4px;
+}
+
+:deep(.label-wrapper) {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+:deep(.required-badge) {
+  background: var(--color-surface-accent);
+  color: var(--color-font-invisible);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.6rem;
+  border-radius: 0.5rem;
 }
 </style>

@@ -4,14 +4,6 @@
       {{ t('addProject.design.stepCounter', { n: stepBadgeN, m: stepBadgeM }) }}
     </div>
 
-    <ButtonDelete
-      v-if="isEditing"
-      class="component-remove-btn"
-      :text="t('project.removeComponentAction')"
-      :type="{ id: 'removeComponent', params: { name: component?.name || '' } }"
-      @click="$emit('remove')"
-    />
-
     <div class="card-header">
       <div class="card-actions">
         <slot name="actions"></slot>
@@ -19,10 +11,6 @@
     </div>
 
     <div class="component-card-subsection component-card-subsection--first">
-      <div class="subsection-header">
-        <h5>{{ isPartComponent(component) ? t('project.componentNameLabel') : t('project.stitchNameLabel') }}</h5>
-      </div>
-
       <div class="component-name-row">
         <input
           v-if="isEditing"
@@ -57,6 +45,7 @@
       v-if="isPartComponent(component)"
       :component="component"
       :is-editing="isEditing"
+      :materials="materials"
       :help-topic-id="helpTopicId"
       :help-topic-ids="helpTopicIds"
     />
@@ -68,6 +57,12 @@
       :component-index="componentIndex"
     />
 
+    <div v-if="isEditing" class="component-card__bottom-actions">
+      <button type="button" class="component-remove-bottom" @click="handleRemove">
+        <span class="component-remove-bottom__text">{{ t('project.removeComponentAction') }}</span>
+      </button>
+    </div>
+
   </div>
 </template>
 
@@ -75,7 +70,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CastOn } from '@/constants/crochetData'
-import ButtonDelete from '@/components/buttons/ButtonDelete.vue'
+import { openConfirmation } from '@/services/ui/confirmation'
 import SelectionInput from '@/components/tools/SelectionInput.vue'
 import ComponentCardComponent from './Component.vue'
 import ComponentCardStitch from './Stitch.vue'
@@ -86,7 +81,7 @@ defineOptions({
   name: 'ComponentCard'
 })
 
-defineEmits(['remove', 'confirm', 'cancel', 'update:component'])
+const emit = defineEmits(['remove', 'confirm', 'cancel', 'update:component'])
 
 const props = defineProps({
   component: {
@@ -114,6 +109,10 @@ const props = defineProps({
     default: ''
   },
   helpTopicIds: {
+    type: Object,
+    default: null
+  },
+  materials: {
     type: Object,
     default: null
   }
@@ -160,10 +159,21 @@ const stepBadgeN = computed(() => {
 const showStepBadge = computed(() => {
   return componentIndex.value != null && componentIndex.value >= 0 && stepBadgeM.value > 0
 })
+
+async function handleRemove() {
+  return openConfirmation({
+    type: { id: 'removeComponent', params: { name: component.value?.name || '' } },
+    onConfirm: async () => {
+      emit('remove')
+    }
+  })
+}
 </script>
 
 <style scoped>
 .component-card {
+  --color-border-edit-project: var(--color-border-warm);
+
   background: var(--color-surface-page);
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -263,7 +273,7 @@ const showStepBadge = computed(() => {
   width: 100%;
   padding: 0.6rem 0.75rem;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   font-size: 0.95rem;
   resize: vertical;
 }
@@ -274,13 +284,43 @@ const showStepBadge = computed(() => {
   box-shadow: 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.12);
 }
 
-:deep(.btn-delete.component-remove-btn) {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border-radius: 8px;
+
+.component-card__bottom-actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-hover);
+  display: flex;
+  align-items: center;
+}
+
+.component-remove-bottom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 70%;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: none;
+  background: var(--color-warning);
+  color: white;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.component-remove-bottom:hover {
+  background: rgb(var(--color-warning-rgb) / 0.18);
+}
+
+.component-remove-bottom__icon {
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) saturate(100%) invert(14%) sepia(76%) saturate(4916%) hue-rotate(356deg)
+    brightness(92%) contrast(109%);
+}
+
+.component-remove-bottom__text {
+  font-size: 0.95rem;
+  font-weight: inherit;
 }
 </style>

@@ -8,6 +8,7 @@
   "common": {
     "cancel": "Cancel",
     "back": "Back",
+    "home": "Home",
     "confirm": "Confirm",
     "search": "Search",
     "ok": "OK",
@@ -36,7 +37,8 @@
     "timeUnitSecond": "s",
     "timeUnitMinute": "m",
     "timeUnitHour": "h",
-    "timeUnitDay": "d"
+    "timeUnitDay": "d",
+    "required": "Required"
   },
   "help": {
     "open": "Help",
@@ -424,6 +426,10 @@
       "title": "Delete component?",
       "message": "Are you sure you want to delete \"{name}\"?"
     },
+    "removeYarnMetaUsed": {
+      "title": "Delete yarn type?",
+      "message": "This yarn type is used by one or more components: {type}. Deleting it will also remove it from those components. Continue?"
+    },
     "logout": {
       "title": "Logout?",
       "message": "Are you sure you want to logout?",
@@ -473,6 +479,11 @@
       "title": "Not the first unfinished component",
       "message": "You are starting from \"{name}\", but the first unfinished component is \"{first}\". Start anyway?",
       "confirmText": "Start"
+    },
+    "switchRecordingSession": {
+      "title": "Switch recording?",
+      "message": "You are currently recording in \"{from}\". End that session before entering \"{to}\"?",
+      "confirmText": "End & continue"
     },
     "endAtBeforeCurrent": {
       "title": "Move progress backwards?",
@@ -540,7 +551,8 @@
       "selectMultipleRows": "Select multiple rows",
       "crochetLang": "Crochet display",
       "crochetLangSymbolJp": "JP symbols",
-      "crochetLangTextZh": "中文",
+      "crochetLangTextZh": "Text",
+      "crochetLangIcon": "Icons",
       "copyRow": "Copy row",
       "deleteRow": "Delete row",
       "countLockedInGroup": "Row count can't be changed in a group",
@@ -595,10 +607,15 @@
     "notFound": "Project not found.",
     "namePlaceholder": "Project name",
     "descriptionPlaceholder": "Project description (optional)",
+    "startMakingCta": "Start making!",
     "startRecording": "Start Recording",
     "resume": "Resume",
     "startNew": "Start New",
     "resumeOrStart": "Resume or Start New Recording?",
+    "errors": {
+      "recordNotFound": "Record not found. Please try again.",
+      "startRecordFailed": "Failed to create new record. Please try again."
+    },
     "copyProject": "Copy Project",
     "copying": "Copying…",
     "copiedNotice": "Project copied",
@@ -620,6 +637,10 @@
       "title": "Materials",
       "yarn": "Yarn",
       "hook": "Hook",
+      "yarnType": "Type",
+      "yarnAmount": "Amount",
+      "yarnTypePlaceholder": "Yarn type / label…",
+      "yarnAmountPlaceholder": "Amount (for display)…",
       "yarnPlaceholder": "brand / color / count......",
       "hookPlaceholder": "Hook size (e.g. 3.5mm)"
     },
@@ -680,6 +701,8 @@
   },
   "record": {
     "record": "Record",
+    "ongoingTitle": "In progress",
+    "resultSharingTitle": "Result summary",
     "startAt": "Start at:",
     "goToProject": "Go to project",
     "watchResult": "Watch result",
@@ -714,7 +737,7 @@
     "deleteSuccessNotice": "Record deleted successfully.",
     "showTimeSlots": "Show time slots",
     "backToRecord": "Back to record",
-    "timeSlotsTitle": "Time slots",
+    "timeSlotsTitle": "Result details",
     "noTimeSlots": "No time slots yet.",
     "slotStart": "Start",
     "slotEnd": "End",
@@ -733,6 +756,7 @@
     "notRecordableDesc": "This component doesn’t have a row-by-row table, so progress tracking isn’t available here."
   },
   "recordResult": {
+    "shareOrDownload": "Share / Download",
     "editResultTitle": "Edit result",
     "imagesLabel": "Photos (max 3)",
     "thoughtLabel": "Thoughts",
@@ -767,6 +791,7 @@
     "titleResumeOrStart": "Resume or Start New Recording?",
     "messageHasExisting": "You have existing records for this project.",
     "messageStartPrompt": "Do you want to start recording your work?",
+    "selectPlaceholder": "Type to filter…",
     "selectToResume": "Select a record to resume:",
     "unknown": "Unknown"
   },
@@ -828,7 +853,18 @@
       "copyUserId": "Copy user ID",
       "userIdCopied": "User ID copied",
       "copyUserIdPrompt": "Copy this user ID:",
-      "copyUserIdFailed": "Failed to copy user ID. Please try again."
+      "copyUserIdFailed": "Failed to copy user ID. Please try again.",
+      "systemSettings": "System settings"
+    },
+    "systemSettings": {
+      "title": "System settings",
+      "languageLabel": "Language",
+      "crochetDisplayLabel": "Stitch display",
+      "langZhTw": "Traditional Chinese",
+      "langEn": "English",
+      "crochetSymbolJp": "JP symbols",
+      "crochetText": "Text",
+      "close": "Close"
     },
     "searchUser": {
       "title": "Find a user",
@@ -853,12 +889,21 @@
       "startRecord": "Start recording",
       "quick": {
         "rowCount": "Row count",
+        "rowCountShort": "Rows",
         "crochetCount": "Stitches per row ({stitch})",
+        "crochetCountShort": "Stitches",
+        "addGroup": "Add a row group",
+        "groupsTitle": "Row groups",
+        "hintRowsMade": "Made {rowCount} rows",
         "hint": "Creates {rowCount} rows, each row has {crochetCount} {stitch}.",
+        "hintGroups": "Creates {rowCount} rows: {summary} ({stitch}).",
         "createAndStart": "Create project & start record",
+        "submitBarAria": "Quick start action bar",
         "errors": {
           "rowCount": "Row count must be at least 1.",
-          "crochetCount": "Stitches per row must be at least 1."
+          "crochetCount": "Stitches per row must be at least 1.",
+          "groupsRequired": "Please add at least one row group.",
+          "groupIncomplete": "Please complete the last row group before continuing."
         }
       },
       "errors": {
@@ -877,7 +922,7 @@
     },
     "profile": {
       "name": "Name",
-      "avatarUrl": "Upload avatar"
+      "avatarUrl": "Avatar"
     },
     "profileSettingsModal": {
       "title": "Profile settings",
@@ -885,7 +930,17 @@
       "avatarLabel": "Upload avatar",
       "avatarPlaceholder": "https://...",
       "avatarAlt": "Avatar {n}",
-      "avatarUploadFailed": "Failed to upload avatar. Please try again."
+      "avatarUploadFailed": "Failed to upload avatar. Please try again.",
+      "privacyLabel": "Privacy",
+      "privacyPublic": "Public",
+      "privacyPrivate": "Private"
+    },
+    "privacy": {
+      "privateNotice": "This account is private."
+    },
+    "avatarPicker": {
+      "title": "Choose an avatar",
+      "default": "Default"
     }
   },
   "addProject": {

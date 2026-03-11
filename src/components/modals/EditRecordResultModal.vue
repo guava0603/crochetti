@@ -13,7 +13,7 @@
               <label class="label">{{ t('recordResult.imagesLabel') }}</label>
 
               <div class="existing-images">
-                <div v-if="keptImageUrls.length" class="existing-images__grid">
+                <div class="existing-images__grid">
                   <ImageBox
                     v-for="(url, idx) in keptImageUrls"
                     :key="url"
@@ -28,27 +28,27 @@
                     :delete-aria-label="t('common.remove')"
                     @delete="removeKeptUrl(url)"
                   />
+
+                  <ImageUploader
+                    v-model="newImageFiles"
+                    :max="remainingSlots"
+                    accept="image/*"
+                    :multiple="true"
+                    :disabled="saving || remainingSlots <= 0"
+                    :remove-text="t('common.remove')"
+                    :max-error-text="t('recordResult.maxImagesError', { max: MAX_IMAGES })"
+                    :alt-text-for-index="(i) => t('recordResult.newImageAlt', { n: i + 1 })"
+                    use-parent-grid
+                  />
                 </div>
 
-                <div v-else class="existing-images__empty">
+                <div v-if="keptImageUrls.length === 0 && newImageFiles.length === 0" class="existing-images__empty">
                   {{ t('recordResult.noImagesYet') }}
                 </div>
               </div>
 
-              <div class="new-images">
-                <ImageUploader
-                  v-model="newImageFiles"
-                  :max="remainingSlots"
-                  accept="image/*"
-                  :multiple="true"
-                  :disabled="saving || remainingSlots <= 0"
-                  :remove-text="t('common.remove')"
-                  :max-error-text="t('recordResult.maxImagesError', { max: MAX_IMAGES })"
-                  :alt-text-for-index="(i) => t('recordResult.newImageAlt', { n: i + 1 })"
-                />
-                <div v-if="remainingSlots <= 0" class="new-images__hint">
-                  {{ t('recordResult.imagesMaxReached', { max: MAX_IMAGES }) }}
-                </div>
+              <div v-if="remainingSlots <= 0" class="new-images__hint">
+                {{ t('recordResult.imagesMaxReached', { max: MAX_IMAGES }) }}
               </div>
             </div>
 
@@ -64,14 +64,15 @@
               />
             </div>
 
-            <div class="actions">
-              <button class="btn-secondary" type="button" :disabled="saving" @click="handleCancel">
-                {{ t('common.cancel') }}
-              </button>
-              <button class="btn-primary" type="button" :disabled="saving" @click="handleSave">
-                {{ saving ? t('common.saving') : t('common.save') }}
-              </button>
-            </div>
+          </div>
+
+          <div class="actions">
+            <button class="btn-secondary" type="button" :disabled="saving" @click="handleCancel">
+              {{ t('common.cancel') }}
+            </button>
+            <button class="btn-primary" type="button" :disabled="saving" @click="handleSave">
+              {{ saving ? t('common.saving') : t('common.save') }}
+            </button>
           </div>
         </div>
       </div>
@@ -151,7 +152,7 @@ function handleSave() {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: var(--z-modal-high);
 }
 
 .modal-container {
@@ -160,7 +161,9 @@ function handleSave() {
   max-width: 520px;
   width: 92%;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
@@ -199,6 +202,8 @@ function handleSave() {
 
 .modal-body {
   padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .field {
@@ -255,6 +260,8 @@ function handleSave() {
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
-  padding-top: 0.5rem;
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid #e5e7eb;
+  background: white;
 }
 </style>

@@ -1,7 +1,9 @@
 <template>
-  <div class="crochet-scrollbar" :class="{ expanded: isExpanded }">
-    <slot />
-  </div>
+  <teleport to="body">
+    <div class="crochet-scrollbar" :class="{ expanded: isExpanded }">
+      <slot />
+    </div>
+  </teleport>
 </template>
 
 <script setup>
@@ -16,14 +18,14 @@ const isExpanded = ref(true)
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 101;
+  z-index: var(--z-bottom-toolbar);
   background: white;
   transition: max-height 0.3s ease;
 }
 
 .crochet-scrollbar.expanded {
-  /* Must be above the bottom-left dock (z-index: 1100 in src/assets/main.css). */
-  z-index: 1200;
+  /* Must be above floating docks/FABs. */
+  z-index: calc(var(--z-bottom-toolbar) + 1);
   max-height: 50vh;
   height: fit-content;
 }
@@ -46,7 +48,7 @@ const isExpanded = ref(true)
   color: var(--color-icon-add);
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
-  z-index: 1201;
+  z-index: calc(var(--z-bottom-toolbar) + 2);
 }
 
 .expand-button:hover {

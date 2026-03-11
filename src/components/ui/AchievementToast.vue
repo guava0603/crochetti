@@ -147,14 +147,14 @@ onBeforeUnmount(() => {
 .ach-toast-host {
   position: fixed;
   left: 50%;
-  z-index: 3100;
+  z-index: var(--z-toast);
   pointer-events: none;
   transform: translateX(-50%);
-  width: min(92vw, 520px);
+  width: min(92vw, 32.5rem);
 }
 
 .ach-toast-host--top {
-  top: calc(12px + env(safe-area-inset-top));
+  top: calc(0.75rem + env(safe-area-inset-top));
 }
 
 .ach-toast-host--center {
@@ -166,57 +166,57 @@ onBeforeUnmount(() => {
   pointer-events: auto;
   cursor: pointer;
   display: grid;
-  grid-template-columns: 96px 1fr;
-  gap: 12px;
-  padding: 14px 14px;
-  border-radius: 18px;
+  grid-template-columns: 4rem 1fr;
+  gap: 0.8rem;
+  padding: 1rem 1.2rem;
+  border-radius: 1.2rem;
 
   /* Japanese healing vibe */
   background: rgba(245, 235, 218, 0.96); /* soft beige */
   color: #5a3f2a; /* warm brown */
 
   /* hand-drawn border */
-  border: 2.5px solid rgba(122, 90, 58, 0.85);
+  border: 0.15625rem solid rgba(122, 90, 58, 0.85);
   box-shadow:
-    0 12px 26px rgba(0, 0, 0, 0.12),
-    0 2px 0 rgba(122, 90, 58, 0.35) inset;
+    0 0.75rem 1.625rem rgba(0, 0, 0, 0.12),
+    0 0.125rem 0 rgba(122, 90, 58, 0.35) inset;
 
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(0.5rem);
+  -webkit-backdrop-filter: blur(0.5rem);
   position: relative;
 }
 
 .ach-toast-card::before {
   content: '';
   position: absolute;
-  inset: 7px;
-  border-radius: 14px;
-  border: 1.5px dashed rgba(122, 90, 58, 0.38);
+  inset: 0.4375rem;
+  border-radius: 0.875rem;
+  border: 0.09375rem dashed rgba(122, 90, 58, 0.38);
   pointer-events: none;
 }
 
 .ach-toast-illus {
-  width: 96px;
-  height: 96px;
-  padding: 12px;
+  width: 4rem;
+  height: 4rem;
+  padding: 0.75rem;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.45);
-  border: 7px solid rgba(122, 90, 58, 0.22);
+  border: 0.4375rem solid rgba(122, 90, 58, 0.22);
 }
 
 .ach-toast-illus__img,
 .ach-toast-illus__svg {
-  width: 78px;
-  height: 78px;
+  width: 4.875rem;
+  height: 4.875rem;
   display: block;
 }
 
 .ach-toast-main {
   min-width: 0;
   display: grid;
-  gap: 6px;
+  gap: 0.375rem;
   align-content: center;
 }
 
@@ -231,7 +231,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .ach-toast-title {
@@ -244,10 +244,11 @@ onBeforeUnmount(() => {
 }
 
 .ach-toast-desc {
-  font-weight: 700;
+  font-weight: 500;
   font-size: 0.92rem;
   line-height: 1.25;
   opacity: 0.92;
+  white-space: pre-line;
   overflow: hidden;
   display: -webkit-box;
   line-clamp: 3;
@@ -256,13 +257,13 @@ onBeforeUnmount(() => {
 }
 
 .ach-toast-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: 999rem;
   display: grid;
   place-items: center;
   background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(122, 90, 58, 0.22);
+  border: 0.0625rem solid rgba(122, 90, 58, 0.22);
   flex: none;
 }
 
@@ -286,7 +287,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 0.5rem;
 }
 
 /* Motion */
@@ -301,29 +302,29 @@ onBeforeUnmount(() => {
 @keyframes ach-toast-in {
   0% {
     opacity: 0;
-    transform: translateY(-18px) scale(0.98);
+    transform: translateY(-1.125rem) scale(0.98);
   }
   60% {
     opacity: 1;
-    transform: translateY(0px) scale(1.02);
+    transform: translateY(0) scale(1.02);
   }
   82% {
-    transform: translateY(2px) scale(0.995);
+    transform: translateY(0.125rem) scale(0.995);
   }
   100% {
     opacity: 1;
-    transform: translateY(0px) scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes ach-toast-out {
   0% {
     opacity: 1;
-    transform: translateY(0px) scale(1);
+    transform: translateY(0) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translateY(-6px) scale(0.98);
+    transform: translateY(-0.375rem) scale(0.98);
   }
 }
 

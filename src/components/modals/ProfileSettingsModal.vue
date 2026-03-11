@@ -21,31 +21,60 @@
             </div>
 
             <div class="field">
-              <label class="label" for="profile-avatar">{{ computedAvatarLabel }}</label>
-              <div id="profile-avatar" class="profile-avatar-uploader">
-                <ImageUploader
-                  v-model="draftAvatarFiles"
-                  :max="1"
-                  accept="image/*"
-                  :multiple="false"
-                  :disabled="saving"
-                  :button-text="computedAvatarLabel"
-                  :remove-text="t('addProject.info.removeImage')"
-                  :max-error-text="t('addProject.info.errors.maxImages', { max: 1 })"
-                  :alt-text-for-index="(i) => t('user.profileSettingsModal.avatarAlt', { n: i + 1 })"
+              <label class="label">{{ computedAvatarLabel }}</label>
+              <div class="avatar-row">
+                <AvatarCircle
+                  class="avatar-row__avatar"
+                  :image-url="avatarPreviewUrl"
+                  :alt="t('user.profileSettingsModal.avatarAlt', { n: 1 })"
+                  :name="draftName"
+                  size="4.25rem"
+                  border="0.25rem solid white"
                 />
+                <button
+                  class="avatar-row__edit"
+                  type="button"
+                  :disabled="saving"
+                  :aria-label="t('user.avatarPicker.title')"
+                  @click="openAvatarPicker"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
               </div>
+            </div>
+
+            <div class="field">
+              <label class="label">{{ t('user.profileSettingsModal.privacyLabel') }}</label>
+              <SelectionButtonGroup
+                v-model="draftPrivacy"
+                :options="privacyOptions"
+                :aria-label="t('user.profileSettingsModal.privacyLabel')"
+                :disabled="saving"
+              />
             </div>
 
             <div class="connected-accounts" aria-label="Connected accounts">
               <div class="connected-accounts__title">{{ t('auth.connectedAccounts.title') }}</div>
 
-              <div v-if="isAnonymous" class="connected-accounts__hint">
+              <div v-if="isAnonymous && !hasLinkedProvider" class="connected-accounts__hint">
                 {{ t('auth.connectedAccounts.anonymousHint') }}
               </div>
 
-              <div v-if="providerInfo.length" class="connected-accounts__list">
-                <div v-for="p in providerInfo" :key="p.providerId" class="connected-accounts__item">
+              <div v-if="displayProviderInfo.length" class="connected-accounts__list">
+                <div v-for="p in displayProviderInfo" :key="p.providerId" class="connected-accounts__item">
                   <div class="connected-accounts__provider">{{ providerLabel(p.providerId) }}</div>
                   <div v-if="p.email" class="connected-accounts__meta">{{ p.email }}</div>
                 </div>
@@ -56,7 +85,7 @@
 
               <div class="connected-accounts__actions">
                 <button
-                  v-if="!hasGoogle"
+                  v-if="!hasLinkedProvider && !hasGoogle"
                   class="btn-secondary"
                   type="button"
                   :disabled="saving || linking"
@@ -66,7 +95,7 @@
                 </button>
 
                 <button
-                  v-if="!hasApple"
+                  v-if="!hasLinkedProvider && !hasApple"
                   class="btn-secondary"
                   type="button"
                   :disabled="saving || linking"
@@ -76,35 +105,57 @@
                 </button>
               </div>
             </div>
+          </div>
 
-            <div class="actions">
-              <button class="btn-secondary" type="button" :disabled="saving" @click="handleCancel">
-                {{ computedCancelText }}
-              </button>
-              <button class="btn-primary" type="button" :disabled="saving" @click="handleSave">
-                {{ saving ? computedSavingText : computedSaveText }}
-              </button>
-            </div>
+          <div class="actions">
+            <button class="btn-secondary" type="button" :disabled="saving" @click="handleCancel">
+              {{ computedCancelText }}
+            </button>
+            <button class="btn-primary" type="button" :disabled="saving || linking || !isDirty" @click="handleSave">
+              {{ saving ? computedSavingText : computedSaveText }}
+            </button>
           </div>
         </div>
       </div>
     </Transition>
   </Teleport>
+
+  <AvatarPickerModal
+    :show="showAvatarPicker"
+    :value="avatarPickerInitial"
+    :avatar-files="avatarFiles"
+    @close="cancelAvatarPicker"
+    @save="saveAvatarPicker"
+  />
 </template>
 
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Capacitor } from '@capacitor/core'
 import { auth } from '@/firebaseConfig'
 import {
-  GoogleAuthProvider,
-  OAuthProvider,
   linkWithCredential
 } from 'firebase/auth'
-import ImageUploader from '@/components/Input/ImageUploader.vue'
+import SelectionButtonGroup from '@/components/Selection/ButtonGroup.vue'
+import AvatarCircle from '@/components/Image/AvatarCircle.vue'
+import AvatarPickerModal from '@/components/modals/AvatarPickerModal.vue'
+import { openConfirmation } from '@/services/ui/confirmation'
 import { openError } from '@/services/ui/error'
 import { openToast } from '@/services/ui/toast'
+import {
+  AVATAR_FILES,
+  AVATAR_IDS,
+  avatarIdFromValue,
+  avatarSrcFromId,
+  isPresetAvatarValue
+} from '@/constants/avatarPresets'
+import {
+  createApplePopupProvider,
+  createGooglePopupProvider,
+  getNativeAppleCredential,
+  getNativeGoogleCredential,
+  isNativePlatform
+} from '@/services/auth/oauth'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -125,7 +176,46 @@ const props = defineProps({
 const emit = defineEmits(['close', 'save'])
 
 const draftName = ref('')
-const draftAvatarFiles = ref([])
+const draftAvatar = ref('')
+const draftPrivacy = ref('public')
+
+const avatarFiles = AVATAR_FILES
+
+const allowedAvatarIdSet = computed(() => {
+  return new Set(['', ...AVATAR_IDS])
+})
+
+function normalizeAvatarValue(raw) {
+  const id = avatarIdFromValue(raw)
+  return allowedAvatarIdSet.value.has(id) ? id : ''
+}
+
+const avatarPreviewUrl = computed(() => {
+  const presetSrc = avatarSrcFromId(draftAvatar.value)
+  if (presetSrc) return presetSrc
+
+  const raw = String(props.profile?.avatar || props.authUser?.photoURL || '').trim()
+  if (!raw) return null
+  if (isPresetAvatarValue(raw)) return avatarSrcFromId(avatarIdFromValue(raw)) || null
+  return raw
+})
+
+const showAvatarPicker = ref(false)
+const avatarPickerInitial = ref('')
+
+function openAvatarPicker() {
+  avatarPickerInitial.value = normalizeAvatarValue(draftAvatar.value)
+  showAvatarPicker.value = true
+}
+
+function cancelAvatarPicker() {
+  showAvatarPicker.value = false
+}
+
+function saveAvatarPicker(next) {
+  draftAvatar.value = normalizeAvatarValue(next)
+  showAvatarPicker.value = false
+}
 
 const linking = ref(false)
 const providerInfo = ref([])
@@ -134,6 +224,65 @@ const isAnonymous = ref(false)
 
 const hasGoogle = computed(() => providerIds.value.includes('google.com'))
 const hasApple = computed(() => providerIds.value.includes('apple.com'))
+const hasLinkedProvider = computed(() => providerInfo.value.length > 0)
+
+function isAppleRelayEmail(email) {
+  const e = String(email || '').trim().toLowerCase()
+  return e.endsWith('@privaterelay.appleid.com')
+}
+
+function pickDisplayProvider(list) {
+  const providers = Array.isArray(list) ? list : []
+  if (!providers.length) return null
+
+  // Prefer any provider with a non-relay email (e.g. Google).
+  const nonRelay = providers.find((p) => p?.email && !isAppleRelayEmail(p.email))
+  if (nonRelay) return nonRelay
+
+  // Then prefer Google explicitly.
+  const google = providers.find((p) => p?.providerId === 'google.com')
+  if (google) return google
+
+  // Fallback: first provider.
+  return providers[0]
+}
+
+function resolveDisplayAccountName(provider, allProviders) {
+  const p = provider || {}
+  const providerId = String(p.providerId || '')
+  const email = String(p.email || '').trim()
+  if (email && !isAppleRelayEmail(email)) return email
+
+  // If this provider is Apple relay but another linked provider has a real email, use that.
+  const alt = Array.isArray(allProviders)
+    ? allProviders.find((x) => x?.email && !isAppleRelayEmail(x.email))
+    : null
+  const altEmail = String(alt?.email || '').trim()
+  if (altEmail) return altEmail
+
+  // Fallbacks.
+  const authEmail = String((auth.currentUser || props.authUser)?.email || '').trim()
+  if (authEmail && !isAppleRelayEmail(authEmail)) return authEmail
+  // Never show Apple's relay/generated identifiers; show only provider label.
+  if (providerId === 'apple.com') return ''
+
+  if (email && !isAppleRelayEmail(email)) return email
+
+  const displayName = String(p.displayName || '').trim()
+  return displayName
+}
+
+const displayProviderInfo = computed(() => {
+  const list = providerInfo.value
+  const chosen = pickDisplayProvider(list)
+  if (!chosen) return []
+  return [
+    {
+      ...chosen,
+      email: resolveDisplayAccountName(chosen, list)
+    }
+  ]
+})
 
 const providerLabel = (providerId) => {
   const id = String(providerId || '')
@@ -151,16 +300,40 @@ const computedSavingText = computed(() => props.savingText || t('common.saving')
 
 const initialName = computed(() => String(props.profile?.name || '').trim())
 
+const initialSnapshotName = ref('')
+const initialSnapshotAvatar = ref('')
+const initialSnapshotPrivacy = ref('public')
+
+const privacyOptions = computed(() => [
+  { id: 'public', label: t('user.profileSettingsModal.privacyPublic') },
+  { id: 'private', label: t('user.profileSettingsModal.privacyPrivate') }
+])
+
 watch(
   () => [props.show, props.profile, props.authUser],
   async () => {
     if (!props.show) return
-    draftName.value = initialName.value
-    draftAvatarFiles.value = []
+    initialSnapshotName.value = initialName.value
+    initialSnapshotAvatar.value = normalizeAvatarValue(props.profile?.avatar)
+    initialSnapshotPrivacy.value = props.profile?.is_privacy ? 'private' : 'public'
+
+    draftName.value = initialSnapshotName.value
+    draftAvatar.value = initialSnapshotAvatar.value
+    draftPrivacy.value = initialSnapshotPrivacy.value
     await refreshProviders()
   },
   { immediate: true }
 )
+
+const isDirty = computed(() => {
+  const nameNow = String(draftName.value || '').trim()
+  const nameInit = String(initialSnapshotName.value || '').trim()
+  const avatarNow = normalizeAvatarValue(draftAvatar.value)
+  const avatarInit = normalizeAvatarValue(initialSnapshotAvatar.value)
+  const privacyNow = draftPrivacy.value === 'private' ? 'private' : 'public'
+  const privacyInit = initialSnapshotPrivacy.value === 'private' ? 'private' : 'public'
+  return nameNow !== nameInit || avatarNow !== avatarInit || privacyNow !== privacyInit
+})
 
 async function refreshProviders() {
   const user = auth.currentUser || props.authUser
@@ -195,32 +368,17 @@ async function refreshProviders() {
 async function handleConnectGoogle() {
   if (linking.value) return
   const user = auth.currentUser
-  if (!user) {
-    openError({ title: t('common.error'), message: t('auth.loginRequired'), confirmText: t('common.ok') })
-    return
-  }
+  if (!user) return
+  if (hasLinkedProvider.value) return
 
   linking.value = true
   try {
-    const isApp = Capacitor.isNativePlatform()
-
-    if (isApp) {
-      const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
-      const nativeResult = await FirebaseAuthentication.signInWithGoogle()
-
-      const idToken = nativeResult?.credential?.idToken || nativeResult?.idToken
-      const accessToken = nativeResult?.credential?.accessToken || nativeResult?.accessToken
-      if (!idToken && !accessToken) {
-        throw new Error('Missing Google credential token from native sign-in result')
-      }
-
-      const credential = GoogleAuthProvider.credential(idToken ?? null, accessToken ?? null)
+    if (isNativePlatform()) {
+      const credential = await getNativeGoogleCredential()
       await linkWithCredential(user, credential)
     } else {
       const { linkWithPopup } = await import('firebase/auth')
-      const provider = new GoogleAuthProvider()
-      provider.setCustomParameters({ prompt: 'select_account' })
-      await linkWithPopup(user, provider)
+      await linkWithPopup(user, createGooglePopupProvider())
     }
 
     await refreshProviders()
@@ -249,41 +407,17 @@ async function handleConnectGoogle() {
 async function handleConnectApple() {
   if (linking.value) return
   const user = auth.currentUser
-  if (!user) {
-    openError({ title: t('common.error'), message: t('auth.loginRequired'), confirmText: t('common.ok') })
-    return
-  }
+  if (!user) return
+  if (hasLinkedProvider.value) return
 
   linking.value = true
   try {
-    const isApp = Capacitor.isNativePlatform()
-
-    if (isApp) {
-      const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
-      if (typeof FirebaseAuthentication?.signInWithApple !== 'function') {
-        throw Object.assign(new Error('Apple sign-in not supported'), { code: 'not-supported' })
-      }
-
-      const nativeResult = await FirebaseAuthentication.signInWithApple()
-      const idToken = nativeResult?.credential?.idToken || nativeResult?.idToken
-      const rawNonce = nativeResult?.credential?.nonce || nativeResult?.nonce || nativeResult?.credential?.rawNonce || nativeResult?.rawNonce
-      if (!idToken) {
-        throw new Error('Missing Apple idToken from native sign-in result')
-      }
-
-      const credential = OAuthProvider.credential({
-        providerId: 'apple.com',
-        idToken,
-        rawNonce: rawNonce || undefined
-      })
-
+    if (isNativePlatform()) {
+      const credential = await getNativeAppleCredential()
       await linkWithCredential(user, credential)
     } else {
       const { linkWithPopup } = await import('firebase/auth')
-      const provider = new OAuthProvider('apple.com')
-      provider.addScope('email')
-      provider.addScope('name')
-      await linkWithPopup(user, provider)
+      await linkWithPopup(user, createApplePopupProvider())
     }
 
     await refreshProviders()
@@ -316,13 +450,25 @@ async function handleConnectApple() {
 }
 
 function handleCancel() {
-  emit('close')
+  if (!isDirty.value || props.saving || linking.value) {
+    emit('close')
+    return
+  }
+
+  void (async () => {
+    const ok = await openConfirmation({ type: 'discardChanges' })
+    if (!ok) return
+    emit('close')
+  })()
 }
 
 function handleSave() {
+  if (!isDirty.value) return
+  if (props.saving || linking.value) return
   emit('save', {
     name: String(draftName.value || '').trim(),
-    avatar_files: Array.isArray(draftAvatarFiles.value) ? draftAvatarFiles.value : []
+    avatar: draftAvatar.value || null,
+    is_privacy: draftPrivacy.value === 'private'
   })
 }
 </script>
@@ -338,7 +484,7 @@ function handleSave() {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: var(--z-modal-high);
 }
 
 .modal-container {
@@ -347,7 +493,9 @@ function handleSave() {
   max-width: 480px;
   width: 92%;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
@@ -386,6 +534,8 @@ function handleSave() {
 
 .modal-body {
   padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .field {
@@ -414,11 +564,47 @@ function handleSave() {
   width: 100%;
 }
 
+.avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatar-row__avatar {
+  flex: none;
+}
+
+.avatar-row__edit {
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  color: rgba(17, 24, 39, 0.85);
+  border-radius: 12px;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.avatar-row__edit:hover {
+  transform: translateY(-1px);
+  background: #ffffff;
+}
+
+.avatar-row__edit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .actions {
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
-  padding-top: 0.5rem;
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid #e5e7eb;
+  background: white;
 }
 
 .connected-accounts {

@@ -23,7 +23,7 @@
       class="image-box__delete"
       @click.stop="emitDelete"
     >
-      <ButtonDelete variant="small" />
+      <ButtonDeleteLight variant="small" />
     </div>
 
     <Teleport to="body">
@@ -44,7 +44,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import ButtonDelete from '@/components/buttons/ButtonDelete.vue'
+import ButtonDeleteLight from '@/components/buttons/ButtonDeleteLight.vue'
 
 const props = defineProps({
   // Prefer `image-url`, but also accept `image_url` to match existing conventions.
@@ -97,7 +97,6 @@ function emitDelete() {
 }
 
 function handleClick(e) {
-  console.log('ImageBox clicked', isOpenable.value, { e })
   if (!isOpenable.value) return
 
   emit('click', e)
@@ -148,11 +147,8 @@ onBeforeUnmount(() => {
 
 .image-box__delete {
   position: absolute;
-  top: -5px;
-  right: -5px;
-  width: 25px;
-  height: 25px;
-  padding: 2px;
+  top: -0.5rem;
+  right: -0.5rem;
   border-radius: 999px;
   border: none;
   background: rgba(255, 255, 255, 0.92);
@@ -171,7 +167,7 @@ onBeforeUnmount(() => {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
-  z-index: 9999;
+  z-index: var(--z-modal-high);
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;

@@ -86,6 +86,7 @@ export async function listPublicUserRecordSummaries(userId, { appId } = {}) {
       id: d.id,
       project_id: data?.project_id ? String(data.project_id) : '',
       project_name: String(data?.project_name || ''),
+      project_image: data?.result?.images?.[0] ? String(data.result.images[0]) : null,
       result: data?.result && typeof data.result === 'object' ? data.result : null,
 
       // Public summaries are only published for completed records.
@@ -247,6 +248,7 @@ export async function listUserRecordSummaries(uid) {
         ? data.result.images
         : []
     const firstImage = imagesRaw.find((u) => typeof u === 'string' && u.trim() !== '')
+    const projectImage = data?.project_image
 
     // Keep only what the user page list needs.
     return {
@@ -257,7 +259,7 @@ export async function listUserRecordSummaries(uid) {
       updated_at_ms: Number.isFinite(updatedAtMs) ? updatedAtMs : 0,
       percentage,
       is_completed: Boolean(data?.is_completed),
-      images: firstImage ? [String(firstImage).trim()] : []
+      coverImageUrl: firstImage || projectImage || null
     }
   })
 

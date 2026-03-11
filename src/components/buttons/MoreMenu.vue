@@ -21,24 +21,66 @@
       <span class="sr-only">{{ label }}</span>
     </button>
 
-    <div v-if="open" class="more-menu__panel" role="menu" @mousedown.prevent>
-      <template v-if="hasItems">
-        <button
-          v-for="item in items"
-          :key="item.key || item.action || item.label"
-          class="more-menu__item"
-          :class="{ 'more-menu__item--danger': item.danger }"
-          type="button"
-          role="menuitem"
-          :disabled="disabled || item.disabled || busyAction === (item.action || item.key)"
-          @click="() => handleItemClick(item)"
-        >
-          {{ item.label }}
-        </button>
-      </template>
+    <Teleport to="body">
+      <div v-if="open" class="more-menu__sheet-layer" @keydown.esc.stop.prevent="close">
+        <div class="more-menu__sheet-backdrop" @click="close" />
 
-      <slot v-else :close="close" />
-    </div>
+        <div class="more-menu__sheet" role="dialog" aria-modal="true" :aria-label="label" @click.stop>
+          <div
+            ref="sheetContentRef"
+            class="more-menu__sheet-content"
+            role="menu"
+            @touchstart.passive="onSheetTouchStart"
+            @touchmove="onSheetTouchMove"
+            @touchend="onSheetTouchEnd"
+            @touchcancel="onSheetTouchEnd"
+          >
+            <div class="more-menu__sheet-grabber" aria-hidden="true">
+              <div class="more-menu__sheet-grabber-bar" />
+            </div>
+            <template v-if="hasAnyItems">
+              <div
+                v-for="(section, sIdx) in normalizedSections"
+                :key="section.key || sIdx"
+                class="more-menu__section"
+              >
+                <div v-if="section.label" class="more-menu__section-label">
+                  {{ section.label }}
+                </div>
+
+                <div class="more-menu__section-items">
+                  <button
+                    v-for="item in section.items"
+                    :key="item.key || item.action || item.label"
+                    class="more-menu__sheet-item"
+                    :class="{ 'more-menu__sheet-item--danger': item.danger }"
+                    type="button"
+                    role="menuitem"
+                    :disabled="disabled || item.disabled || busyAction === (item.action || item.key)"
+                    @click="() => handleItemClick(item)"
+                  >
+                    <span class="more-menu__sheet-item-name">{{ item.label }}</span>
+                    <span v-if="item.icon" class="more-menu__sheet-item-icon" aria-hidden="true">
+                      <component :is="item.icon" />
+                    </span>
+                    <img
+                      v-else-if="item.iconUrl"
+                      class="more-menu__sheet-item-img"
+                      :src="item.iconUrl"
+                      alt=""
+                      aria-hidden="true"
+                      draggable="false"
+                    />
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <slot v-else :close="close" />
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -57,6 +99,10 @@ const props = defineProps({
   items: {
     type: Array,
     default: () => []
+  },
+  sections: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -65,15 +111,112 @@ const type = computed(() => props.type)
 const emit = defineEmits(['select'])
 
 const rootRef = ref(null)
+const sheetContentRef = ref(null)
 const open = ref(false)
 const busyAction = ref('')
 
-const hasItems = computed(() => Array.isArray(props.items) && props.items.length > 0)
+const pullState = {
+  active: false,
+  startY: 0,
+  startX: 0
+}
 
-const items = computed(() => {
-  if (!Array.isArray(props.items)) return []
-  return props.items.filter((i) => i && typeof i.label === 'string' && i.label.length)
+const PULL_CLOSE_THRESHOLD_PX = 64
+const PULL_VERTICAL_SLOP_PX = 6
+
+function getTouchPoint(event) {
+  const t = event?.touches?.[0] || event?.changedTouches?.[0]
+  if (!t) return null
+  return { x: t.clientX, y: t.clientY }
+}
+
+function onSheetTouchStart(event) {
+  if (!open.value) return
+  if (!event?.touches || event.touches.length !== 1) return
+
+  const p = getTouchPoint(event)
+  if (!p) return
+
+  pullState.active = false
+  pullState.startX = p.x
+  pullState.startY = p.y
+}
+
+function onSheetTouchMove(event) {
+  if (!open.value) return
+  if (!event?.touches || event.touches.length !== 1) return
+
+  const el = sheetContentRef.value
+  if (!el) return
+
+  const p = getTouchPoint(event)
+  if (!p) return
+
+  // Only enable pull-to-close when the scroll view is already at the top.
+  // We start measuring from the moment we are at the top to avoid closing
+  // when the user is merely scrolling back to top.
+  if (el.scrollTop > 0) {
+    pullState.active = false
+    return
+  }
+
+  const deltaX = Math.abs(p.x - pullState.startX)
+  const deltaY = p.y - pullState.startY
+
+  if (!pullState.active) {
+    if (deltaY < PULL_VERTICAL_SLOP_PX) return
+    if (deltaX > Math.abs(deltaY)) return
+    // Activate pull tracking and reset start point at the top.
+    pullState.active = true
+    pullState.startX = p.x
+    pullState.startY = p.y
+    return
+  }
+
+  if (deltaY <= 0) return
+
+  // Prevent rubber-band / scroll chaining while pulling.
+  event.preventDefault()
+
+  if (deltaY >= PULL_CLOSE_THRESHOLD_PX) {
+    pullState.active = false
+    close()
+  }
+}
+
+function onSheetTouchEnd() {
+  pullState.active = false
+}
+
+function normalizeItems(list) {
+  if (!Array.isArray(list)) return []
+  return list
+    .filter((i) => i && typeof i.label === 'string' && i.label.length)
+    .map((i) => ({
+      ...i,
+      iconUrl: typeof i.iconUrl === 'string' ? i.iconUrl : ''
+    }))
+}
+
+const normalizedSections = computed(() => {
+  // Preferred API: explicit sections.
+  if (Array.isArray(props.sections) && props.sections.length) {
+    return props.sections
+      .filter((s) => s && Array.isArray(s.items) && s.items.length)
+      .map((s) => ({
+        key: s.key || s.label || '',
+        label: typeof s.label === 'string' ? s.label : '',
+        items: normalizeItems(s.items)
+      }))
+      .filter((s) => s.items.length)
+  }
+
+  // Back-compat: single implicit section from `items`.
+  const list = normalizeItems(props.items)
+  return list.length ? [{ key: 'default', label: '', items: list }] : []
 })
+
+const hasAnyItems = computed(() => normalizedSections.value.length > 0)
 
 function close() {
   open.value = false
@@ -104,25 +247,16 @@ async function handleItemClick(item) {
   }
 }
 
-function handleDocumentClick(event) {
-  if (!open.value) return
-  const root = rootRef.value
-  if (!root) return
-  if (!root.contains(event.target)) close()
-}
-
 function handleDocumentKeydown(event) {
   if (!open.value) return
   if (event.key === 'Escape') close()
 }
 
 onMounted(() => {
-  document.addEventListener('click', handleDocumentClick)
   document.addEventListener('keydown', handleDocumentKeydown)
 })
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleDocumentClick)
   document.removeEventListener('keydown', handleDocumentKeydown)
 })
 </script>
@@ -177,53 +311,133 @@ onUnmounted(() => {
   box-shadow: none;
 }
 
-.more-menu__panel {
+.more-menu__sheet-layer {
+  --more-menu-z: calc(var(--z-bottom-toolbar) + 50);
+
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: var(--more-menu-z);
+}
+
+.more-menu__sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.28);
+  backdrop-filter: blur(2px);
+}
+
+.more-menu__sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  max-width: 100vw;
+  background: var(--color-surface-sheet);
+  border-top: 1px solid rgba(17, 24, 39, 0.10);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -18px 34px rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+}
+
+.more-menu__sheet-content {
+  padding: 0.75rem 1.25rem calc(2rem + var(--safe-area-bottom));
   display: flex;
   flex-direction: column;
-  align-items: center;
-  position: absolute;
-  right: 0;
-  top: calc(100% + 10px);
-  min-width: 160px;
-  padding: 0.35rem;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
-  z-index: 2000;
+  gap: 1.5rem;
+  max-height: min(70vh, calc(var(--safe-viewport-height) - 2rem));
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  background: white;
 }
 
-.more-menu--sm .more-menu__panel {
-  min-width: unset;
-  width: max-content;
-  max-width: calc(100vw - 24px);
-}
-
-.more-menu__panel :deep(.more-menu__item) {
+.more-menu__sheet-grabber {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
-  width: 100%;
-  text-align: left;
-  padding: 0.6rem 0.2rem;
-  border: none;
-  background: transparent;
-  color: #111827;
-  font-size: 0.9rem;
+  justify-content: center;
+  padding: 0.25rem 0 0.5rem;
+  margin: 0;
+  background: white;
+}
+
+.more-menu__sheet-grabber-bar {
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.18);
+}
+
+.more-menu__section-label {
+  font-size: 0.85rem;
   font-weight: 800;
+  color: rgba(17, 24, 39, 0.70);
+  margin: 0 0 0.4rem;
+}
+
+.more-menu__section-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.more-menu__sheet-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 0.75rem;
+  border: 1px solid rgba(17, 24, 39, 0.10);
+  background: rgba(255, 255, 255, 0.55);
+  color: #111827;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 900;
   cursor: pointer;
 }
 
-.more-menu__panel :deep(.more-menu__item:hover) {
-  background: rgba(0, 0, 0, 0.05);
+.more-menu__sheet-item-name {
+  flex: 1;
+  text-align: left;
+  font-weight: inherit;
 }
 
-.more-menu__panel :deep(.more-menu__item:disabled) {
+.more-menu__sheet-item-icon,
+.more-menu__sheet-item-img {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.92;
+  transform: scale(2.2);
+}
+
+.more-menu__sheet-item-icon :deep(svg) {
+  width: 20px;
+  height: 20px;
+}
+
+.more-menu__sheet-item:active {
+  transform: translateY(1px);
+}
+
+.more-menu__sheet-item:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.more-menu__panel :deep(.more-menu__item--danger) {
-  color: #b91c1c;
-  border-top: 1px solid #eaeaea;
+.more-menu__sheet-item--danger {
+  color: white;
+  background-color: var(--color-warning);
 }
 
 .sr-only {

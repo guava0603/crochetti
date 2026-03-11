@@ -8,5 +8,9 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 
+defineOptions({
+  name: 'RecordHowToPage'
+})
+
 const { t } = useI18n({ useScope: 'global' })
 </script>

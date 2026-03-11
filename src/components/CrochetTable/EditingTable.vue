@@ -609,6 +609,17 @@ const currentSelectedData = computed(() => {
 // Click outside handler
 const handleClickOutside = (event) => {
 	if (editingRowIndex.value !== undefined && tableRef.value) {
+		// BottomToolbar is teleported to <body>. On iOS this also avoids fixed/transform
+		// stacking issues, but it means the toolbar is no longer contained by `toolbarRef`.
+		// Treat clicks inside the toolbar as "inside" so they don't close edit mode.
+		const path = typeof event?.composedPath === 'function' ? event.composedPath() : null
+		if (
+			Array.isArray(path) &&
+			path.some((node) => node?.classList?.contains?.('crochet-scrollbar'))
+		) {
+			return
+		}
+
 		if (toolbarRef.value && toolbarRef.value.contains(event.target)) {
 			return
 		}
