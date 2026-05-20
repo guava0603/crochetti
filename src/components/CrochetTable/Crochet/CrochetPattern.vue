@@ -1,7 +1,7 @@
 <template>
   <!-- Pattern node: [stitch1, stitch2, ...] * n -->
   <span class="pattern-wrapper">
-    <span v-if="isLongPattern">
+    <template v-if="isLongPattern">
       <span class="pattern-count">[</span>
       <template v-for="(stitchNode, nIndex) in node.pattern" :key="nIndex">
         <CrochetNode
@@ -20,8 +20,8 @@
           <template v-else> * {{ patternCount }}</template>
         </template>
       </span>
-    </span>
-    <span v-else>
+    </template>
+    <template v-else>
       <span
         v-if="compactInnerType === 'stitch'"
         class="compact-stitch"
@@ -30,7 +30,8 @@
       >
         <span v-if="(node.count || 1) > 1" class="compact-count">{{ node.count }}</span>
         <span class="compact-inner" :class="{ selected: compactInnerSelected }">
-          <CrochetStitch
+          <component
+            :is="StitchComponent"
             :stitch-id="node.pattern[0].stitch_id"
             :position="node.pattern[0].position"
             :count="1"
@@ -39,7 +40,8 @@
       </span>
 
       <template v-else-if="compactInnerType === 'bundle'">
-        <CrochetBundle
+        <component
+          :is="BundleComponent"
           :node="node.pattern[0]"
           :table-type="tableType"
           :level="level + 1"
@@ -51,12 +53,12 @@
           <template v-else> * {{ patternCount }}</template>
         </span>
       </template>
-     </span>
+     </template>
   </span>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { createSelection, isInSelection } from '@/constants/selection.js'
 import { CROCHET_LANG } from '@/constants/crochetData.js'
@@ -89,12 +91,22 @@ const emit = defineEmits(['selection-change'])
 const { t } = useI18n({ useScope: 'global' })
 const { crochetLang } = useCrochetLang()
 
+const StitchComponent = inject('stitchComponent', CrochetStitch)
+const BundleComponent = inject('bundleComponent', CrochetBundle)
+// If provided, this overrides crochetLang-based zh-repeat behavior.
+const showZhRepeatOverride = inject('showZhRepeatOverride', null)
+
 const patternCount = computed(() => {
   const count = props.node?.count
   return typeof count === 'number' && Number.isFinite(count) ? count : 1
 })
 
-const showZhRepeat = computed(() => crochetLang.value === CROCHET_LANG.text_zh && patternCount.value > 1)
+const showZhRepeat = computed(() => {
+  if (typeof showZhRepeatOverride === 'boolean') {
+    return showZhRepeatOverride && patternCount.value > 1
+  }
+  return crochetLang.value === CROCHET_LANG.text_zh && patternCount.value > 1
+})
 
 const compactInnerSelected = computed(() => {
   if (!props.selection || props.selection.length === 0) return false

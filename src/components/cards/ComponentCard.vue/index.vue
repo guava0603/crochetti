@@ -46,8 +46,6 @@
       :component="component"
       :is-editing="isEditing"
       :materials="materials"
-      :help-topic-id="helpTopicId"
-      :help-topic-ids="helpTopicIds"
     />
     <ComponentCardStitch
       v-else
@@ -71,9 +69,10 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CastOn } from '@/constants/crochetData'
 import { openConfirmation } from '@/services/ui/confirmation'
-import SelectionInput from '@/components/tools/SelectionInput.vue'
+import SelectionInput from '@/components/Selection/SelectionInput.vue'
 import ComponentCardComponent from './Component.vue'
 import ComponentCardStitch from './Stitch.vue'
+import { isComponentType } from '@/utils/componentTypes'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -104,14 +103,6 @@ const props = defineProps({
     type: Boolean,
     default: true
   },
-  helpTopicId: {
-    type: String,
-    default: ''
-  },
-  helpTopicIds: {
-    type: Object,
-    default: null
-  },
   materials: {
     type: Object,
     default: null
@@ -122,11 +113,9 @@ const component = computed(() => props.component)
 const componentList = computed(() => props.componentList)
 const componentIndex = computed(() => props.componentIndex)
 const isEditing = computed(() => props.isEditing)
-const helpTopicId = computed(() => props.helpTopicId)
-const helpTopicIds = computed(() => props.helpTopicIds)
 
 function isPartComponent(c) {
-  return !c?.type || c?.type === 'component'
+  return isComponentType(c?.type)
 }
 
 const castOnOptions = computed(() => {

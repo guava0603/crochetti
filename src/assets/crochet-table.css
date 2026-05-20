@@ -1,18 +1,35 @@
 /* Crochet table shared styles
    Scoped under `.crochet-table` to avoid leaking globally.
 */
-.crochet-table {
+.crochet-table, .edit-row {
   --color-selected: var(--color-icon-add);
   --color-selected-hover: rgb(var(--color-icon-add-rgb) / 0.12);
   --color-selected-active: rgb(var(--color-icon-add-rgb) / 0.2);
+}
+
+/* Table wrapper that can host non-overlapping actions above the table. */
+.crochet-table-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.crochet-table__corner-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 /* Table wrappers */
 .crochet-table.row-list-vertical {
   display: flex;
   flex-direction: column;
-  margin-top: 1rem;
   overflow: visible;
+}
+
+/* When the table is wrapped, avoid double top spacing. */
+.crochet-table-shell > .crochet-table.row-list-vertical {
+  margin-top: 0;
 }
 
 .crochet-table.row-list-vertical .row-container--header {
@@ -112,8 +129,7 @@
 .crochet-table .row-table-cell {
   display: flex;
   align-items: center;
-  padding: 0.5rem 0.75rem;
-  min-height: 44px;
+  padding: 0.3rem 0.75rem;
 }
 
 .crochet-table .row-number {
@@ -163,6 +179,7 @@
 .crochet-table .row-generate.view-mode {
   background: var(--color-surface-sheet) !important;
   color: #6b7280 !important;
+  font-weight: 600;
 }
 
 .crochet-table .row-editor {

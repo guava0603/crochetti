@@ -37,6 +37,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { openError } from '@/services/ui/error'
+import { friendCodeUtils, searchUserByFriendCode } from '@/services/firestore/friendCode'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -65,14 +66,33 @@ watch(
 const trimmedUserId = computed(() => String(userId.value || '').trim())
 const canSubmit = computed(() => Boolean(trimmedUserId.value))
 
-const submit = () => {
-  const id = trimmedUserId.value
-  if (!id) {
+const submit = async () => {
+  const raw = trimmedUserId.value
+  if (!raw) {
     openError({ title: t('common.error'), message: t('user.searchUser.errors.userIdRequired') })
     return
   }
 
-  emit('confirm', id)
+  // If the input looks like a friend code, resolve it to a uid.
+  if (friendCodeUtils.isLikelyFriendCode(raw)) {
+    try {
+      const result = await searchUserByFriendCode(raw)
+      const uid = String(result?.uid || '').trim()
+      if (!uid) {
+        openError({ title: t('common.error'), message: t('user.searchUser.errors.friendCodeNotFound') })
+        return
+      }
+      emit('confirm', uid)
+      return
+    } catch (err) {
+      console.error('searchUserByFriendCode failed:', err)
+      openError({ title: t('common.error'), message: t('user.searchUser.errors.searchFailed') })
+      return
+    }
+  }
+
+  // Fallback: treat as uid.
+  emit('confirm', raw)
 }
 </script>
 

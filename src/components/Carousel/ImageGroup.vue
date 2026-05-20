@@ -38,7 +38,7 @@
         :class="{ 'is-active': idx === activeIndex }"
         :aria-label="t('image.goToImage', { n: idx + 1 })"
         :aria-current="idx === activeIndex ? 'true' : undefined"
-        @click="scrollToIndex(idx)"
+        @click.stop="scrollToIndex(idx)"
       >
         <img class="image-carousel__thumb-img" :src="url" alt="" loading="lazy" />
       </button>
@@ -90,6 +90,12 @@ const urls = computed(() => {
 const trackEl = ref(null)
 const activeIndex = ref(0)
 
+function getSlideElements() {
+  const track = trackEl.value
+  if (!track) return []
+  return Array.from(track.querySelectorAll('.image-carousel__slide'))
+}
+
 function clampIndex(i) {
   const max = Math.max(0, urls.value.length - 1)
   const n = Number(i)
@@ -99,10 +105,20 @@ function clampIndex(i) {
 
 function updateActiveFromScroll() {
   const track = trackEl.value
-  if (!track) return
-  const w = track.clientWidth
-  if (!w) return
-  activeIndex.value = clampIndex(track.scrollLeft / w)
+  const slides = getSlideElements()
+  if (!track || !slides.length) return
+
+  const scrollLeft = track.scrollLeft
+  let best = 0
+  let bestDist = Infinity
+  for (let i = 0; i < slides.length; i += 1) {
+    const dist = Math.abs(slides[i].offsetLeft - scrollLeft)
+    if (dist < bestDist) {
+      bestDist = dist
+      best = i
+    }
+  }
+  if (activeIndex.value !== best) activeIndex.value = best
 }
 
 let scrollRaf = 0
@@ -118,10 +134,22 @@ async function scrollToIndex(index) {
   const target = clampIndex(index)
   await nextTick()
 
-  const w = track.clientWidth
-  if (!w || typeof track.scrollTo !== 'function') return
-  track.scrollTo({ left: target * w, behavior: 'smooth' })
+  const slides = getSlideElements()
+  const slide = slides[target]
+  if (!slide) return
+
   activeIndex.value = target
+
+  const left = slide.offsetLeft
+  if (typeof track.scrollTo === 'function') {
+    track.scrollTo({ left, behavior: 'smooth' })
+  } else {
+    track.scrollLeft = left
+  }
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(updateActiveFromScroll)
+  })
 }
 
 function handleResize() {
@@ -153,12 +181,15 @@ watch(
   position: relative;
   width: 100%;
   height: min(100vw, 40vh);
+  min-height: 0;
   margin-left: 0;
   margin-right: 0;
   background: rgba(0, 0, 0, 0.04);
 }
 
 .image-carousel__track {
+  position: relative;
+  z-index: 0;
   height: 100%;
   display: flex;
   overflow-x: auto;
@@ -175,7 +206,8 @@ watch(
 .image-carousel__slide {
   flex: 0 0 100%;
   height: 100%;
-  scroll-snap-align: center;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
 .image-carousel :deep(.image-carousel__image) {
@@ -202,12 +234,14 @@ watch(
   position: absolute;
   right: 4px;
   bottom: 6px;
+  z-index: 3;
   display: flex;
   gap: 6px;
   padding: 6px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(6px);
+  pointer-events: auto;
 }
 
 .image-carousel__thumb {
@@ -231,5 +265,6 @@ watch(
   height: 100%;
   display: block;
   object-fit: cover;
+  pointer-events: none;
 }
 </style>

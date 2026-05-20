@@ -13,8 +13,10 @@
 // - metrics: computed totals
 // - projects: raw project docs
 // - records: raw record docs
+// - profile: user profile doc (artifacts/...)
 
 import { toMs } from '@/utils/toMs'
+import { hasUsedAllAvatarsForCategory } from '@/constants/avatarAchievementCategories'
 
 /**
  * @typedef {Object} AchievementMetrics
@@ -29,6 +31,7 @@ import { toMs } from '@/utils/toMs'
  * @property {AchievementMetrics} metrics
  * @property {Array<any>} projects
  * @property {Array<any>} records
+ * @property {any} [profile]
  */
 
 /** @type {Record<string, (ctx: AchievementEvalContext) => boolean>} */
@@ -137,6 +140,27 @@ export const ACHIEVEMENT_EVALUATORS = {
     }
 
     return false
+  },
+
+  // avatar
+  avatar_all_flying: ({ profile }) => {
+    const used = profile?.avatar_used_ids
+    return hasUsedAllAvatarsForCategory(used, 'flying')
+  },
+
+  avatar_all_forest: ({ profile }) => {
+    const used = profile?.avatar_used_ids
+    return hasUsedAllAvatarsForCategory(used, 'forest')
+  },
+
+  avatar_all_bugs: ({ profile }) => {
+    const used = profile?.avatar_used_ids
+    return hasUsedAllAvatarsForCategory(used, 'bugs')
+  },
+
+  avatar_all_sea: ({ profile }) => {
+    const used = profile?.avatar_used_ids
+    return hasUsedAllAvatarsForCategory(used, 'sea')
   }
 }
 

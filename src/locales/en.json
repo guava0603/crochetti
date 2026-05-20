@@ -38,7 +38,8 @@
     "timeUnitMinute": "m",
     "timeUnitHour": "h",
     "timeUnitDay": "d",
-    "required": "Required"
+    "required": "Required",
+    "discardChangesConfirm": "You have unsaved changes. Discard them?"
   },
   "help": {
     "open": "Help",
@@ -109,9 +110,9 @@
         "title": "Decorative / utility",
         "body": "Small utility stitches used for joins, turning, spacing, and shaping (may not increase stitch count).",
         "items": {
-          "sl": "sl: slip stitch (joins/moves)",
-          "ch": "ch: chain (turning/spacing)",
-          "skip": "skip: skip 1 stitch (consume 1, generate 0)",
+          "sl": "引抜: slip stitch (joins/moves)",
+          "ch": "鎖: chain (turning/spacing)",
+          "skip": "休: skip 1 stitch (consume 1, generate 0)",
           "turning": "^: turning chain (context-dependent)"
         }
       },
@@ -304,6 +305,84 @@
       "totalStitches": "Total"
     }
   },
+  "knitTable": {
+    "header": {
+      "rowNumber": "Row",
+      "stitch": "Stitch",
+      "totalStitches": "Total"
+    },
+    "add": {
+      "title": "Add a row",
+      "ribbing": "Ribbing",
+      "stockinette": "Stockinette",
+      "singleRow": "Single row"
+    },
+    "row": {
+      "placeholder": "Tap to input stitches"
+    },
+    "mode": {
+      "label": "Mode",
+      "flat": "Flat",
+      "round": "Round"
+    },
+    "modeHintFlat": "Flat knitting: stockinette alternates knit / purl rows.",
+    "modeHintRound": "Round knitting: stockinette is knit every row.",
+    "totalStitches": "Total stitches",
+    "rowCount": "Row count",
+    "startStitch": "Start stitch",
+    "previousTotal": "Previous total",
+    "preview": {
+      "consume": "Consume",
+      "generate": "Generate"
+    },
+    "ribbing": {
+      "a": "A",
+      "b": "B"
+    },
+    "stockinette": {
+      "kindLabel": "Kind",
+      "stockinetteLabel": "Stockinette",
+      "garterLabel": "Garter"
+    },
+    "singleRow": {
+      "draftTitle": "Draft",
+      "clear": "Clear",
+      "empty": "No stitches yet.",
+      "consumeWarn": "This row consumes {consume} stitches, but previous total is {prev}."
+    },
+    "errors": {
+      "totalStitchesRequired": "Please enter total stitches.",
+      "rowCountRequired": "Please enter row count.",
+      "ribbingABRequired": "Please enter A and B."
+    },
+    "confirmRemainder": "Total stitches is not divisible by the repeat unit. Continue and pad the remainder?",
+    "pattern": "Pattern",
+    "bundle": "Bundle",
+    "rope": "Rope"
+  },
+  "knit": {
+    "category": {
+      "basic": "Basic",
+      "increase": "Increase",
+      "decrease": "Decrease"
+    },
+    "stitch": {
+      "castOn": "Cast on",
+      "knit": "Knit",
+      "purl": "Purl",
+      "slip": "Slip",
+      "twist": "Twist",
+      "move": "Move",
+      "bindOff": "Bind off",
+      "yarnOver": "Yarn over",
+      "m1l": "M1L",
+      "m1r": "M1R",
+      "kfb": "KFB",
+      "k2tog": "k2tog",
+      "ssk": "ssk",
+      "s2kp": "s2kp"
+    }
+  },
   "achievement": {
     "toast": {
       "kicker": "New badge"
@@ -316,7 +395,8 @@
     "categories": {
       "projects": "Projects",
       "time": "Time",
-      "special": "Special"
+      "special": "Special",
+      "avatar": "Avatar"
     },
     "catalog": {
       "projects_1": {
@@ -354,6 +434,22 @@
       "special_5_projects_1_days": {
         "name": "Five-in-Five",
         "description": "Complete 5 different projects within 5 days."
+      },
+      "avatar_all_flying": {
+        "name": "Skyward Style",
+        "description": "Use every flying-animal avatar at least once."
+      },
+      "avatar_all_forest": {
+        "name": "Forest Friends",
+        "description": "Use every forest-animal avatar at least once."
+      },
+      "avatar_all_bugs": {
+        "name": "Bug Collector",
+        "description": "Use every bug avatar at least once."
+      },
+      "avatar_all_sea": {
+        "name": "Sea Safari",
+        "description": "Use every sea-animal avatar at least once."
       }
     },
     "cabinet": {
@@ -392,6 +488,10 @@
     "addProjectChooseComponentType": {
       "title": "Add",
       "message": "What would you like to add?"
+    },
+    "addProjectStartMode": {
+      "title": "Create a project",
+      "message": "Would you like to start a new project, or copy from existing projects?"
     },
     "addProjectUnexpectedGenerate": {
       "title": "Submit anyway?",
@@ -447,7 +547,7 @@
     },
     "syncProject": {
       "title": "Update design?",
-      "message": "Updating the design will change the current pattern. If the update is before a stitch marker, it may cause the recorded position to become incorrect.\n\nAre you sure you want to update this record? This action cannot be undone.",
+      "message": "This may affect data you’ve already recorded.\n\nUpdating the design will change the current pattern. If the update is before a stitch marker, it may cause the recorded position to become incorrect.\n\nAre you sure you want to update this record? This action cannot be undone.",
       "confirmText": "Confirm",
       "loadingText": "Syncing…"
     },
@@ -490,6 +590,12 @@
       "message": "You are moving the progress marker backwards for \"{name}\".\n\nCurrent: Row {fromRow}, {fromCrochet}\nNew: Row {toRow}, {toCrochet}\n\nContinue?",
       "confirmText": "Move"
     },
+    "stopRecordingAfterEndAtChange": {
+      "title": "Stop recording?",
+      "message": "Progress updated for \"{name}\". Stop the current recording session now?",
+      "confirmText": "Stop recording",
+      "cancelText": "Keep recording"
+    },
     "completeWholeRow": {
       "title": "Complete this row?",
       "message": "Mark Row {row} as completed for \"{name}\" (move the marker to the end of the row)?",
@@ -509,7 +615,43 @@
         "addStitch": "Add stitch",
         "sameStitch": "Into same stitch"
       },
-      "custom": "Custom",
+      "custom": "More",
+      "quickAdd": {
+        "bundle": "Rope bundle"
+      },
+      "ropeBundle": {
+        "title": "Rope bundle",
+        "chainCountLabel": "Chain count (1-99)",
+        "hint": "Enter how many chains are in this rope bundle."
+      },
+      "moreWizard": {
+        "options": {
+          "raised": "3D stitches",
+          "custom": "Custom"
+        },
+        "raised": {
+          "popcorn": "Popcorn",
+          "puff": "Puff",
+          "bobble": "Bobble",
+          "corkscrew": "Corkscrew"
+        },
+        "raisedSymbolPrefix": {
+          "popcorn": "爆",
+          "puff": "玉",
+          "bobble": "絲",
+          "corkscrew": "捲"
+        },
+        "raisedSymbolPlain": {
+          "popcorn": "PC",
+          "puff": "玉",
+          "bobble": "絲",
+          "corkscrew": "捲"
+        },
+        "details": {
+          "countLabel": "Count",
+          "baseStitchLabel": "Base stitch"
+        }
+      },
       "position": {
         "title": "Position",
         "ariaLabel": "Stitch position",
@@ -529,6 +671,7 @@
         "BP": "裏引き上げ"
       },
       "adjust": {
+        "ariaLabel": "Adjust",
         "increase": "Increase",
         "decrease": "Decrease"
       },
@@ -551,6 +694,7 @@
       "selectMultipleRows": "Select multiple rows",
       "crochetLang": "Crochet display",
       "crochetLangSymbolJp": "JP symbols",
+      "crochetLangSymbolUk": "UK symbols",
       "crochetLangTextZh": "Text",
       "crochetLangIcon": "Icons",
       "copyRow": "Copy row",
@@ -612,10 +756,6 @@
     "resume": "Resume",
     "startNew": "Start New",
     "resumeOrStart": "Resume or Start New Recording?",
-    "errors": {
-      "recordNotFound": "Record not found. Please try again.",
-      "startRecordFailed": "Failed to create new record. Please try again."
-    },
     "copyProject": "Copy Project",
     "copying": "Copying…",
     "copiedNotice": "Project copied",
@@ -637,12 +777,17 @@
       "title": "Materials",
       "yarn": "Yarn",
       "hook": "Hook",
+      "needle": "Needles",
       "yarnType": "Type",
       "yarnAmount": "Amount",
       "yarnTypePlaceholder": "Yarn type / label…",
       "yarnAmountPlaceholder": "Amount (for display)…",
       "yarnPlaceholder": "brand / color / count......",
-      "hookPlaceholder": "Hook size (e.g. 3.5mm)"
+      "hookPlaceholder": "Hook size (e.g. 3.5mm)",
+      "needlePlaceholder": "Needle size (e.g. 4mm)"
+    },
+    "stitchIntroduction": {
+      "title": "Stitch guide"
     },
     "componentImage": {
       "uploadLabel": "Upload image",
@@ -673,19 +818,24 @@
     "actions": {
       "downloadDesign": "Download design",
       "editProject": "Edit project",
+      "deleteProject": "Delete project",
       "copyProjectLink": "Copy project link",
       "saveProject": "Save project",
       "unsaveProject": "Remove from saved"
     },
     "toasts": {
       "savedProject": "Saved",
-      "unsavedProject": "Removed from saved designs"
+      "unsavedProject": "Removed from saved designs",
+      "deletedProject": "Deleted"
     },
     "errors": {
+      "recordNotFound": "Record not found. Please try again.",
+      "startRecordFailed": "Failed to create new record. Please try again.",
       "copyLinkFailed": "Failed to copy link",
       "updateSavedFailed": "Failed to update saved designs",
       "shareLinkFailed": "Failed to share link",
-      "copyProjectFailed": "Failed to copy project. Please try again."
+      "copyProjectFailed": "Failed to copy project. Please try again.",
+      "deleteProjectFailed": "Failed to delete project. Please try again."
     },
     "removeComponentAction": "Delete component",
     "confirmUpdate": "Confirm",
@@ -731,6 +881,13 @@
     "syncNoChangesNotice": "Nothing to sync — your record is already up to date.",
     "syncSuccessNotice": "Project synced.",
     "syncFailedNotice": "Failed to sync project. Please try again.",
+    "syncUpdatedNotice": "Updated: {items}",
+    "syncUpdatedSections": {
+      "name": "Design name",
+      "description": "Description",
+      "images": "Images",
+      "chart": "Pattern"
+    },
     "noProjectId": "No project ID found on this record.",
     "goToDesign": "Go to design",
     "deleteRecord": "Delete record",
@@ -868,11 +1025,13 @@
     },
     "searchUser": {
       "title": "Find a user",
-      "message": "Enter a user ID to open their profile.",
-      "userIdLabel": "User ID",
-      "userIdPlaceholder": "e.g. abc123...",
+      "message": "Enter a user ID or friend code to open their profile.",
+      "userIdLabel": "User ID / Friend code",
+      "userIdPlaceholder": "e.g. abc123... or ABC123",
       "errors": {
-        "userIdRequired": "Please enter a user ID."
+        "userIdRequired": "Please enter a user ID or friend code.",
+        "friendCodeNotFound": "No user found for that friend code.",
+        "searchFailed": "Search failed. Please try again."
       }
     },
     "addRecord": {
@@ -933,7 +1092,18 @@
       "avatarUploadFailed": "Failed to upload avatar. Please try again.",
       "privacyLabel": "Privacy",
       "privacyPublic": "Public",
-      "privacyPrivate": "Private"
+      "privacyPrivate": "Private",
+      "friendCodeLabel": "Friend code",
+      "friendCodeHint": "Share this code so others can find you.",
+      "friendCodeUnavailable": "Not available yet.",
+      "friendCodeCopyPrompt": "Copy friend code:",
+      "friendCodeCopied": "Friend code copied.",
+      "friendCodeCopyFailed": "Failed to copy friend code.",
+      "friendCodeRegenerate": "Regenerate",
+      "friendCodeRegenerateConfirmTitle": "Regenerate friend code?",
+      "friendCodeRegenerateConfirmMessage": "Your old friend code will stop working. Anyone using it won't be able to find you.",
+      "friendCodeRegenerateFailed": "Failed to regenerate friend code. Please try again.",
+      "friendCodeRegenerated": "New friend code created."
     },
     "privacy": {
       "privateNotice": "This account is private."
@@ -944,6 +1114,21 @@
     }
   },
   "addProject": {
+    "startMode": {
+      "new": "Start new",
+      "copy": "Copy from existing"
+    },
+    "copy": {
+      "title": "Copy from existing",
+      "hint": "Select an existing project to copy from.",
+      "selectLabel": "Projects",
+      "selectedLabel": "Selected",
+      "selectPlaceholder": "Search projects…",
+      "selectAria": "Select projects to copy",
+      "selectAll": "Select all",
+      "clearAll": "Clear"
+    },
+    "bannerTitle": "Add project",
     "title": "Add New Project",
     "steps": {
       "basicInfo": "Basic Info",
@@ -960,6 +1145,11 @@
     "info": {
       "projectNameLabel": "Project Name",
       "projectNamePlaceholder": "Enter project name",
+      "craftTypeLabel": "Craft type",
+      "craftTypes": {
+        "crochet": "Crochet",
+        "knitting": "Knitting"
+      },
       "descriptionLabel": "Description",
       "descriptionPlaceholder": "Enter project description (optional)",
       "imagesLabel": "Images (optional)",
@@ -969,6 +1159,7 @@
       "submitBarAria": "Project info actions",
       "errors": {
         "projectNameRequired": "Project name is required",
+        "craftTypeRequired": "Please select at least one craft type",
         "maxImages": "You can upload up to {max} images."
       }
     },
@@ -981,14 +1172,21 @@
       "submitBarAria": "Submit project",
       "addMenuAria": "Add",
       "addComponent": "Add component",
+      "addCrochetComponent": "Add crochet component",
+      "addKnittingComponent": "Add knitting component",
       "addStitch": "Add stitch",
       "relatedComponentsLabel": "Related components",
       "relatedComponentsPlaceholder": "Select a component",
+      "hookSelectPlaceholder": "Select hook…",
+      "needleSelectPlaceholder": "Select needles…",
+      "yarnSelectPlaceholder": "Select yarn…",
+      "yarnAmountPlaceholder": "Amount (optional)…",
       "stitchNotesPlaceholder": "Enter notes",
       "creating": "Creating...",
       "createProject": "Create Project",
       "errors": {
         "atLeastOneComponent": "At least one component is required",
+        "componentNameRequired": "Component name is required (component #{n})",
         "atLeastOneRow": "At least one row is required",
         "noEmptyRows": "Please remove empty rows before submitting{example, select, '' {} other { (e.g., {example})}}."
       }
@@ -1027,7 +1225,9 @@
     "uploadedImages": "Uploaded images"
   },
   "input": {
-    "numberPicker": "Number picker"
+    "numberPicker": "Number picker",
+    "decrease": "Decrease",
+    "increase": "Increase"
   },
   "crochet": {
     "deleteSelectedPattern": "Delete this pattern",
@@ -1055,17 +1255,20 @@
       "halfDoubleCrochet": "Half double crochet",
       "doubleCrochet": "Double crochet",
       "trebleCrochet": "Treble crochet",
+      "tripleSpiralDoubleCrochet": "Triple spiral double crochet",
       "increase": {
         "singleCrochet": "Single crochet increase",
         "halfDoubleCrochet": "Half double crochet increase",
         "doubleCrochet": "Double crochet increase",
-        "trebleCrochet": "Treble crochet increase"
+        "trebleCrochet": "Treble crochet increase",
+        "tripleSpiralDoubleCrochet": "Triple spiral double crochet increase"
       },
       "decrease": {
         "singleCrochet": "Single crochet decrease",
         "halfDoubleCrochet": "Half double crochet decrease",
         "doubleCrochet": "Double crochet decrease",
-        "trebleCrochet": "Treble crochet decrease"
+        "trebleCrochet": "Treble crochet decrease",
+        "tripleSpiralDoubleCrochet": "Triple spiral double crochet decrease"
       },
       "frontPostDoubleCrochet": "Front post double crochet",
       "frontPostHalfDoubleCrochet": "Front post half double crochet"

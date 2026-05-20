@@ -28,9 +28,17 @@
           </div>
         </div>
 
-        <button v-if="hasMore" class="cabinet__more" type="button" @click="openFull">
+        <div
+          v-if="hasMore"
+          class="cabinet__more"
+          role="button"
+          tabindex="0"
+          @click="openFull"
+          @keydown.enter.prevent="openFull"
+          @keydown.space.prevent="openFull"
+        >
           {{ t('achievement.more') }}
-        </button>
+        </div>
       </div>
     </div>
 
@@ -58,6 +66,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAchievementStore } from '@/stores/achievementStore'
 
 import { fetchAchievementCabinet } from '@/services/firestore/achievements'
 import { achievementIconUrl } from '@/services/achievements/icons'
@@ -101,6 +110,28 @@ const props = defineProps({
 })
 
 const { t, te } = useI18n({ useScope: 'global' })
+
+const achievementStore = useAchievementStore()
+
+const getMyEarnedIdSet = () => {
+  // Pinia unwraps refs/computed on the store instance, but keep this defensive.
+  const v = achievementStore?.earnedAchievementIds
+  return v && typeof v === 'object' && 'value' in v ? v.value : v
+}
+
+const canRevealDescription = (a) => {
+  if (props.isMyPage) return true
+
+  const id = a?.id != null ? String(a.id).trim() : ''
+  if (!id) return false
+
+  // Require *both* parties to have earned it.
+  const otherHasEarned = Boolean(a?.isEarned)
+  if (!otherHasEarned) return false
+
+  const myIds = getMyEarnedIdSet()
+  return Boolean(myIds && typeof myIds.has === 'function' && myIds.has(id))
+}
 
 const loading = ref(false)
 const error = ref('')
@@ -255,7 +286,11 @@ const detailOpen = ref(false)
 const detail = ref(null)
 
 const detailTitle = computed(() => (detail.value ? displayName(detail.value) : ''))
-const detailDescription = computed(() => (detail.value ? displayDescription(detail.value) : ''))
+const detailDescription = computed(() => {
+  if (!detail.value) return ''
+  if (canRevealDescription(detail.value)) return displayDescription(detail.value)
+  return '???'
+})
 
 function openAchievement(a) {
   detail.value = a
@@ -342,21 +377,17 @@ onUnmounted(() => {
 <style scoped>
 .cabinet {
   width: min(92vw, 560px);
-  margin: 14px auto 18px;
-  padding: 12px;
+  height: 7rem;
+  padding: 0 1rem;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(0, 0, 0, 0.07);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-}
 
-.cabinet__header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
+  flex-direction: column;
+  justify-content: space-evenly;
 }
 
 .cabinet__title {
@@ -399,8 +430,8 @@ onUnmounted(() => {
 }
 
 .cabinet__icon {
-  width: 42px;
-  height: 42px;
+  width: 2.6rem;
+  height: 2.6rem;
   border-radius: 999px;
   display: grid;
   place-items: center;

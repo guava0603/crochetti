@@ -1,6 +1,7 @@
 @import './base.css';
 @import './crochet-table.css';
 @import './shared-style.css';
+@import './user.css';
 
 #app {
   max-width: 1280px;
@@ -104,6 +105,40 @@ body.hide-scrollbar::-webkit-scrollbar {
 
 /* Bottom docks are now rendered as a unified footer dock in App.vue. */
 
+/* Normalize native button chrome on mobile browsers (iOS/Android).
+   This prevents default platform styles from leaking into unstyled buttons.
+   Class-based button styles (e.g. .btn-primary) will still override these. */
+button,
+input[type='button'],
+input[type='submit'],
+input[type='reset'] {
+  -webkit-appearance: none;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled,
+input[type='button']:disabled,
+input[type='submit']:disabled,
+input[type='reset']:disabled {
+  cursor: not-allowed;
+}
+
+button::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
 /* Global button styles */
 .btn-primary {
   background: var(--color-buton-add);
@@ -173,7 +208,8 @@ body.hide-scrollbar::-webkit-scrollbar {
 
 /* Project textareas: base styles are global (components should not restyle borders/colors). */
 .project-wizard-layout textarea,
-.project-view textarea {
+.project-view textarea,
+.textarea-soft {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid var(--color-border);
@@ -186,7 +222,8 @@ body.hide-scrollbar::-webkit-scrollbar {
 }
 
 .project-wizard-layout textarea:focus,
-.project-view textarea:focus {
+.project-view textarea:focus,
+.textarea-soft:focus {
   outline: none;
   border-color: var(--color-icon-add);
   box-shadow: 0 0 0 3px rgb(var(--color-icon-add-rgb) / 0.18);
@@ -245,7 +282,7 @@ a,
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
   body {
     display: flex;
     place-items: center;

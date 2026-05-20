@@ -10,7 +10,14 @@
     <div class="top-banner" :class="{ 'top-banner--fixed': bannerOverlay }">
       <div class="top-banner__inner">
         <div class="top-banner__side" aria-hidden="false">
-          <LastPage v-if="bannerShowBack" @click="handleBannerBack" />
+          <ToolbarButton
+            v-if="bannerShowBack"
+            class="btn-back banner-button-l"
+            icon-src="assets/image/settings/001__arrow_left.svg"
+            :aria-label="t('common.back')"
+            :title="t('common.back')"
+            @click="handleBannerBack"
+          />
           <div v-else class="top-banner__placeholder" />
         </div>
 
@@ -31,8 +38,8 @@ import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import LastPage from '@/components/buttons/LastPage.vue'
-import { provideAppBanner } from '@/composables/appBanner'
+import ToolbarButton from '@/components/layout/ToolbarButton.vue'
+import { useAppBanner } from '@/composables/appBanner'
 
 defineOptions({ name: 'TopBanner' })
 
@@ -40,7 +47,11 @@ const route = useRoute()
 const router = useRouter()
 const { t } = useI18n({ useScope: 'global' })
 
-const appBanner = provideAppBanner()
+const appBanner = useAppBanner()
+
+if (!appBanner) {
+  throw new Error('TopBanner: missing appBanner provider (provideAppBanner must be called in App.vue)')
+}
 
 function applyRouteBannerDefaults(r) {
   const meta = r?.meta || {}
@@ -173,13 +184,10 @@ async function handleBannerBack() {
   color: var(--color-icon-base);
 }
 
-.app-banner--glass :deep(.btn-back__icon) {
+.app-banner--glass :deep(.btn-back .toolbar-button__icon),
+.app-banner--glass :deep(.more-menu__icon-img) {
   width: 1.5rem;
   height: 1.5rem;
-  filter: drop-shadow(0 0.125rem 0.25rem rgba(0, 0, 0, 0.1));
-}
-
-.app-banner--glass :deep(.more-menu__icon) {
   filter: drop-shadow(0 0.125rem 0.25rem rgba(0, 0, 0, 0.1));
 }
 
@@ -267,7 +275,11 @@ async function handleBannerBack() {
   text-overflow: ellipsis;
 }
 
-@media (min-width: 1024px) {
+:deep(.button-star svg) {
+  transform: scale(1);
+}
+
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
   .app-banner {
     display: flex;
     place-items: center;

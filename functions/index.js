@@ -74,6 +74,80 @@ exports.isPublic = onCall({ cors: true }, async (request) => {
 	}
 })
 
+function normalizeString(value) {
+	return value != null ? String(value).trim() : ''
+}
+
+function normalizeStringArray(value) {
+	if (!Array.isArray(value)) return []
+	const out = []
+	const seen = new Set()
+	for (const raw of value) {
+		const v = normalizeString(raw)
+		if (!v) continue
+		if (seen.has(v)) continue
+		seen.add(v)
+		out.push(v)
+	}
+	return out
+}
+
+/**
+ * Get basic user profile fields for a list of user IDs.
+ *
+ * Purpose: client-side reads of `artifacts/{appId}/users/{uid}/profile/info` may be blocked by rules.
+ * This callable uses Admin SDK to fetch name/avatar reliably.
+ *
+ * Security: requires an authenticated caller.
+ *
+ * Params:
+ * - user_ids: string[]
+ *
+ * Returns:
+ * - { users: Array<{ id: string, name: string, avatar: string|null, is_privacy: boolean, exists: boolean }> }
+ */
+exports.getUsersPublicProfiles = onCall({ cors: true }, async (request) => {
+	if (!request?.auth?.uid) {
+		throw new HttpsError('unauthenticated', 'Authentication required')
+	}
+
+	const ids = normalizeStringArray(request?.data?.user_ids ?? request?.data?.userIds)
+	if (ids.length > 200) {
+		throw new HttpsError('invalid-argument', 'Too many user_ids (max 200)')
+	}
+	if (ids.length === 0) {
+		return { users: [] }
+	}
+
+	const appId = normalizeString(admin.app()?.options?.projectId || process.env.GCLOUD_PROJECT)
+	if (!appId) {
+		throw new HttpsError('internal', 'Missing project id')
+	}
+
+	const firestore = admin.firestore()
+	const refs = ids.map((id) => firestore.doc(`artifacts/${appId}/users/${id}/profile/info`))
+	const snaps = await firestore.getAll(...refs)
+
+	const users = snaps.map((snap, idx) => {
+		const id = ids[idx]
+		if (!snap.exists) {
+			return { id, name: '', avatar: null, is_privacy: false, exists: false }
+		}
+		const data = snap.data() || {}
+		const name = normalizeString(data?.name)
+		const avatar = normalizeString(data?.avatar)
+		return {
+			id,
+			name,
+			avatar: avatar || null,
+			is_privacy: Boolean(data?.is_privacy),
+			exists: true,
+		}
+	})
+
+	return { users }
+})
+
 /**
  * One-time utility: backfill `publishedDate` for achievements that are missing it.
  *

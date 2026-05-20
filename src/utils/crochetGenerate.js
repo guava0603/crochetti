@@ -1,5 +1,12 @@
 import { BasicStitch } from '@/constants/crochetData.js'
 import { buildStitchLookup } from '@/utils/calculateConsumeGenerate.js'
+import {
+  getStitchGenerate as getStitchGenerateCore,
+  getPatternRepeatGenerate as getPatternRepeatGenerateCore,
+  getBundleRepeatGenerate as getBundleRepeatGenerateCore,
+  getNodePerRepeatGenerate as getNodePerRepeatGenerateCore,
+  getNodeTotalGenerate as getNodeTotalGenerateCore
+} from '@/utils/nodeGenerate'
 
 const shouldUseSelfDefined = (selfDefinedStitches) =>
   Array.isArray(selfDefinedStitches) && selfDefinedStitches.length > 0
@@ -11,46 +18,29 @@ function getLookup(selfDefinedStitches) {
 export function getStitchGenerate(node, selfDefinedStitches) {
   if (!node) return 0
   const lookup = getLookup(selfDefinedStitches)
-  return lookup?.[node.stitch_id]?.generate || 0
+  return getStitchGenerateCore(node, lookup)
 }
 
 export function getPatternRepeatGenerate(pattern = [], selfDefinedStitches) {
-  if (!Array.isArray(pattern) || pattern.length === 0) return 0
-  return pattern.reduce((sum, item) => sum + getNodeTotalGenerate(item, selfDefinedStitches), 0)
+  const lookup = getLookup(selfDefinedStitches)
+  return getPatternRepeatGenerateCore(pattern, lookup)
 }
 
 export function getBundleRepeatGenerate(bundle = [], selfDefinedStitches) {
-  if (!Array.isArray(bundle) || bundle.length === 0) return 0
-  return bundle.reduce((sum, item) => sum + getNodeTotalGenerate(item, selfDefinedStitches), 0)
+  const lookup = getLookup(selfDefinedStitches)
+  return getBundleRepeatGenerateCore(bundle, lookup)
 }
 
 // Per-repeat generate for a node (does NOT multiply by node.count)
 export function getNodePerRepeatGenerate(node, selfDefinedStitches) {
-  if (!node) return 0
-
-  if (node.type === 'stitch') {
-    return getStitchGenerate(node, selfDefinedStitches)
-  }
-
-  if (node.type === 'pattern') {
-    return getPatternRepeatGenerate(node.pattern || [], selfDefinedStitches)
-  }
-
-  if (node.type === 'bundle') {
-    // Prefer computed inner generate when available; fallback to persisted `node.generate`.
-    const computedPer = getBundleRepeatGenerate(node.bundle || [], selfDefinedStitches)
-    if (computedPer > 0) return computedPer
-    return Number(node.generate || 0)
-  }
-
-  return Number(node.generate || 0)
+  const lookup = getLookup(selfDefinedStitches)
+  return getNodePerRepeatGenerateCore(node, lookup)
 }
 
 // Total generate for a node (multiplies per-repeat by node.count)
 export function getNodeTotalGenerate(node, selfDefinedStitches) {
-  if (!node) return 0
-  const count = Math.max(1, Number(node.count || 1))
-  return getNodePerRepeatGenerate(node, selfDefinedStitches) * count
+  const lookup = getLookup(selfDefinedStitches)
+  return getNodeTotalGenerateCore(node, lookup)
 }
 
 export function isStitchNode(node) {

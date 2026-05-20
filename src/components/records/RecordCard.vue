@@ -222,8 +222,9 @@ const timeText = computed(() => {
 }
 
 .record-card__media {
-  height: clamp(6.5rem, 22vw, 7.25rem);
   width: 100%;
+  aspect-ratio: 4/3;
+  min-height: 6.5rem;
   border-radius: 0.75rem;
   overflow: hidden;
   display: grid;

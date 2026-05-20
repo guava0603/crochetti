@@ -7,7 +7,8 @@
 
 import {
   signInAnonymously,
-  signInWithCredential
+  signInWithCredential,
+  signInWithPopup
 } from 'firebase/auth'
 
 import {
@@ -38,7 +39,6 @@ export async function signInWithGoogle(auth) {
     return signInWithCredential(auth, credential)
   }
 
-  const { signInWithPopup } = await import('firebase/auth')
   const provider = createGooglePopupProvider()
   return signInWithPopup(auth, provider)
 }
@@ -57,7 +57,6 @@ export async function signInWithApple(auth) {
     return signInWithCredential(auth, credential)
   }
 
-  const { signInWithPopup } = await import('firebase/auth')
   const provider = createApplePopupProvider()
   return signInWithPopup(auth, provider)
 }

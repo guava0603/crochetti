@@ -13,10 +13,10 @@
 
         <div class="edit-row-main-top__actions" @click.stop>
           <button
-            v-if="!isGroupMode"
             type="button"
             class="toggle-button"
             :class="{ selected: props.isSelectingMultipleRows }"
+            :disabled="isGroupMode"
             @click="handleToggleSelectMultipleRows"
           >
             {{ t('toolbar.editRow.selectMultipleRows') }}
@@ -99,6 +99,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputNumber from '@/components/Input/InputNumber.vue'
 import HelpIconButton from '@/components/help/HelpIconButton.vue'
+import { openConfirmation } from '@/services/ui/confirmation'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -161,8 +162,20 @@ const emit = defineEmits([
   'copy-row',
   'copy-group',
   'move-row',
-  'close'
+  'close',
+  'dirty-change'
 ])
+
+const isDirty = computed(() => {
+  if (isGroupMode.value) {
+    return Math.max(1, Number(pendingGroupRepeatCount.value) || 1) !== Math.max(1, Number(props.groupRepeatCount) || 1)
+  }
+  return Math.max(1, Number(pendingCount.value) || 1) !== Math.max(1, Number(props.rowCount) || 1)
+})
+
+watch(isDirty, (next) => {
+  emit('dirty-change', next)
+}, { immediate: true })
 
 const handleUpdateRowRepeat = (value) => {
   pendingCount.value = value
@@ -172,29 +185,33 @@ const handleUpdateGroupRepeat = (value) => {
   pendingGroupRepeatCount.value = value
 }
 
-const handleConfirm = () => {
+const handleConfirm = ({ close = true } = {}) => {
   if (isGroupMode.value) {
     const next = Math.max(1, Number(pendingGroupRepeatCount.value) || 1)
-    // Always emit in group mode so the parent can treat `1` as "no group".
     emit('update-group-repeat-count', next)
-    emit('close')
+    if (close) emit('close')
     return
   }
 
   if (pendingCount.value !== props.rowCount) {
     emit('update-row-repeat', pendingCount.value)
   }
-  emit('close')
+  if (close) emit('close')
 }
 
-const handleCancel = () => {
+const handleCancel = async ({ close = true, skipConfirm = false } = {}) => {
+  if (isDirty.value && !skipConfirm) {
+    const ok = await openConfirmation({ type: 'discardChanges' })
+    if (!ok) return
+  }
+
   if (isGroupMode.value) {
     pendingGroupRepeatCount.value = props.groupRepeatCount
-    emit('close')
+    if (close) emit('close')
     return
   }
   pendingCount.value = props.rowCount
-  emit('close')
+  if (close) emit('close')
 }
 
 const handleToggleSelectMultipleRows = () => {
@@ -212,7 +229,8 @@ const handleCopy = () => {
 
 defineExpose({
   confirm: handleConfirm,
-  cancel: handleCancel
+  cancel: handleCancel,
+  isDirty
 })
 </script>
 
@@ -319,6 +337,11 @@ defineExpose({
 
 .toggle-button.selected {
   border-color: var(--color-selected);
+}
+
+.toggle-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .secondary-button {

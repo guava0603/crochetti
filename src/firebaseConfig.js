@@ -23,7 +23,7 @@ const firebaseConfig = {
   measurementId: "G-RFKS5HQ7RY"
 };
 
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 
 // export const db = getFirestore(app);
 // ✅ 啟用離線持久化快取

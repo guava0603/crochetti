@@ -40,7 +40,7 @@ const toggleStar = () => {
   color: var(--color-icon-base);
 }
 
-.button-star > svg {
+svg {
   transition: all 0.2s;
   transform: scale(0.55);
 }

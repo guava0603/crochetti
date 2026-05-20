@@ -10,22 +10,6 @@
       </div>
 
       <div v-else class="result-body">
-        <button
-          class="result-share-btn user-fab"
-          type="button"
-          aria-label="Share"
-          title="Share / Download"
-          :disabled="isCapturing"
-          @click="shareOrDownload"
-        >
-          <span
-            class="result-share-btn__icon-mask"
-            :style="{ '--result-share-icon-url': `url(${uploadIconUrl})` }"
-            aria-hidden="true"
-          />
-          <img class="result-share-btn__icon-img" :src="uploadIconUrl" alt="" aria-hidden="true" style="transform: scale(2);" />
-        </button>
-
         <div v-if="showSummary" class="result-summary">
           <div class="summary-line">{{ t('recordResult.spanLine', { span: spanText }) }}</div>
           <div class="summary-line">
@@ -134,9 +118,6 @@ const props = defineProps({
 
 const route = useRoute()
 const { t } = useI18n({ useScope: 'global' })
-
-const baseUrl = import.meta.env.BASE_URL || '/'
-const uploadIconUrl = `${baseUrl}assets/image/settings/028__upload.svg`
 
 const pageContentEl = ref(null)
 const isCapturing = ref(false)
@@ -701,10 +682,34 @@ onUnmounted(() => {
   gap: 1rem;
 }
 
+/* Match the AchievementToast inner-card style (Japanese healing vibe) */
+.top-card,
+.metric,
+.rest-card {
+  background: rgba(245, 235, 218, 0.96);
+  border: 0.15625rem solid rgba(122, 90, 58, 0.85);
+  box-shadow:
+    0 0.75rem 1.625rem rgba(0, 0, 0, 0.10),
+    0 0.125rem 0 rgba(122, 90, 58, 0.30) inset;
+  backdrop-filter: blur(0.5rem);
+  -webkit-backdrop-filter: blur(0.5rem);
+  position: relative;
+}
+
+.top-card::before,
+.metric::before,
+.rest-card::before {
+  content: '';
+  position: absolute;
+  inset: 0.4375rem;
+  border-radius: 0.875rem;
+  border: 0.09375rem dashed rgba(122, 90, 58, 0.38);
+  pointer-events: none;
+}
+
 .top-card {
   position: relative;
   padding: 6.25rem 0.6rem 1rem;
-  background: white;
   border-radius: 1rem;
   margin-top: 4rem;
 }
@@ -771,11 +776,8 @@ onUnmounted(() => {
 }
 
 .metric {
-  background: #fff;
-  /* border: 1px solid #e5e7eb; */
   border-radius: 14px;
   padding: 1.5rem 1rem;
-  /* border: 1px solid rgb(var(--color-icon-add-rgb) / 0.35); */
 }
 
 .metric-value {
@@ -816,15 +818,13 @@ onUnmounted(() => {
 }
 
 .rest-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  border-radius: 14px;
   padding: 0.85rem;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0.6rem;
   cursor: pointer;
-  border-radius: 14px;
 }
 
 .rest-card-header {
@@ -837,7 +837,7 @@ onUnmounted(() => {
 }
 
 .rest-card-header:focus-visible {
-  box-shadow: 0 0 0 3px rgb(var(--color-icon-add-rgb) / 0.22);
+  box-shadow: 0 0 0 3px rgba(122, 90, 58, 0.22);
   border-radius: 12px;
 }
 

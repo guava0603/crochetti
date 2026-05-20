@@ -1,70 +1,57 @@
 <template>
-  <div v-if="isEditing" class="subsection">
-    <div class="subsection-header">
-      <h5>{{ t('addProject.design.relatedComponentsLabel') }}</h5>
-    </div>
-    <ComponentMaterialField
-      v-model:items="component.related_component_ids"
-      input-type="dropdown"
-      :placeholder="t('addProject.design.relatedComponentsPlaceholder')"
-      :options="relatedComponentOptions"
-      :item-key="(_, idx) => `related-${idx}`"
-      :get-text="(id) => id"
-      :set-text="(_id, v) => String(v ?? '')"
-      @add="addRelatedComponent"
-      @remove="removeRelatedComponent"
-      @item-blur="pruneRelatedComponentIds"
-    />
-  </div>
+  <FormSubsection
+    v-if="isEditing"
+    wrapper-class="subsection"
+    kind="multi-select"
+    :title="t('addProject.design.relatedComponentsLabel')"
+    v-model="relatedComponentIdsModel"
+    :options="relatedComponentOptions"
+    :placeholder="t('addProject.design.relatedComponentsPlaceholder')"
+    :aria-label="t('addProject.design.relatedComponentsLabel')"
+  />
 
-  <div
+  <FormSubsection
     v-else-if="relatedComponentNames.length"
-    class="view-section view-section--related"
-    style="margin-top: 1rem;"
+    wrapper-class="view-section view-section--related"
+    kind="slot"
+    :show-header="false"
   >
     <div class="related-components-line">
       <span class="related-components-label">{{ t('project.stitchCard.seamPartsLabel') }}</span>
       <span class="related-components-value">{{ relatedComponentNames.join('、') }}</span>
     </div>
-  </div>
+  </FormSubsection>
 
-  <div v-if="isEditing" class="subsection">
-    <div class="subsection-header">
-      <h5>{{ t('common.notes') }}</h5>
-    </div>
-    <ComponentMaterialField
-      variant="notes"
-      v-model:items="component.notes"
-      input-type="textarea"
-      :placeholder="t('addProject.design.stitchNotesPlaceholder')"
-      input-class="list-item-input"
-      :rows="2"
-      :get-text="(n) => n"
-      :set-text="(_n, v) => String(v ?? '')"
-      @add="addStitchNote"
-      @remove="removeStitchNote"
-      @item-blur="(idx) => handleNoteBlur(idx)"
-    />
-  </div>
+  <FormSubsection
+    v-if="isEditing"
+    wrapper-class="subsection"
+    kind="notes"
+    :title="t('common.notes')"
+    v-model="component.notes"
+    :placeholder="t('addProject.design.stitchNotesPlaceholder')"
+    :notes-rows="2"
+    notes-input-class="list-item-input"
+  />
 
-  <div
+  <FormSubsection
     v-else-if="displayNotes.length > 0"
-    class="view-section"
-    style="margin-top: 1rem;"
+    wrapper-class="view-section"
+    kind="slot"
+    :title="t('common.notes')"
   >
-    <h5 class="view-section-title">{{ t('common.notes') }}</h5>
     <ul class="view-list">
       <li v-for="(note, nIndex) in displayNotes" :key="nIndex">
         {{ note }}
       </li>
     </ul>
-  </div>
+  </FormSubsection>
 </template>
 
 <script setup>
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import ComponentMaterialField from '@/components/cards/ComponentMaterialField.vue'
+import FormSubsection from '@/components/AddProject/FormSubsection.vue'
+import { isComponentType } from '@/utils/componentTypes'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -106,9 +93,6 @@ function ensureStitchFields() {
   if (!Array.isArray(component.value.related_component_ids)) {
     component.value.related_component_ids = []
   }
-  if (isEditing.value && component.value.related_component_ids.length === 0) {
-    component.value.related_component_ids.push('')
-  }
 
   if (!Array.isArray(component.value.notes)) {
     component.value.notes = []
@@ -119,27 +103,20 @@ function ensureStitchFields() {
     .map((n) => (typeof n === 'string' ? n : String(n?.description ?? '')))
 }
 
-function trimTrailingEmptyNotesInPlace() {
-  if (!Array.isArray(component.value.notes)) component.value.notes = []
-  const list = component.value.notes
-    .filter((n) => n != null)
-    .map((n) => (typeof n === 'string' ? n : String(n?.description ?? '')))
-    .map((n) => String(n ?? ''))
-
-  let end = list.length
-  while (end > 0 && String(list[end - 1] ?? '').trim() === '') end -= 1
-  component.value.notes = list.slice(0, end)
+function normalizeIdList(value) {
+  const list = Array.isArray(value) ? value : []
+  const seen = new Set()
+  const out = []
+  for (const raw of list) {
+    const v = String(raw ?? '').trim()
+    if (!v) continue
+    if (seen.has(v)) continue
+    seen.add(v)
+    out.push(v)
+  }
+  return out
 }
 
-function handleNoteBlur(idx) {
-  if (!Array.isArray(component.value.notes)) component.value.notes = []
-  const list = component.value.notes
-  const i = Number(idx)
-  if (!Number.isFinite(i)) return
-  if (i !== list.length - 1) return
-  if (String(list[i] ?? '').trim() !== '') return
-  trimTrailingEmptyNotesInPlace()
-}
 
 const stitchOrderN = computed(() => {
   const list = Array.isArray(props.componentList) ? props.componentList : []
@@ -155,7 +132,7 @@ const stitchOrderN = computed(() => {
 })
 
 function isPartComponent(c) {
-  return !c?.type || c?.type === 'component'
+  return isComponentType(c?.type)
 }
 
 const relatedComponentIdLabelMap = computed(() => {
@@ -176,23 +153,8 @@ const relatedComponentIdLabelMap = computed(() => {
 })
 
 const relatedComponentNames = computed(() => {
-  const ids = Array.isArray(component.value?.related_component_ids)
-    ? component.value.related_component_ids
-    : []
-
-  const seen = new Set()
-  const out = []
-
-  for (const raw of ids) {
-    const id = String(raw ?? '').trim()
-    if (!id) continue
-    if (seen.has(id)) continue
-    seen.add(id)
-
-    out.push(relatedComponentIdLabelMap.value.get(id) || id)
-  }
-
-  return out
+  return normalizeIdList(component.value?.related_component_ids)
+    .map((id) => relatedComponentIdLabelMap.value.get(id) || id)
 })
 
 const relatedComponentOptions = computed(() => {
@@ -209,6 +171,23 @@ const relatedComponentOptions = computed(() => {
       label: String(c?.name || `#${i + 1}`)
     }))
     .filter((o) => o.value)
+})
+
+const relatedComponentIdsModel = computed({
+  get() {
+    const allowed = new Set(relatedComponentOptions.value.map((o) => String(o?.value ?? '').trim()).filter(Boolean))
+    const raw = normalizeIdList(component.value?.related_component_ids)
+    if (allowed.size === 0) return raw
+    return raw.filter((id) => allowed.has(id))
+  },
+  set(next) {
+    ensureStitchFields()
+    const allowed = new Set(relatedComponentOptions.value.map((o) => String(o?.value ?? '').trim()).filter(Boolean))
+    const normalized = normalizeIdList(next)
+    component.value.related_component_ids = allowed.size
+      ? normalized.filter((id) => allowed.has(id))
+      : normalized
+  }
 })
 
 watch(
@@ -234,47 +213,6 @@ watch(
   { immediate: true }
 )
 
-function pruneRelatedComponentIds() {
-  const allowed = new Set(relatedComponentOptions.value.map((o) => String(o.value)))
-  const list = Array.isArray(component.value.related_component_ids)
-    ? component.value.related_component_ids
-    : []
-
-  const seen = new Set()
-  const out = []
-  for (const raw of list) {
-    const v = String(raw ?? '').trim()
-    if (!v) continue
-    if (!allowed.has(v)) continue
-    if (seen.has(v)) continue
-    seen.add(v)
-    out.push(v)
-  }
-
-  out.push('')
-  component.value.related_component_ids = out
-}
-
-function addRelatedComponent() {
-  ensureStitchFields()
-  component.value.related_component_ids.push('')
-}
-
-function removeRelatedComponent(idx) {
-  ensureStitchFields()
-  component.value.related_component_ids.splice(idx, 1)
-  if (component.value.related_component_ids.length === 0) component.value.related_component_ids.push('')
-}
-
-function addStitchNote() {
-  ensureStitchFields()
-  component.value.notes.push('')
-}
-
-function removeStitchNote(index) {
-  ensureStitchFields()
-  component.value.notes.splice(index, 1)
-}
 </script>
 
 <style scoped>
@@ -286,19 +224,6 @@ function removeStitchNote(index) {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--color-border);
-}
-
-.subsection-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.subsection-header h5 {
-  margin: 0;
-  font-weight: 500;
-  font-size: 1rem;
 }
 
 .view-section-title {

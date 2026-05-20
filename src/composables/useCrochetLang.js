@@ -19,6 +19,7 @@ const normalizeCrochetLang = (value) => {
   const next = Number(value)
   if (!Number.isFinite(next)) return CROCHET_LANG.symbol_jp
   if (next === CROCHET_LANG.symbol_jp) return CROCHET_LANG.symbol_jp
+  if (next === CROCHET_LANG.symbol_uk) return CROCHET_LANG.symbol_uk
   if (next === CROCHET_LANG.text_zh) return CROCHET_LANG.text_zh
   if (next === CROCHET_LANG.icon) return CROCHET_LANG.icon
   return CROCHET_LANG.symbol_jp

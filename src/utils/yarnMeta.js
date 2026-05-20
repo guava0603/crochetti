@@ -209,6 +209,14 @@ export function removeYarnMetaFromComponents(componentList, yarnMeta) {
       ? { ...c.metadata, yarn: next }
       : c.metadata
 
+    if (id && nextMeta && typeof nextMeta === 'object' && !Array.isArray(nextMeta)) {
+      const prevAmountMap = nextMeta.yarn_amount_by_id
+      if (prevAmountMap && typeof prevAmountMap === 'object' && !Array.isArray(prevAmountMap)) {
+        const { [id]: _removed, ...rest } = prevAmountMap
+        nextMeta.yarn_amount_by_id = rest
+      }
+    }
+
     return { ...c, yarn: next, metadata: nextMeta }
   })
 }

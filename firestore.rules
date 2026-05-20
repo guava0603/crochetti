@@ -179,6 +179,46 @@ service cloud.firestore {
         && isValidPublicRecordSummary();
     }
 
+    // Friend-code shortcut mapping.
+    // - `get` readable by anyone for friend-code search.
+    // - `list` disabled to reduce enumeration.
+    // - Writable only by the owner (uid == request.auth.uid).
+    match /artifacts/{appId}/public/data/short_ids/{code} {
+      allow get: if true;
+      allow list: if false;
+
+      allow create: if signedIn()
+        && code.matches('^[A-Z0-9]{6}$')
+        && request.resource.data.keys().hasOnly(['uid', 'name', 'avatar', 'created_at', 'updated_at'])
+        && request.resource.data.uid is string
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && (request.resource.data.avatar == null || request.resource.data.avatar is string)
+        && request.resource.data.created_at is timestamp
+        && request.resource.data.updated_at is timestamp;
+
+      allow update: if signedIn()
+        && code.matches('^[A-Z0-9]{6}$')
+        && resource.data.uid is string
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'name', 'avatar', 'created_at', 'updated_at'])
+        && request.resource.data.uid is string
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && (request.resource.data.avatar == null || request.resource.data.avatar is string)
+        && request.resource.data.created_at is timestamp
+        && request.resource.data.updated_at is timestamp;
+
+      allow delete: if signedIn()
+        && code.matches('^[A-Z0-9]{6}$')
+        && resource.data.uid is string
+        && resource.data.uid == request.auth.uid;
+    }
+
     // Wish Pool submissions.
     // - Create: signed-in users, only for themselves.
     // - Read/Update/Delete: default deny (handled by admins/server if needed).

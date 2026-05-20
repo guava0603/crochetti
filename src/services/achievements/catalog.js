@@ -125,6 +125,52 @@ export const ACHIEVEMENT_CATALOG = Object.freeze([
     conditionValue: 1,
     conditionUnit: 'bool',
     version: 1
+  },
+
+  // avatar
+  {
+    id: 'avatar_all_flying',
+    category: 'avatar',
+    tier: 'special',
+    nameKey: 'achievement.catalog.avatar_all_flying.name',
+    descriptionKey: 'achievement.catalog.avatar_all_flying.description',
+    conditionType: 'custom',
+    conditionValue: 1,
+    conditionUnit: 'bool',
+    version: 2
+  },
+  {
+    id: 'avatar_all_forest',
+    category: 'avatar',
+    tier: 'special',
+    nameKey: 'achievement.catalog.avatar_all_forest.name',
+    descriptionKey: 'achievement.catalog.avatar_all_forest.description',
+    conditionType: 'custom',
+    conditionValue: 1,
+    conditionUnit: 'bool',
+    version: 2
+  },
+  {
+    id: 'avatar_all_bugs',
+    category: 'avatar',
+    tier: 'special',
+    nameKey: 'achievement.catalog.avatar_all_bugs.name',
+    descriptionKey: 'achievement.catalog.avatar_all_bugs.description',
+    conditionType: 'custom',
+    conditionValue: 1,
+    conditionUnit: 'bool',
+    version: 2
+  },
+  {
+    id: 'avatar_all_sea',
+    category: 'avatar',
+    tier: 'special',
+    nameKey: 'achievement.catalog.avatar_all_sea.name',
+    descriptionKey: 'achievement.catalog.avatar_all_sea.description',
+    conditionType: 'custom',
+    conditionValue: 1,
+    conditionUnit: 'bool',
+    version: 2
   }
 ])
 

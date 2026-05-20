@@ -9,7 +9,7 @@ defineOptions({ name: 'AboutViewMain' })
 </script>
 
 <style>
-@media (min-width: 1024px) {
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
   .about {
     min-height: 100vh;
     display: flex;

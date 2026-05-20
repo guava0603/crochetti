@@ -1,19 +1,22 @@
 <template>
   <div ref="rootRef" class="selection-input" @keydown.esc.stop.prevent="close">
-    <button
-      type="button"
+    <div
       class="selection-input__trigger"
-      :class="{ 'is-open': open }"
-      :disabled="disabled"
-      :aria-expanded="open"
+      :class="{ 'is-open': open, 'is-disabled': disabled }"
+      role="button"
+      :tabindex="disabled ? -1 : 0"
+      :aria-disabled="disabled ? 'true' : 'false'"
+      :aria-expanded="open ? 'true' : 'false'"
       aria-haspopup="listbox"
       @click="toggle"
+      @keydown.enter.stop.prevent="toggle"
+      @keydown.space.stop.prevent="toggle"
     >
       <span class="selection-input__trigger-text">
         {{ displayLabel }}
       </span>
       <span class="selection-input__caret" aria-hidden="true">▾</span>
-    </button>
+    </div>
 
     <div v-if="open" class="selection-input__menu" role="listbox" @mousedown.prevent>
       <template v-for="item in normalizedOptions" :key="item.key">
@@ -151,6 +154,8 @@ onUnmounted(() => {
   border-radius: 8px;
   background: white;
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .selection-input__trigger:focus {
@@ -159,7 +164,7 @@ onUnmounted(() => {
   box-shadow: 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.1);
 }
 
-.selection-input__trigger:disabled {
+.selection-input__trigger.is-disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

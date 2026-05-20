@@ -1,47 +1,90 @@
 <template>
-  <div
-    ref="rootRef"
-    class="selection-actions"
-    :class="{ 'selection-actions--sm': props.size === 'sm' }"
-    :style="cssVars"
-    @click.stop
-    @blur.capture="handleBlur"
-    tabindex="-1"
-  >
-    <!-- 滾輪外層容器 -->
-    <div class="picker-container">
-      <!-- 選中區域的視覺指示器 -->
-      <div class="picker-indicator"></div>
+  <div class="input-number" @click.stop>
+    <button
+      type="button"
+      class="input-number__trigger"
+      :class="[
+        `input-number__trigger--${size}`,
+        { 'input-number__trigger--disabled': disabled }
+      ]"
+      :disabled="disabled"
+      :aria-label="ariaLabel || t('input.numberPicker')"
+      @click="openModal"
+    >
+      {{ displayValue }}
+    </button>
 
+    <Teleport to="body">
       <div
-        ref="scrollRef"
-        class="number-scroll no-scrollbar"
-        role="listbox"
-        :aria-label="t('input.numberPicker')"
-        @scroll.passive="handleScroll"
-        @wheel.passive="markUserInteracted"
-        @touchstart.passive="markUserInteracted"
-        @mousedown="startDrag"
+        v-if="isOpen"
+        class="input-number-modal-overlay"
+        @click="cancelModal"
       >
-        <button
-          v-for="n in numbers"
-          :key="n"
-          type="button"
-          class="number-item"
-          :class="{ 'is-selected': n === modelValue }"
-          :aria-selected="n === modelValue"
-          @click="selectNumber(n)"
+        <div
+          class="input-number-modal"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="ariaLabel || t('input.numberPicker')"
+          @click.stop
         >
-          {{ n }}
-        </button>
+          <div class="input-number-modal__picker">
+            <button
+              type="button"
+              class="input-number-modal__step"
+              :disabled="!canDecrease"
+              :aria-label="t('input.decrease')"
+              @click="decrease"
+            >
+              <span aria-hidden="true">−</span>
+            </button>
+
+            <InputNumberWheels
+              v-model="draftValue"
+              :size="size"
+              :min="min"
+              :max="max"
+              :auto-focus="true"
+            />
+
+            <button
+              type="button"
+              class="input-number-modal__step"
+              :disabled="!canIncrease"
+              :aria-label="t('input.increase')"
+              @click="increase"
+            >
+              <span aria-hidden="true">+</span>
+            </button>
+          </div>
+
+          <div class="input-number-modal__actions">
+            <button
+              type="button"
+              class="input-number-modal__btn input-number-modal__btn--secondary"
+              @click="cancelModal"
+            >
+              {{ t('common.cancel') }}
+            </button>
+            <button
+              type="button"
+              class="input-number-modal__btn input-number-modal__btn--primary"
+              @click="saveModal"
+            >
+              {{ t('common.save') }}
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import InputNumberWheels from '@/components/Input/InputNumberWheels.vue'
+import { clampInputNumber } from '@/utils/inputNumberDigits'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -49,10 +92,6 @@ const props = defineProps({
   modelValue: {
     type: Number,
     required: true
-  },
-  autoFocus: {
-    type: Boolean,
-    default: true
   },
   size: {
     type: String,
@@ -66,264 +105,203 @@ const props = defineProps({
   max: {
     type: Number,
     default: 999
+  },
+  disabled: {
+    type: Boolean,
+    default: false
+  },
+  ariaLabel: {
+    type: String,
+    default: ''
   }
 })
 
 const emit = defineEmits(['update:modelValue', 'close'])
 
-const rootRef = ref(null)
-const scrollRef = ref(null)
-const isDragging = ref(false)
-const isProgrammaticScroll = ref(true)
-const hasUserInteracted = ref(false)
-let programmaticScrollClearTimer = null
-let expectedScrollTop = null
+const isOpen = ref(false)
+const draftValue = ref(props.modelValue)
 
-// Keep JS scroll math and CSS visuals in sync.
-const ITEM_HEIGHT = computed(() => (props.size === 'sm' ? 22 : 28))
-
-const cssVars = computed(() => {
-  const itemHeight = ITEM_HEIGHT.value
-  const containerHeight = props.size === 'sm' ? itemHeight * 2 : itemHeight * 3
-  return {
-    '--item-height': `${itemHeight}px`,
-    '--container-height': `${containerHeight}px`
-  }
+const displayValue = computed(() => {
+  const clamped = clampInputNumber(props.modelValue, { min: props.min, max: props.max })
+  return String(clamped)
 })
 
-const numbers = computed(() => {
-  const min = Number.isFinite(props.min) ? props.min : 0
-  const max = Number.isFinite(props.max) ? props.max : 999
-  const size = Math.max(0, max - min + 1)
-  return Array.from({ length: size }, (_, i) => min + i)
-})
+const clampedDraftValue = computed(() => (
+  clampInputNumber(draftValue.value, { min: props.min, max: props.max })
+))
 
-function clamp(value) {
-  const min = Number.isFinite(props.min) ? props.min : 0
-  const max = Number.isFinite(props.max) ? props.max : 999
-  return Math.max(min, Math.min(max, value))
-}
-
-function scrollToValue(value, behavior = 'auto') {
-  const el = scrollRef.value
-  if (!el) return
-
-  isProgrammaticScroll.value = true
-  if (programmaticScrollClearTimer) clearTimeout(programmaticScrollClearTimer)
-
-  const min = Number.isFinite(props.min) ? props.min : 0
-  const target = (clamp(value) - min) * ITEM_HEIGHT.value
-  expectedScrollTop = target
-  el.scrollTo({ top: target, behavior })
-
-  // Fallback: if scroll events never fire, unlock after a bit.
-  programmaticScrollClearTimer = setTimeout(() => {
-    isProgrammaticScroll.value = false
-    expectedScrollTop = null
-  }, behavior === 'smooth' ? 400 : 120)
-}
-
-// 滑鼠拖拽邏輯 (改善桌面端體驗)
-let startY = 0
-let startScrollTop = 0
-
-function startDrag(e) {
-  hasUserInteracted.value = true
-  isDragging.value = true
-  startY = e.pageY
-  startScrollTop = scrollRef.value.scrollTop
-
-  // 拖拽時改為即時滾動
-  scrollRef.value.style.scrollBehavior = 'auto'
-
-  const onMouseMove = (moveEvent) => {
-    if (!isDragging.value) return
-    const deltaY = moveEvent.pageY - startY
-    scrollRef.value.scrollTop = startScrollTop - deltaY
-  }
-
-  const onMouseUp = () => {
-    isDragging.value = false
-    scrollRef.value.style.scrollBehavior = 'smooth'
-    window.removeEventListener('mousemove', onMouseMove)
-    window.removeEventListener('mouseup', onMouseUp)
-  }
-
-  window.addEventListener('mousemove', onMouseMove)
-  window.addEventListener('mouseup', onMouseUp)
-}
-
-function markUserInteracted() {
-  hasUserInteracted.value = true
-}
-
-let scrollRaf = null
-function handleScroll() {
-  // Ignore mount/programmatic scrolls until the user interacts.
-  if (!hasUserInteracted.value && !isDragging.value) return
-
-  if (isProgrammaticScroll.value) {
-    const el = scrollRef.value
-    if (!el) return
-
-    // Wait until the programmatic scroll reaches its target, then unlock.
-    if (typeof expectedScrollTop === 'number' && Math.abs(el.scrollTop - expectedScrollTop) <= 1) {
-      if (programmaticScrollClearTimer) clearTimeout(programmaticScrollClearTimer)
-      requestAnimationFrame(() => {
-        isProgrammaticScroll.value = false
-        expectedScrollTop = null
-      })
-    }
-    return
-  }
-  if (scrollRaf) cancelAnimationFrame(scrollRaf)
-  scrollRaf = requestAnimationFrame(() => {
-    const el = scrollRef.value
-    if (!el) return
-
-    const idx = Math.round(el.scrollTop / ITEM_HEIGHT.value)
-    const next = clamp((props.min || 0) + idx)
-    if (next !== props.modelValue) {
-      emit('update:modelValue', next)
-    }
-  })
-}
-
-function selectNumber(n) {
-  const next = clamp(n)
-  emit('update:modelValue', next)
-  nextTick(() => scrollToValue(next, 'smooth'))
-}
-
-const handleBlur = (event) => {
-  if (!event.currentTarget.contains(event.relatedTarget)) {
-    emit('close')
-  }
-}
-
-onMounted(async () => {
-  await nextTick()
-  scrollToValue(props.modelValue)
-  if (props.autoFocus) rootRef.value?.focus?.()
-})
+const canDecrease = computed(() => clampedDraftValue.value > props.min)
+const canIncrease = computed(() => clampedDraftValue.value < props.max)
 
 watch(
   () => props.modelValue,
-  async (value) => {
-    if (isDragging.value) return
-    await nextTick()
-    scrollToValue(value)
+  (value) => {
+    if (!isOpen.value) {
+      draftValue.value = clampInputNumber(value, { min: props.min, max: props.max })
+    }
   }
 )
+
+function openModal() {
+  if (props.disabled) return
+  draftValue.value = clampInputNumber(props.modelValue, { min: props.min, max: props.max })
+  isOpen.value = true
+}
+
+function cancelModal() {
+  isOpen.value = false
+  draftValue.value = clampInputNumber(props.modelValue, { min: props.min, max: props.max })
+  emit('close')
+}
+
+function saveModal() {
+  const next = clampInputNumber(draftValue.value, { min: props.min, max: props.max })
+  isOpen.value = false
+  if (next !== props.modelValue) {
+    emit('update:modelValue', next)
+  }
+  emit('close')
+}
+
+function decrease() {
+  if (!canDecrease.value) return
+  draftValue.value = clampInputNumber(draftValue.value - 1, { min: props.min, max: props.max })
+}
+
+function increase() {
+  if (!canIncrease.value) return
+  draftValue.value = clampInputNumber(draftValue.value + 1, { min: props.min, max: props.max })
+}
 </script>
 
 <style scoped>
-.selection-actions {
+.input-number {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.input-number__trigger {
   display: inline-flex;
   align-items: center;
-  padding: 4px;
-  background: #f8fafc;
-  border-radius: 14px;
-  pointer-events: auto;
-  z-index: 50;
-  outline: none;
+  justify-content: center;
+  min-width: 2.5rem;
+  padding: 0.35rem 0.65rem;
   border: 1px solid #e2e8f0;
-}
-
-.selection-actions.selection-actions--sm {
-  max-width: 60px;
-}
-
-.picker-container {
-  position: relative;
-  width: 64px;
-  height: var(--container-height); /* ITEM_HEIGHT * 3 */
-  overflow: hidden;
   border-radius: 10px;
-  background: white;
-  /* 3D 滾輪效果遮罩 */
-  mask-image: linear-gradient(
-    to bottom,
-    transparent,
-    black 40%,
-    black 60%,
-    transparent
-  );
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent,
-    black 40%,
-    black 60%,
-    transparent
-  );
+  background: #f8fafc;
+  color: #111827;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.05s;
 }
 
-.number-scroll {
-  height: 100%;
-  width: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior-y: contain;
-  overscroll-behavior-x: none;
-  touch-action: pan-y;
-  overscroll-behavior: contain;
-  scroll-snap-type: y mandatory;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  padding: calc((var(--container-height) - var(--item-height)) / 2) 0;
-  scroll-behavior: smooth;
+.input-number__trigger:hover:not(:disabled) {
+  background: #eef2ff;
+  border-color: rgb(var(--color-icon-add-rgb) / 0.35);
 }
 
-.number-scroll::-webkit-scrollbar {
-  display: none;
+.input-number__trigger:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
-.number-item {
-  height: var(--item-height);
-  width: 100%;
-  scroll-snap-align: center;
-  border: none;
-  background: transparent;
-  cursor: grab;
-  color: #94a3b8;
-  font-size: 14px;
-  font-weight: 600;
+.input-number__trigger--sm {
+  min-width: 2rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.875rem;
+  border-radius: 8px;
+}
+
+.input-number__trigger--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.input-number-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal-top);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  user-select: none;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
 }
 
-.number-item:active {
-  cursor: grabbing;
+.input-number-modal {
+  width: min(100%, 320px);
+  padding: 1rem 1rem 0.85rem;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12);
 }
 
-.number-item.is-selected {
-  color: var(--color-icon-add);
+.input-number-modal__picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0 0.75rem;
+}
+
+.input-number-modal__step {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #111827;
+  font-size: 1.35rem;
   font-weight: 800;
-  transform: scale(1.1);
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s, transform 0.05s;
 }
 
-.picker-indicator {
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  height: var(--item-height);
-  border-radius: 6px;
-  background: rgba(37, 99, 235, 0.05);
-  border-top: 1px solid rgba(37, 99, 235, 0.1);
-  border-bottom: 1px solid rgba(37, 99, 235, 0.1);
-  pointer-events: none;
+.input-number-modal__step:hover:not(:disabled) {
+  background: #eef2ff;
+  border-color: rgb(var(--color-icon-add-rgb) / 0.35);
 }
 
-.selection-actions--sm .picker-container {
-  width: 56px;
+.input-number-modal__step:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
-.selection-actions--sm .number-item {
-  font-size: 13px;
+.input-number-modal__step:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.input-number-modal__actions {
+  display: flex;
+  gap: 0.65rem;
+  justify-content: flex-end;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.75rem;
+}
+
+.input-number-modal__btn {
+  min-width: 5rem;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.input-number-modal__btn--secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.input-number-modal__btn--primary {
+  background: var(--color-icon-add);
+  color: #fff;
 }
 </style>

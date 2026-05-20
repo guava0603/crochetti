@@ -26,7 +26,6 @@ const isExpanded = ref(true)
 .crochet-scrollbar.expanded {
   /* Must be above floating docks/FABs. */
   z-index: calc(var(--z-bottom-toolbar) + 1);
-  max-height: 50vh;
   height: fit-content;
 }
 

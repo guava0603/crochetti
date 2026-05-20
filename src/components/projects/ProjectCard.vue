@@ -145,11 +145,6 @@ const emitOpen = () => {
   outline: none;
 }
 
-.project-card:hover {
-  box-shadow: 0 10px 22px -14px rgba(0, 0, 0, 0.45);
-  transform: translateY(-1px);
-}
-
 .project-card:focus-within {
   z-index: 5;
 }

@@ -14,7 +14,13 @@
 
     <div v-else-if="projectData" class="content">
       <div class="header">
-        <LastPage @click="backToProject" />
+        <ToolbarButton
+          class="btn-back banner-button-l"
+          icon-src="assets/image/settings/001__arrow_left.svg"
+          :aria-label="$t('common.back')"
+          :title="$t('common.back')"
+          @click="backToProject"
+        />
         <div class="header-actions">
           <div
             class="btn-download"
@@ -64,11 +70,12 @@
 <script setup>
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import LastPage from '@/components/buttons/LastPage.vue'
+import ToolbarButton from '@/components/layout/ToolbarButton.vue'
 import ButtonPrinter from '@/components/buttons/svg/ButtonPrinter.vue'
 import { getPatternItemDisplay } from '@/constants/crochetData.js'
 import { useCrochetLang } from '@/composables/useCrochetLang'
 import { buildStitchLookup } from '@/utils/calculateConsumeGenerate.js'
+import { isComponentType } from '@/utils/componentTypes'
 
 const props = defineProps({
   currentUser: { type: Object, default: null },
@@ -124,7 +131,7 @@ const getRowRepeatCount = (row) => {
 const componentList = computed(() => {
   const list = projectData.value?.component_list
   if (!Array.isArray(list)) return []
-  return list.filter((c) => (c?.type || 'component') === 'component')
+  return list.filter((c) => isComponentType(c?.type))
 })
 
 const sanitizeFileName = (name) => {
@@ -182,7 +189,7 @@ const downloadDesign = async () => {
   padding: 1.5rem;
   max-width: 1200px;
   margin: 0 auto;
-  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(2rem + var(--safe-area-bottom));
 }
 
 .header {

@@ -2,6 +2,7 @@
 
 import { calculateConsumeGenerateCore } from '@/utils/crochetStatsCore.js'
 import { i18n } from '@/i18n'
+import { normalizeRopeChainCount } from '@/utils/ropeChainCount'
 
 const CROCHET_TEXT_ZH_LOCALE = 'zh-TW'
 
@@ -73,6 +74,11 @@ export const getCrochetZhText = (key, params) => getLocaleText(key, CROCHET_TEXT
  *   label?: string            // 選填：給這個模式一個名字（如：爆米花針組）
  * }
  *
+ * RopeBundle: {
+ *   type: "rope",
+ *   chain_count: number       // 鎖針數量 (1-99)
+ * }
+ *
  * Row: {
  *   row_index: number,        // 實際的起始行號 (e.g., 1, 2, 5, 11...)
  *                             // 當 count 改變時，所有後續行的 row_index 會自動重新計算
@@ -89,14 +95,19 @@ export const BasicStitch = [
   {
     index: 0,
     nameKey: 'crochet.stitches.slipStitch',
+    // 日式縮寫：引抜（引き抜き編み）
     symbol_jp: 'sl',
+    // UK pattern abbreviation
+    symbol_uk: 'ss',
     consume: 1,
     generate: 1
   },
   {
     index: 1,
     nameKey: 'crochet.stitches.chain',
+    // 日式縮寫：鎖（鎖編み）
     symbol_jp: 'ch',
+    symbol_uk: 'ch',
     consume: 0,
     generate: 1
   },
@@ -104,13 +115,16 @@ export const BasicStitch = [
     index: 2,
     nameKey: 'crochet.stitches.turningChain',
     symbol_jp: '^',
+    symbol_uk: '^',
     consume: 0,
     generate: 0
   },
   {
     index: 3,
     nameKey: 'crochet.stitches.skip',
+    // 日式縮寫：休（休み目）
     symbol_jp: 'skip',
+    symbol_uk: 'sk',
     consume: 1,
     generate: 0
   },
@@ -118,6 +132,8 @@ export const BasicStitch = [
     index: 4,
     nameKey: 'crochet.stitches.singleCrochet',
     symbol_jp: 'X',
+    // UK: US single crochet == UK double crochet
+    symbol_uk: 'dc',
     consume: 1,
     generate: 1
   },
@@ -125,6 +141,7 @@ export const BasicStitch = [
     index: 5,
     nameKey: 'crochet.stitches.increase.singleCrochet',
     symbol_jp: 'V',
+    symbol_uk: '2dc',
     consume: 1,
     generate: 2
   },
@@ -132,6 +149,7 @@ export const BasicStitch = [
     index: 6,
     nameKey: 'crochet.stitches.decrease.singleCrochet',
     symbol_jp: 'A',
+    symbol_uk: 'dc2tog',
     consume: 2,
     generate: 1
   },
@@ -139,6 +157,8 @@ export const BasicStitch = [
     index: 7,
     nameKey: 'crochet.stitches.halfDoubleCrochet',
     symbol_jp: 'T',
+    // UK: US half double crochet == UK half treble
+    symbol_uk: 'htr',
     consume: 1,
     generate: 1
   },
@@ -146,6 +166,7 @@ export const BasicStitch = [
     index: 8,
     nameKey: 'crochet.stitches.increase.halfDoubleCrochet',
     symbol_jp: 'TV',
+    symbol_uk: '2htr',
     consume: 1,
     generate: 2
   },
@@ -153,6 +174,7 @@ export const BasicStitch = [
     index: 9,
     nameKey: 'crochet.stitches.decrease.halfDoubleCrochet',
     symbol_jp: 'TA',
+    symbol_uk: 'htr2tog',
     consume: 2,
     generate: 1
   },
@@ -160,6 +182,8 @@ export const BasicStitch = [
     index: 10,
     nameKey: 'crochet.stitches.doubleCrochet',
     symbol_jp: 'F',
+    // UK: US double crochet == UK treble
+    symbol_uk: 'tr',
     consume: 1,
     generate: 1
   },
@@ -167,6 +191,7 @@ export const BasicStitch = [
     index: 11,
     nameKey: 'crochet.stitches.increase.doubleCrochet',
     symbol_jp: 'FV',
+    symbol_uk: '2tr',
     consume: 1,
     generate: 2
   },
@@ -174,6 +199,7 @@ export const BasicStitch = [
     index: 12,
     nameKey: 'crochet.stitches.decrease.doubleCrochet',
     symbol_jp: 'FA',
+    symbol_uk: 'tr2tog',
     consume: 2,
     generate: 1
   },
@@ -181,6 +207,8 @@ export const BasicStitch = [
     index: 13,
     nameKey: 'crochet.stitches.trebleCrochet',
     symbol_jp: 'E',
+    // UK: US treble crochet == UK double treble
+    symbol_uk: 'dtr',
     consume: 1,
     generate: 1
   },
@@ -188,6 +216,7 @@ export const BasicStitch = [
     index: 14,
     nameKey: 'crochet.stitches.increase.trebleCrochet',
     symbol_jp: 'EV',
+    symbol_uk: '2dtr',
     consume: 1,
     generate: 2
   },
@@ -195,6 +224,32 @@ export const BasicStitch = [
     index: 15,
     nameKey: 'crochet.stitches.decrease.trebleCrochet',
     symbol_jp: 'EA',
+    symbol_uk: 'dtr2tog',
+    consume: 2,
+    generate: 1
+  },
+  {
+    index: 16,
+    nameKey: 'crochet.stitches.tripleSpiralDoubleCrochet',
+    symbol_jp: '3F',
+    // Common UK equivalent for a 3-yarn-over tall stitch.
+    symbol_uk: 'ttr',
+    consume: 1,
+    generate: 1
+  },
+  {
+    index: 17,
+    nameKey: 'crochet.stitches.increase.tripleSpiralDoubleCrochet',
+    symbol_jp: '3FV',
+    symbol_uk: '2ttr',
+    consume: 1,
+    generate: 2
+  },
+  {
+    index: 18,
+    nameKey: 'crochet.stitches.decrease.tripleSpiralDoubleCrochet',
+    symbol_jp: '3FA',
+    symbol_uk: 'ttr2tog',
     consume: 2,
     generate: 1
   }
@@ -205,7 +260,8 @@ export const BasicStitch = [
 export const CROCHET_LANG = Object.freeze({
   symbol_jp: 0,
   text_zh: 1,
-  icon: 2
+  icon: 2,
+  symbol_uk: 3
 })
 
 // Position modifiers for stitches (only some stitches support these, e.g. X/T/F/E).
@@ -246,7 +302,8 @@ export const CROCHET_LANG_FIELD_BY_ID = Object.freeze({
   0: 'symbol_jp',
   1: 'nameKey',
   // icon mode uses UI components for icons; string fallbacks should be Chinese text.
-  2: 'nameKey'
+  2: 'nameKey',
+  3: 'symbol_uk'
 })
 
 const shouldTranslatePositionPrefix = (crochetLang) => {
@@ -295,7 +352,12 @@ export const getStitchGroup = (stitch) => {
   return 'general'
 }
 
-export const BasicStitchGeneral = BasicStitch.filter((s) => getStitchGroup(s) === 'general')
+// Note: stitch_id values are persisted in user data. Avoid reindexing/removing
+// entries from `BasicStitch`; instead, hide deprecated stitches from the
+// selectable lists.
+export const BasicStitchGeneral = BasicStitch.filter(
+  (s) => getStitchGroup(s) === 'general' && s?.index !== 16
+)
 export const BasicStitchIncrease = BasicStitch.filter((s) => getStitchGroup(s) === 'increase')
 export const BasicStitchDecrease = BasicStitch.filter((s) => getStitchGroup(s) === 'decrease')
 
@@ -381,8 +443,9 @@ export const getCastOnByName = (name) => {
  * @param {string} position - 選填：位置修飾 (e.g. FL/BL/FP/BP)
  * @returns {object} SimpleStitch 物件
  */
-export const createSimpleStitch = (stitchId, position = '') => {
-  const stitch = BasicStitch[stitchId]
+export const createSimpleStitch = (stitchId, position = '', stitchLookup = BasicStitch) => {
+  const lookup = stitchLookup || BasicStitch
+  const stitch = lookup[stitchId]
   if (!stitch) {
     throw new Error(`Stitch at index ${stitchId} not found`)
   }
@@ -404,8 +467,9 @@ export const createSimpleStitch = (stitchId, position = '') => {
  * @param {string} label - 選填的標籤
  * @returns {object} Bundle 物件
  */
-export const createBundle = (bundle = [], consume = 1, count = 1, label = null) => {
-  const totalGenerate = calculateConsumeGenerateCore(bundle, 1, BasicStitch).generate
+export const createBundle = (bundle = [], consume = 1, count = 1, label = null, stitchLookup = BasicStitch) => {
+  const lookup = stitchLookup || BasicStitch
+  const totalGenerate = calculateConsumeGenerateCore(bundle, 1, lookup).generate
 
   const node = {
     type: 'bundle',
@@ -427,8 +491,9 @@ export const createBundle = (bundle = [], consume = 1, count = 1, label = null) 
  * @param {string} label - 選填的標籤
  * @returns {object} Pattern 物件
  */
-export const createPattern = (count, pattern = [], label = null) => {
-  const stats = calculateConsumeGenerateCore(pattern, count, BasicStitch)
+export const createPattern = (count, pattern = [], label = null, stitchLookup = BasicStitch) => {
+  const lookup = stitchLookup || BasicStitch
+  const stats = calculateConsumeGenerateCore(pattern, count, lookup)
 
   const node = {
     type: 'pattern',
@@ -441,6 +506,19 @@ export const createPattern = (count, pattern = [], label = null) => {
     node.label = label
   }
   return node
+}
+
+/**
+ * 創建一個 RopeBundle 節點（繩束）
+ * @param {number} chainCount - 鎖針數量 (1-99)
+ * @returns {object} RopeBundle 物件
+ */
+export const createRope = (chainCount) => {
+  const safe = normalizeRopeChainCount(chainCount)
+  return {
+    type: 'rope',
+    chain_count: safe
+  }
 }
 
 /**
@@ -555,6 +633,9 @@ export const getPatternItemDisplay = (anchor, crochetLang = CROCHET_LANG.symbol_
 
   if (anchor.type === 'stitch') {
     return getStitchNodeDisplay(anchor, crochetLang, stitchLookup)
+  } else if (anchor.type === 'rope') {
+    const chainCount = normalizeRopeChainCount(anchor.chain_count ?? anchor.chainCount)
+    return getStitchNodeDisplay({ type: 'stitch', stitch_id: 1, count: chainCount }, crochetLang, stitchLookup)
   } else if (anchor.type === 'bundle') {
     const items = compactConsecutiveStitches(anchor.bundle || [])
       .map((item) => (
@@ -630,6 +711,14 @@ export const getPatternItemDisplayWithoutCount = (
     const translated = getCrochetZhText(key)
     const prefix = translated === key ? pos : translated
     return `${prefix}${text}`
+  }
+
+  if (anchor.type === 'rope') {
+    // Rope bundle displays as a chain stitch without the count in this mode.
+    const stitch = lookup[1]
+    if (!stitch) return 'ch'
+    if (typeof stitch?.name === 'string' && stitch.name.trim()) return stitch.name.trim()
+    return getStitchDisplayText(stitch, crochetLang)
   }
 
   if (anchor.type === 'bundle') {

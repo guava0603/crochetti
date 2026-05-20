@@ -66,13 +66,14 @@
 
   /* Warning / destructive */
   --color-warning-rgb: 255 70 70;
-  --color-warning: #FF4646;
+  --color-warning: #EB4C4C;
 
   --color-border: var(--vt-c-divider-light-2);
   --color-border-hover: var(--vt-c-divider-light-1);
 
   --color-heading: var(--vt-c-text-light-1);
   --color-text: var(--vt-c-text-light-1);
+  --color-text-note: #aaa;
 
   --color-icon-base: #4b5563;
   --color-icon-add-rgb: 224 157 127;
@@ -101,7 +102,7 @@
   --safe-viewport-height: calc(100vh - var(--safe-area-top) - var(--safe-area-bottom));
   --bottom-floating-button: calc(24px + var(--safe-area-bottom));
   --color-completed-green: #A3B666;
-  --color-play-and-pause: #EEDD99;
+  --color-play-and-pause: #F6CE71;
 
   /* Achievement tier colors */
   --tier-brown: #6e5034;
@@ -116,6 +117,9 @@
   --z-float: 200;
   --z-bottom-toolbar: 300;
   --z-popover: 600;
+  /* Dropdowns/menus should sit above app chrome but below modals/toasts */
+  --z-dropdown: var(--z-popover);
+  --z-dropdown-menu: calc(var(--z-popover) + 1);
   --z-modal: 1000;
   --z-modal-high: 1100;
   --z-modal-top: 1200;
@@ -123,11 +127,12 @@
   --z-toast-high: 2100;
 
   --padding-bottom-record-options: 12rem;
+  --radius-card: 0.75rem;
 }
 
 html.is-app {
   --safe-area-top: env(safe-area-inset-top, 0px);
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-bottom: calc(env(safe-area-inset-bottom, 0px) / 3);
 }
 
 @supports (height: 100svh) {

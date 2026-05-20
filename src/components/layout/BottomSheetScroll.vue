@@ -497,6 +497,17 @@ onBeforeUnmount(() => {
   z-index: var(--bottom-sheet-z, 55);
   overflow: hidden;
   transition: height 120ms ease-out;
+  /* Pass clicks through sheet padding; header/content stay interactive. */
+  pointer-events: none;
+}
+
+.bottom-sheet__scroll {
+  pointer-events: none;
+}
+
+.bottom-sheet__header,
+.bottom-sheet__content {
+  pointer-events: auto;
 }
 
 .bottom-sheet--resizing {
@@ -522,9 +533,11 @@ onBeforeUnmount(() => {
 }
 
 .bottom-sheet__header {
+  flex: 0 0 auto;
   position: relative;
   z-index: 1000;
   min-width: 0;
+  background: var(--color-surface-sheet);
 }
 
 .bottom-sheet__body {
@@ -539,11 +552,11 @@ onBeforeUnmount(() => {
   /* Create a local stacking context so header z-index is authoritative.
      Prevent content (e.g. carousels with z-index) from drawing over the header. */
   isolation: isolate;
-  /* padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px)); */
 }
 
 .bottom-sheet__content {
   min-width: 0;
+  min-height: 0;
   background: var(--color-surface-sheet);
   flex: 1 1 auto;
   overflow-y: auto;

@@ -486,7 +486,7 @@ const confirmSave = async () => {
 .bottom-bar {
   position: sticky;
   bottom: 0;
-  padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom));
+  padding: 0.75rem 0 calc(0.75rem + var(--safe-area-bottom));
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(8px);
   border-top: 1px solid rgba(0, 0, 0, 0.08);

@@ -23,37 +23,39 @@
     <template v-else>
       <!-- User profile content -->
       <div class="profile-content">
-        <UserDataDisplay
-          :name="userData.name"
-          :avatar="userData.avatar"
-          :fan-list="userData?.fan_list"
-          :is-my-page="false"
-          :badge-text="$t('user.myPageBadge')"
-        />
+        <div class="profile-content-top">
+          <UserDataDisplay
+            :name="userData.name"
+            :avatar="userData.avatar"
+            :fan-list="userData?.fan_list"
+            :is-my-page="false"
+            :badge-text="$t('user.myPageBadge')"
+          />
 
-        <AchievementCabinet
-          v-if="userId"
-          :user-id="String(userId)"
-          :is-my-page="false"
-          :earned-only="true"
-          :title="$t('achievement.cabinet.title')"
-        />
+          <AchievementCabinet
+            v-if="userId"
+            :user-id="String(userId)"
+            :is-my-page="false"
+            :earned-only="true"
+            :title="$t('achievement.cabinet.title')"
+          />
 
-        <UserTabPage
-          v-model="activeTab"
-          :tabs="profileTabs"
-          :user-projects="userProjects"
-          :user-records="userRecords"
-          :records-loading="recordsLoading"
-          :is-my-page="false"
-          :user-is-privacy="Boolean(userData?.is_privacy)"
-          :copying-project-id="copyingProjectId"
-          @open-project="(p) => navigateToProject(p.id)"
-          @open-record="(r) => navigateToRecord(r)"
-          @copy-project="handleCopyProject"
-          @share-project="handleShareProject"
-          @project-created="(p) => { userProjects.value = [p, ...userProjects.value] }"
-        />
+          <UserTabPage
+            v-model="activeTab"
+            :tabs="profileTabs"
+            :user-projects="userProjects"
+            :user-records="userRecords"
+            :records-loading="recordsLoading"
+            :is-my-page="false"
+            :user-is-privacy="Boolean(userData?.is_privacy)"
+            :copying-project-id="copyingProjectId"
+            @open-project="(p) => navigateToProject(p.id)"
+            @open-record="(r) => navigateToRecord(r)"
+            @copy-project="handleCopyProject"
+            @share-project="handleShareProject"
+            @project-created="(p) => { userProjects.value = [p, ...userProjects.value] }"
+          />
+        </div>
       </div>
     </template>
   </div>
@@ -109,6 +111,8 @@ const loading = ref(true)
 const userProjects = ref([])
 const copyingProjectId = ref(null)
 const optimisticFollowingList = ref(null)
+
+let userProfileFetchToken = 0
 
 const userRecords = ref([])
 const recordsLoading = ref(false)
@@ -223,8 +227,6 @@ const isFollowing = computed(() => {
   return Array.isArray(list) && list.includes(viewed)
 })
 
-let unsubscribeSnapshot = null
-
 function arraysEqualAsStrings(a, b) {
   const aa = Array.isArray(a) ? a.map(String) : []
   const bb = Array.isArray(b) ? b.map(String) : []
@@ -302,8 +304,10 @@ function handleBack() {
 }
 
 const bannerTitle = computed(() => {
+  if (loading.value) return t('common.loading')
   const name = String(userData.value?.name || '').trim()
-  return name || t('user.anonymous')
+  if (name) return name
+  return t('user.anonymous')
 })
 
 watch(
@@ -475,10 +479,7 @@ onMounted(() => {
 watch(
   () => userId.value,
   async () => {
-    if (unsubscribeSnapshot) {
-      unsubscribeSnapshot()
-      unsubscribeSnapshot = null
-    }
+    const token = ++userProfileFetchToken
 
     if (!userId.value) {
       userData.value = null
@@ -486,82 +487,42 @@ watch(
       return
     }
 
+    userData.value = null
     loading.value = true
     const fallbackProfile = getAuthFallbackProfile()
 
     try {
-      unsubscribeSnapshot = await callApi('subscribeUserProfile', {
-        userId: userId.value,
-        fallbackProfile,
-        onData: async (profile) => {
-          userData.value = normalizeProfileWithFallback(profile, fallbackProfile)
+      const users = await callApi('fetchUsersPublicProfiles', { userIds: [userId.value] })
+      if (token !== userProfileFetchToken) return
 
-          if (isPrivacyBlocked.value) {
-            userProjects.value = []
-            userRecords.value = []
-            recordsLoading.value = false
-          } else {
-            await fetchUserProjects()
-            await fetchUserRecords()
-          }
-          loading.value = false
-        },
-        onError: (error) => {
-          console.error('Error listening to user profile:', error)
-          userData.value = null
-          loading.value = false
-        }
-      })
+      const profile = Array.isArray(users) ? users[0] : null
+      userData.value = normalizeProfileWithFallback(profile, fallbackProfile)
+
+      if (isPrivacyBlocked.value) {
+        userProjects.value = []
+        userRecords.value = []
+        recordsLoading.value = false
+      } else {
+        await fetchUserProjects()
+        await fetchUserRecords()
+      }
     } catch (error) {
-      console.error('Error setting up user data listener:', error)
+      console.error('Error fetching user profile:', error)
+      if (token !== userProfileFetchToken) return
       userData.value = null
-      loading.value = false
+    } finally {
+      if (token === userProfileFetchToken) loading.value = false
     }
   },
   { immediate: true }
 )
 
 onUnmounted(() => {
-  // Cleanup: Unsubscribe from snapshot listener
-  if (unsubscribeSnapshot) {
-    unsubscribeSnapshot()
-  }
-
   appBanner?.setBanner({ onBack: null })
 })
 </script>
 
 <style scoped>
-.user-view {
-  min-height: 100vh;
-  background: #f9fafb;
-}
-
-.loading-container,
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  color: #6b7280;
-}
-
-.error-container h2 {
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-/* Profile content */
-.profile-content {
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
-
 .user-banner-actions {
   display: inline-flex;
   align-items: center;

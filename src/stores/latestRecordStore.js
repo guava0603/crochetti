@@ -61,11 +61,66 @@ export const useLatestRecordStore = defineStore('latestRecord', () => {
     }
   }
 
+  async function fetchRecordById(uid, recordId) {
+    const userId = String(uid || '').trim()
+    const rid = String(recordId || '').trim()
+    if (!userId || !rid) return null
+
+    const token = ++fetchToken
+    loading.value = true
+    error.value = null
+
+    try {
+      const full = await fetchUserRecord(userId, rid)
+      if (token !== fetchToken) return null
+
+      if (!full || typeof full !== 'object') {
+        latestRecordData.value = null
+        return null
+      }
+
+      // Preserve the record id (doc id) on the returned object so UIs can navigate/update.
+      full.id = rid
+      latestRecordData.value = full
+      return full
+    } catch (e) {
+      if (token !== fetchToken) return null
+      console.error('latestRecordStore: fetchRecordById failed', e)
+      error.value = e
+      latestRecordData.value = null
+      return null
+    } finally {
+      if (token === fetchToken) loading.value = false
+    }
+  }
+
+  /**
+   * Hydrate the dock record for a signed-in user.
+   * Prefers a specific record id (e.g. last accessed) and falls back to the most recent record.
+   */
+  async function hydrateLatestRecord(uid, { preferredRecordId = null } = {}) {
+    const userId = String(uid || '').trim()
+    if (!userId) {
+      reset()
+      return null
+    }
+
+    const preferredId = String(preferredRecordId || '').trim()
+    if (preferredId) {
+      const r = await fetchRecordById(userId, preferredId)
+      if (r) return r
+    }
+
+    return await fetchLatestRecord(userId)
+  }
+
   return {
     latestRecordData,
     loading,
     error,
     fetchLatestRecord,
+    fetchRecordById,
+    hydrateLatestRecord,
     reset,
     setLatestRecordData
   }

@@ -4,15 +4,17 @@
     :class="{ selected: showSelected, clickable: isClickable }"
     @click.stop="handleClick"
   >
-    <CrochetStitch
+    <component
       v-if="node.type === 'stitch'"
+      :is="StitchComponent"
       :stitch-id="node.stitch_id"
       :position="node.position"
       :count="node.count || 1"
     />
 
-    <CrochetBundle
+    <component
       v-else-if="node.type === 'bundle'"
+      :is="BundleComponent"
       :node="node"
       :table-type="tableType"
       :level="level"
@@ -20,8 +22,15 @@
       @selection-change="handleChildSelectionChange"
     />
 
-    <CrochetPattern
+    <component
+      v-else-if="node.type === 'rope'"
+      :is="RopeComponent"
+      :chain-count="node.chain_count"
+    />
+
+    <component
       v-else-if="node.type === 'pattern'"
+      :is="PatternComponent"
       :node="node"
       :table-type="tableType"
       :level="level"
@@ -32,10 +41,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import CrochetStitch from './CrochetStitch.vue'
 import CrochetBundle from './CrochetBundle.vue'
 import CrochetPattern from './CrochetPattern.vue'
+import CrochetRope from './CrochetRope.vue'
 
 const props = defineProps({
   node: {
@@ -57,6 +67,13 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['selection-change'])
+
+// Allow other crafts to reuse CrochetNode/CrochetPattern tree with a different stitch renderer.
+// Defaults preserve existing crochet behavior.
+const StitchComponent = inject('stitchComponent', CrochetStitch)
+const BundleComponent = inject('bundleComponent', CrochetBundle)
+const PatternComponent = inject('patternComponent', CrochetPattern)
+const RopeComponent = inject('ropeComponent', CrochetRope)
 
 const isClickable = computed(() => props.tableType !== 'view')
 

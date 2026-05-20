@@ -16,14 +16,6 @@
 
             <label v-else>{{ crochetColumnLabel }}</label>
           </div>
-
-          <div class="crochet-column-header__actions" @click.stop>
-            <ButtonTranslate />
-            <HelpIconButton
-              topic-id="editCrochetHowTo"
-              :aria-label="t('help.editCrochetHowTo.aria')"
-            />
-          </div>
         </div>
 
         <!-- Display current pattern for pattern type -->
@@ -43,21 +35,26 @@
           </div>
 
           <div class="pattern-count">
-            <span class="pattern-count__symbol">×</span>
+            <span class="pattern-count__symbol">{{ isRopeSelected ? 'ch' : '×' }}</span>
             <InputNumber
-              :model-value="pendingCount"
+              :model-value="displayCount"
               size="sm"
               :min="1"
-              :max="999"
-              :aria-label="t('toolbar.editCrochet.count')"
+              :max="isRopeSelected ? 99 : 999"
+              :aria-label="isRopeSelected ? t('toolbar.addCrochet.ropeBundle.chainCountLabel') : t('toolbar.editCrochet.count')"
               @update:model-value="handleUpdateCount"
             />
           </div>
         </div>
 
         <AddCrochet
-          v-if="selectedNodeType !== 'select_range'"
+          v-if="selectedNodeType !== 'select_range' && selectedNodeType !== 'rope'"
           :disabled="false"
+          :craft-key="craftKey"
+          :stitches="stitchesForList"
+          :show-custom-button="showCustomButton"
+          :enable-wizard="enableWizard"
+          :enable-self-defined-stitches="enableSelfDefinedStitches"
           :preset-stitch-id="presetStitchId"
           :preset-position="presetPosition"
           :default-position="''"
@@ -65,6 +62,7 @@
           @add-crochet="handleAddCrochet"
           @position-change="handlePositionChange"
           @add-bundle="handleAddBundle"
+          @add-rope="handleAddRope"
       />
       </div>
     </div>
@@ -73,21 +71,42 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, nextTick } from 'vue'
+import { ref, watch, computed, nextTick, inject, unref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputNumber from '@/components/Input/InputNumber.vue'
 import AddCrochet from '@/components/BottomToolbar/AddCrochet.vue'
 import GoParent from '@/components/buttons/GoParent.vue'
 import ButtonGroup from '@/components/buttons/ButtonGroup.vue'
-import ButtonTranslate from '@/components/buttons/svg/ButtonTranslate.vue'
 import CrochetNodeDisplay from '@/components/CrochetTable/CrochetNodeDisplay.vue'
-import HelpIconButton from '@/components/help/HelpIconButton.vue'
 import { addStitchToPatternList } from '@/utils/patternEdit.js'
-import { createBundle, createPattern, createSimpleStitch } from '@/constants/crochetData.js'
+import { createBundle, createSimpleStitch } from '@/constants/crochetData.js'
+import { openConfirmation } from '@/services/ui/confirmation'
+import { resolveEditCount } from '@/utils/editCrochetCount'
+import { getCountFromRowCopy } from '@/utils/rowCopyCount'
 
 const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps({
+  craftKey: {
+    type: String,
+    default: 'crochet'
+  },
+  stitchesForList: {
+    type: Array,
+    default: null
+  },
+  showCustomButton: {
+    type: Boolean,
+    default: true
+  },
+  enableWizard: {
+    type: Boolean,
+    default: true
+  },
+  enableSelfDefinedStitches: {
+    type: Boolean,
+    default: true
+  },
   selectedNodeType: {
     type: String,
     default: 'stitch'
@@ -107,6 +126,14 @@ const props = defineProps({
   canGoParent: {
     type: Boolean,
     default: false
+  },
+  selectionPath: {
+    type: Array,
+    default: () => []
+  },
+  rowCopy: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -115,8 +142,10 @@ const emit = defineEmits([
   'confirm',
   'cancel',
   'draft-pattern-change',
+  'row-copy-count-change',
   'go-parent',
-  'add-inner-selection'
+  'add-inner-selection',
+  'dirty-change'
 ])
 
 const isPatternSelected = computed(() => props.selectedNodeType === 'pattern')
@@ -124,7 +153,13 @@ const isPatternSelected = computed(() => props.selectedNodeType === 'pattern')
 const isBundleSelected = computed(() => props.selectedNodeType === 'bundle')
 
 const isStitchSelected = computed(() => props.selectedNodeType === 'stitch')
+const isRopeSelected = computed(() => props.selectedNodeType === 'rope')
 const showStitchAddTabs = computed(() => !isPatternSelected.value && (isStitchSelected.value || isBundleSelected.value))
+
+const supportsPosition = computed(() => String(props.craftKey || 'crochet') === 'crochet')
+
+const stitchLookup = inject('stitchLookup', null)
+const resolvedStitchLookup = computed(() => unref(stitchLookup))
 
 const stitchEditTab = ref('change')
 
@@ -147,12 +182,14 @@ const canSelectPreviewInner = computed(() => {
 })
 
 const crochetColumnLabel = computed(() => {
+  if (isRopeSelected.value) return t('toolbar.addCrochet.ropeBundle.title')
   if (isPatternSelected.value) return t('toolbar.editCrochet.addStitch')
   if (showStitchAddTabs.value && stitchEditTab.value === 'add') return t('toolbar.editCrochet.tabs.addToBundle')
   return t('toolbar.editCrochet.changeStitch')
 })
 
-const POSITION_SUPPORTED_STITCH_IDS = new Set([4, 7, 10, 13]) // X, T, F, E
+const POSITION_SUPPORTED_STITCH_IDS = new Set([4, 7, 10, 13, 6, 9, 12, 15]) // X, T, F, E and their decrease variants
+const supportsPositionForStitch = (stitchId) => supportsPosition.value && POSITION_SUPPORTED_STITCH_IDS.has(stitchId)
 
 const normalizePosition = (pos) => (typeof pos === 'string' ? pos.trim().toUpperCase() : '')
 
@@ -161,7 +198,7 @@ const appendStitchIntoBundleList = (bundleList, stitchId, position) => {
   const pos = normalizePosition(position)
 
   // Do not compact/merge while editing; keep explicit stitches.
-  safe.push(createSimpleStitch(stitchId, pos))
+  safe.push(createSimpleStitch(stitchId, pos, resolvedStitchLookup.value || undefined))
   return safe
 }
 
@@ -202,8 +239,10 @@ const presetPosition = computed(() => {
   return info?.position ?? ''
 })
 
-// Track pending changes
-const pendingCount = ref(props.selectedCount)
+const selectionDepth = computed(() => (
+  Array.isArray(props.selectionPath) ? props.selectionPath.length : 0
+))
+
 const countDirty = ref(false)
 const pendingStitchId = ref(null)
 const pendingPosition = ref('')
@@ -212,23 +251,70 @@ const pendingPattern = ref(props.currentPattern ? [...props.currentPattern] : []
 const suppressDraftEmit = ref(false)
 const draftTouched = ref(false)
 
-// Reset pending changes when selection changes
-watch(() => props.selectedCount, (newCount) => {
-  pendingCount.value = newCount
-  countDirty.value = false
-  pendingStitchId.value = null
-  pendingPosition.value = ''
-  pendingReplaceNode.value = null
+const readCountFromRowCopy = () => getCountFromRowCopy(props.rowCopy, props.selectionPath, {
+  selectedNodeType: props.selectedNodeType,
+  virtualWholeRow: props.virtualWholeRow
 })
 
-watch(() => props.selectedNodeType, () => {
-  stitchEditTab.value = 'change'
-  pendingStitchId.value = null
-  pendingPosition.value = ''
-  pendingReplaceNode.value = null
-  pendingCount.value = props.selectedCount
-  countDirty.value = false
+const baseDisplayCount = computed(() => {
+  if (Array.isArray(props.rowCopy) && props.rowCopy.length) {
+    return readCountFromRowCopy()
+  }
+  return resolveEditCount({
+    selectedNodeType: props.selectedNodeType,
+    selectedCount: props.selectedCount,
+    pendingPattern: props.currentPattern,
+    virtualWholeRow: props.virtualWholeRow,
+    selectionDepth: selectionDepth.value
+  })
 })
+
+const displayCount = computed(() => {
+  if (Array.isArray(props.rowCopy) && props.rowCopy.length) {
+    return readCountFromRowCopy()
+  }
+  return resolveEditCount({
+    selectedNodeType: props.selectedNodeType,
+    selectedCount: props.selectedCount,
+    pendingPattern: pendingPattern.value,
+    virtualWholeRow: props.virtualWholeRow,
+    selectionDepth: selectionDepth.value
+  })
+})
+
+const isDirty = computed(() => {
+  const basePattern = Array.isArray(props.currentPattern) ? props.currentPattern : []
+  const currentPattern = Array.isArray(pendingPattern.value) ? pendingPattern.value : []
+  const patternChanged = JSON.stringify(currentPattern) !== JSON.stringify(basePattern)
+
+  return Boolean(
+    draftTouched.value ||
+    patternChanged ||
+    countDirty.value ||
+    pendingReplaceNode.value !== null ||
+    pendingStitchId.value !== null
+  )
+})
+
+watch(isDirty, (next) => {
+  emit('dirty-change', next)
+}, { immediate: true })
+
+const resetCountDirty = () => {
+  countDirty.value = false
+}
+
+watch(
+  () => [props.selectedNodeType, props.selectionPath, props.rowCopy],
+  () => {
+    resetCountDirty()
+    pendingStitchId.value = null
+    pendingPosition.value = ''
+    pendingReplaceNode.value = null
+    stitchEditTab.value = props.selectedNodeType === 'bundle' ? 'add' : 'change'
+  },
+  { deep: true }
+)
 
 watch(() => props.currentPattern, (newPattern) => {
   suppressDraftEmit.value = true
@@ -236,12 +322,8 @@ watch(() => props.currentPattern, (newPattern) => {
   pendingStitchId.value = null
   pendingPosition.value = ''
   pendingReplaceNode.value = null
-  // Bundle edits almost always want "add to bundle" by default. For stitches, default to change.
   stitchEditTab.value = props.selectedNodeType === 'bundle' ? 'add' : 'change'
-  if (!props.virtualWholeRow) {
-    pendingCount.value = props.selectedCount
-    countDirty.value = false
-  }
+  resetCountDirty()
   nextTick(() => {
     suppressDraftEmit.value = false
   })
@@ -259,46 +341,10 @@ watch(
 
 const handleUpdateCount = (newCount) => {
   const nextCount = Math.max(1, Number(newCount) || 1)
-  pendingCount.value = nextCount
+  if (nextCount === baseDisplayCount.value) return
+
   countDirty.value = true
-
-  // For a single stitch node, represent count by wrapping into a pattern node.
-  // This makes count belong to the node itself (and draft/selection stays consistent).
-  if (props.selectedNodeType === 'stitch') {
-    const current = Array.isArray(pendingPattern.value) ? pendingPattern.value : []
-    const first = current[0]
-    if (!first || first.type !== 'stitch' || typeof first.stitch_id !== 'number') return
-
-    if (nextCount <= 1) {
-      pendingPattern.value = [{ ...first }]
-      return
-    }
-
-    pendingPattern.value = [createPattern(nextCount, [{ type: 'stitch', stitch_id: first.stitch_id, position: first.position }])]
-    return
-  }
-
-  // Whole-row editing (root / virtual selection): count is applied on confirm,
-  // but we still want the editing table to reflect the count immediately.
-  if (props.virtualWholeRow) {
-    draftTouched.value = true
-    emit('draft-pattern-change', {
-      list: Array.isArray(pendingPattern.value) ? pendingPattern.value : [],
-      count: nextCount,
-      selectRootPattern: nextCount > 1
-    })
-    return
-  }
-
-  // For pattern/bundle nodes, count belongs to the selected node (not to the inner list).
-  // Push the draft count up so selection props (selectedCount) update immediately and don't snap back.
-  if (props.selectedNodeType === 'pattern' || props.selectedNodeType === 'bundle') {
-    draftTouched.value = true
-    emit('draft-pattern-change', {
-      list: Array.isArray(pendingPattern.value) ? pendingPattern.value : [],
-      count: nextCount
-    })
-  }
+  emit('row-copy-count-change', { count: nextCount })
 }
 
 const handleAddCrochet = (payload) => {
@@ -313,7 +359,7 @@ const handleAddCrochet = (payload) => {
   // Never auto-default position (e.g. FP). If user didn't pick a position,
   // keep it empty — except when we're changing a stitch that already had a position,
   // in which case we preserve it for position-supported stitches.
-  if (!isAddToBundleMode && !positionSafe && POSITION_SUPPORTED_STITCH_IDS.has(stitchId)) {
+  if (!isAddToBundleMode && !positionSafe && supportsPositionForStitch(stitchId)) {
     const currentInfo = getFirstSelectedStitchInfo(pendingPattern.value)
     if (currentInfo?.position) {
       positionSafe = normalizePosition(currentInfo.position)
@@ -350,7 +396,8 @@ const handleAddCrochet = (payload) => {
         nextInner,
         1,
         first.count || 1,
-        first.label || null
+        first.label || null,
+        resolvedStitchLookup.value || undefined
       )
       pendingReplaceNode.value = nextBundle
       pendingPattern.value = [nextBundle]
@@ -358,9 +405,9 @@ const handleAddCrochet = (payload) => {
     }
 
     if (first.type === 'stitch' && typeof first.stitch_id === 'number') {
-      const nextInner = [createSimpleStitch(first.stitch_id, first.position)]
+      const nextInner = [createSimpleStitch(first.stitch_id, first.position, resolvedStitchLookup.value || undefined)]
       appendStitchIntoBundleList(nextInner, stitchId, positionSafe)
-      const nextBundle = createBundle(nextInner, 1, 1)
+      const nextBundle = createBundle(nextInner, 1, 1, null, resolvedStitchLookup.value || undefined)
       pendingReplaceNode.value = nextBundle
       pendingPattern.value = [nextBundle]
       return
@@ -390,6 +437,7 @@ const handleAddCrochet = (payload) => {
 }
 
 const handlePositionChange = (pos) => {
+  if (!supportsPosition.value) return
   if (!isStitchSelected.value) return
 
   const info = getFirstSelectedStitchInfo(pendingPattern.value)
@@ -434,7 +482,13 @@ const handleAddBundle = (bundle) => {
   pendingPattern.value = [...pendingPattern.value, bundle]
 }
 
-const handleConfirm = async () => {
+const handleAddRope = (rope) => {
+  if (!isPatternSelected.value) return
+  if (!rope || rope.type !== 'rope') return
+  pendingPattern.value = [...pendingPattern.value, rope]
+}
+
+const handleConfirm = async ({ close = true } = {}) => {
   // Ensure any focused input (e.g. InputNumber) commits its value before we read pending refs.
   if (typeof document !== 'undefined') {
     const el = document.activeElement
@@ -444,14 +498,11 @@ const handleConfirm = async () => {
 
   const changes = {}
 
-  if (draftTouched.value) {
+  if (draftTouched.value || countDirty.value) {
     changes.applyDraft = true
   }
 
-  // Stitch count is represented by pendingPattern wrapper; don't emit count separately.
-  if (props.selectedNodeType !== 'stitch' && countDirty.value && pendingCount.value !== props.selectedCount) {
-    changes.count = pendingCount.value
-  }
+  // Count edits are written into row_copy when the number picker is saved.
 
   if (pendingReplaceNode.value !== null) {
     changes.replaceNode = pendingReplaceNode.value
@@ -468,14 +519,21 @@ const handleConfirm = async () => {
 
   if (Object.keys(changes).length > 0) {
     emit('confirm', changes)
+  } else if (close) {
+    emit('cancel')
   }
 }
 
-const handleCancel = () => {
+const handleCancel = async ({ close = true, skipConfirm = false } = {}) => {
+  if (isDirty.value && !skipConfirm) {
+    const ok = await openConfirmation({ type: 'discardChanges' })
+    if (!ok) return
+  }
+
   // Reset to original values
   suppressDraftEmit.value = true
   draftTouched.value = false
-  pendingCount.value = props.selectedCount
+  resetCountDirty()
   pendingStitchId.value = null
   pendingReplaceNode.value = null
   stitchEditTab.value = 'change'
@@ -484,12 +542,13 @@ const handleCancel = () => {
     suppressDraftEmit.value = false
   })
   emit('draft-pattern-change', null)
-  emit('cancel')
+  if (close) emit('cancel')
 }
 
 defineExpose({
   confirm: handleConfirm,
-  cancel: handleCancel
+  cancel: handleCancel,
+  isDirty
 })
 
 </script>
@@ -545,13 +604,13 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
-.crochet-column-header__actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+.crochet-column-header__main {
+  flex: 1 1 auto;
+  min-width: 180px;
 }
 
 .add-tabs {
@@ -643,7 +702,7 @@ defineExpose({
 }
 
 .pattern-count :deep(.input-number) {
-  width: 96px;
+  width: auto;
 }
 
 

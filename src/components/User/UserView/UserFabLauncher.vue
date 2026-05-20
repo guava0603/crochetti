@@ -20,6 +20,13 @@
     @quick-start="handleQuickStart"
   />
 
+  <AddProjectStartModeModal
+    :show="showAddProjectStartModeModal"
+    @cancel="showAddProjectStartModeModal = false"
+    @new="handleStartNewProject"
+    @copy="handleCopyProject"
+  />
+
   <SearchUserByIdModal
     :show="showSearchUserModal"
     @cancel="showSearchUserModal = false"
@@ -34,6 +41,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import FloatDockedButton from '@/components/buttons/FloatDockedButton.vue'
 import AddRecordFromUserModal from '@/components/modals/AddRecordFromUserModal.vue'
+import AddProjectStartModeModal from '@/components/modals/AddProjectStartModeModal.vue'
 import SearchUserByIdModal from '@/components/modals/SearchUserByIdModal.vue'
 
 import { auth } from '@/firebaseConfig'
@@ -66,6 +74,7 @@ const achievementStore = useAchievementStore()
 const { t } = useI18n({ useScope: 'global' })
 
 const showAddRecordModal = ref(false)
+const showAddProjectStartModeModal = ref(false)
 const addRecordLoading = ref(false)
 const showSearchUserModal = ref(false)
 
@@ -97,13 +106,14 @@ watch(
   () => {
     // Avoid leaving modals open when switching tabs.
     showAddRecordModal.value = false
+    showAddProjectStartModeModal.value = false
     showSearchUserModal.value = false
   }
 )
 
 const handleFabClick = async () => {
   if (activeTab.value === 'design') {
-    await router.push('/add-project')
+    showAddProjectStartModeModal.value = true
     return
   }
 
@@ -118,9 +128,19 @@ const handleFabClick = async () => {
   }
 }
 
-const handleGoAddProject = async () => {
+const handleGoAddProject = () => {
   showAddRecordModal.value = false
+  showAddProjectStartModeModal.value = true
+}
+
+const handleStartNewProject = async () => {
+  showAddProjectStartModeModal.value = false
   await router.push('/add-project')
+}
+
+const handleCopyProject = async () => {
+  showAddProjectStartModeModal.value = false
+  await router.push('/add-project/copy')
 }
 
 const handleQuickStart = async () => {

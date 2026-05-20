@@ -10,7 +10,7 @@
 import ProjectViewMain from '@/components/ProjectView/index.vue'
 import { useCurrentUserProfile } from '@/composables/useCurrentUserProfile'
 
-import { fetchProject, updateProject } from '@/services/firestore/projects'
+import { deleteProject as deleteProjectDoc, fetchProject, updateProject } from '@/services/firestore/projects'
 import { listUserRecordsByProjectId } from '@/services/firestore/records'
 import { startRecordForProject } from '@/services/records/startRecordForProject'
 import {
@@ -22,6 +22,7 @@ import {
 const { currentUser, profile } = useCurrentUserProfile()
 
 const apiHandlers = {
+  deleteProjectDoc,
   fetchProject,
   updateProject,
   listUserRecordsByProjectId,

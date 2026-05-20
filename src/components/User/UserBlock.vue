@@ -1,5 +1,12 @@
 <template>
-  <button class="user-block" type="button" @click="$emit('select', user?.id)">
+  <div
+    class="user-block"
+    role="button"
+    tabindex="0"
+    @click="$emit('select', user?.id)"
+    @keydown.enter.prevent="$emit('select', user?.id)"
+    @keydown.space.prevent="$emit('select', user?.id)"
+  >
     <AvatarCircle
       class="user-block__avatar"
       :image-url="user?.avatar || null"
@@ -12,7 +19,7 @@
     <div class="user-block__content">
       <div class="user-block__name">{{ displayName }}</div>
     </div>
-  </button>
+  </div>
 </template>
 
 <script setup>

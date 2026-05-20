@@ -95,11 +95,9 @@ function tierClass(a) {
   flex-direction: row;
   gap: 1rem;
   position: relative;
-  width: min(92vw, 520px);
+  width: 100vw;
   padding: 14px 14px;
-  border-radius: 16px;
   background: rgba(245, 235, 218, 0.96);
-  border: 2px solid rgba(122, 90, 58, 0.65);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -108,29 +106,6 @@ function tierClass(a) {
 .ach-grid-modal__content {
   display: flex;
   flex-direction: column;
-}
-
-.ach-grid-modal__card.tier--brown {
-  background-color: var(--tier-brown);
-}
-
-.ach-grid-modal__card.tier--silver {
-  background-color: var(--tier-silver);
-}
-
-.ach-grid-modal__card.tier--gold {
-  background-color: var(--tier-gold);
-}
-
-.ach-grid-modal__card.tier--special {
-  background-color: var(--tier-special);
-}
-
-.ach-grid-modal__card.tier--brown .ach-grid-modal__title,
-.ach-grid-modal__card.tier--brown .ach-grid-modal__desc,
-.ach-grid-modal__card.tier--special .ach-grid-modal__title,
-.ach-grid-modal__card.tier--special .ach-grid-modal__desc {
-  color: rgba(255, 255, 255, 0.95);
 }
 
 .ach-grid-modal__close {

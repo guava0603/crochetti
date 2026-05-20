@@ -33,7 +33,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useFooterContext } from '@/composables/footerContext'
 
-defineOptions({ name: 'FooterActionsButton' })
+defineOptions({ name: 'FooterActions' })
 
 const route = useRoute()
 const footer = useFooterContext()
@@ -58,12 +58,15 @@ const justify = computed(() => {
 <style scoped>
 .actions-footer {
   width: 100%;
-  padding: 0.75rem 1.5rem;
+  height: 100%;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .actions-footer__inner {
-  max-width: 1000px;
-  margin: 0 auto;
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 0.75rem;

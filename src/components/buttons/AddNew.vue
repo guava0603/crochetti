@@ -105,7 +105,6 @@ defineEmits(['click'])
   border-radius: 8px;
   font-size: 1.2rem;
   color: var(--color-icon-add);
-  margin-top: 0.5rem;
 }
 
 .add-new--row:hover {
@@ -120,9 +119,9 @@ defineEmits(['click'])
 }
 
 .add-new--md {
-  padding: 0.45rem 0.9rem;
+  padding: 0.2rem 0.9rem;
   border-radius: 10px;
-  font-size: 0.875rem;
+  font-size: 1.2rem;
 }
 
 .add-new__icon {

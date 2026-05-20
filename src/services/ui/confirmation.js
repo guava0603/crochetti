@@ -221,6 +221,16 @@ const CONFIRMATION_PRESETS = {
     confirmClass: 'btn-confirm'
   }),
 
+  stopRecordingAfterEndAtChange: (params) => ({
+    title: t('confirmation.stopRecordingAfterEndAtChange.title'),
+    message: t('confirmation.stopRecordingAfterEndAtChange.message', {
+      name: params?.name || ''
+    }),
+    confirmText: t('confirmation.stopRecordingAfterEndAtChange.confirmText'),
+    cancelText: t('confirmation.stopRecordingAfterEndAtChange.cancelText'),
+    confirmClass: 'btn-confirm'
+  }),
+
   completeWholeRow: (params) => ({
     title: t('confirmation.completeWholeRow.title'),
     message: t('confirmation.completeWholeRow.message', {
@@ -377,6 +387,9 @@ export function openChoiceConfirmation(options = {}) {
   }
 
   state.title = presetOptions.title ?? DEFAULTS.title
+  state.message = presetOptions.message ?? DEFAULTS.message
+  state.cancelText = presetOptions.cancelText ?? DEFAULTS.cancelText
+  state.loadingText = presetOptions.loadingText ?? DEFAULTS.loadingText
   state.loading = Boolean(options.loading)
 
   // confirm button is replaced by choices in the UI

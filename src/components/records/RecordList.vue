@@ -141,6 +141,17 @@ const visibleRecords = computed(() => {
   margin-bottom: 2rem;
 }
 
+@media (min-width: 768px) and (hover: none) and (pointer: coarse) {
+  .records-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+
+  .records-section {
+    padding: 1.25rem;
+  }
+}
+
 .records-hint {
   text-align: center;
   padding: 3rem 2rem;

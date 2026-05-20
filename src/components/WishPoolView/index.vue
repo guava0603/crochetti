@@ -10,16 +10,15 @@
               <h5>{{ $t('wishPool.descriptionLabel') }}</h5>
             </div>
             <div class="subsection-body">
-              <textarea
+              <LimitedTextArea
                 v-model="description"
                 class="field__control field__control--textarea"
                 :placeholder="$t('wishPool.descriptionPlaceholder')"
-                rows="10"
+                :rows="10"
                 :disabled="loading"
+                :limit="WORD_LIMIT"
+                count-mode="wordsLike"
               />
-              <span class="field__meta" :class="{ 'field__meta--error': isOverLimit }">
-                {{ $t('wishPool.wordCount', { n: wordCount, max: WORD_LIMIT }) }}
-              </span>
             </div>
           </section>
 
@@ -63,6 +62,8 @@ import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { openError, openNotice } from '@/services/ui/notice'
 import { useFooterContext } from '@/composables/footerContext'
+import LimitedTextArea from '@/components/Input/LimitedTextArea.vue'
+import { countWordsLike } from '@/utils/textCount'
 
 defineOptions({ name: 'WishPoolViewMain' })
 
@@ -91,16 +92,6 @@ const loading = ref(false)
 const description = ref('')
 const allowContact = ref(false)
 const email = ref('')
-
-function countWordsLike(text) {
-  const s = String(text || '').trim()
-  if (!s) return 0
-
-  // Count CJK characters as 1 each; count other letter/number sequences as 1.
-  // This approximates "1000 words" across mixed languages.
-  const matches = s.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]|[\p{L}\p{N}]+/gu)
-  return matches ? matches.length : 0
-}
 
 const wordCount = computed(() => countWordsLike(description.value))
 const isOverLimit = computed(() => wordCount.value > WORD_LIMIT)
@@ -206,24 +197,6 @@ async function handleSubmit() {
   border: 1px solid var(--color-border);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
   padding: 1rem;
-}
-
-.subsection-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  margin-bottom: 0.75rem;
-}
-
-.subsection-header h5 {
-  margin: 0;
-  font-weight: 500;
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: var(--color-font-dark);
 }
 
 .subsection-body {

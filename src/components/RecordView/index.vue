@@ -1,11 +1,6 @@
 <template>
   <Teleport to=".top-banner__side--right">
     <div class="record-top-actions" @click.stop>
-      <HelpIconButton
-        v-if="isOngoingView"
-        topic-id="recordHowTo"
-        :aria-label="$t('help.recordHowTo.aria')"
-      />
       <button
         v-if="hasResultSharingQuery"
         type="button"
@@ -62,7 +57,6 @@ import { v4 as uuidv4 } from '@lukeed/uuid'
 import { storage } from '@/firebaseConfig'
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
 
-import HelpIconButton from '@/components/help/HelpIconButton.vue'
 import MoreMenu from '@/components/buttons/MoreMenu.vue'
 
 import RecordOngoing from '@/components/records/RecordOngoing.vue'
@@ -78,12 +72,12 @@ import { useAppBanner } from '@/composables/appBanner'
 import { expandComponentListByCount, normalizeRecordForComponentCountsInPlace } from '@/utils/componentInstances'
 import EditRecordResultModal from '@/components/modals/EditRecordResultModal.vue'
 import { getLastEndAtForComponent, getRecordProgressPercent } from '@/utils/recordProgressGenerate'
-import { formatDateTimeCompact } from '@/utils/dateTime'
 import { toMs } from '@/utils/toMs'
 
 import { openConfirmation } from '@/services/ui/confirmation'
 import { openError, openNotice } from '@/services/ui/notice'
 import { useLatestRecordStore } from '@/stores/latestRecordStore'
+import { clearLastAccessedRecordId, writeLastAccessedRecordId } from '@/utils/lastAccessedRecord'
 
 defineOptions({ name: 'RecordViewMain' })
 
@@ -105,7 +99,7 @@ function callApi(name, ...args) {
 
 const route = useRoute()
 const router = useRouter()
-const { t } = useI18n({ useScope: 'global' })
+const { t, locale } = useI18n({ useScope: 'global' })
 
 const appBanner = useAppBanner()
 
@@ -151,8 +145,6 @@ const cloneTimeSlots = (slots) => {
 const lastSwitchPromptKey = ref('')
 const handleSwitchRecordingSessionIfNeeded = async ({ uid, nextRecordId, nextRecord }) => {
   if (!uid) return { cancelled: false }
-  if (!isOngoingView.value) return { cancelled: false }
-  if (nextRecord?.is_completed === true) return { cancelled: false }
 
   const dockRecord = latestRecordStore.latestRecordData
   const dockId = String(dockRecord?.id || '').trim()
@@ -216,28 +208,6 @@ const hasResultSharingQuery = computed(() => Object.prototype.hasOwnProperty.cal
 const hasTimeSlotIdQuery = computed(() => Object.prototype.hasOwnProperty.call(route.query, 'time_slot_id'))
 const hasCompletedResultQuery = computed(() => Object.prototype.hasOwnProperty.call(route.query, 'completed-result'))
 const hasEditResultQuery = computed(() => Object.prototype.hasOwnProperty.call(route.query, 'edit-result'))
-
-const recordCreatedAtMs = computed(() => {
-  const r = recordData.value
-  return toMs(r?.created_at) ?? toMs(r?.createdAt) ?? null
-})
-
-const recordUpdatedAtMs = computed(() => {
-  const r = recordData.value
-  return toMs(r?.updated_at) ?? toMs(r?.updatedAt) ?? null
-})
-
-const recordCreatedAtCompact = computed(() => {
-  const ms = recordCreatedAtMs.value
-  if (ms == null) return ''
-  return formatDateTimeCompact(ms)
-})
-
-const recordUpdatedAtCompact = computed(() => {
-  const ms = recordUpdatedAtMs.value
-  if (ms == null) return ''
-  return formatDateTimeCompact(ms)
-})
 
 const baseUrl = import.meta.env.BASE_URL || '/'
 const downloadIconUrl = `${baseUrl}assets/image/settings/027__download.svg`
@@ -344,6 +314,12 @@ const moreMenuSections = computed(() => {
             label: t('record.goToProject'),
             disabled: !projectId.value,
             onSelect: goToProject
+          },
+          {
+            action: 'syncProject',
+            label: t('record.syncProject'),
+            disabled: !recordData.value || recordLoading.value || !projectId.value,
+            onSelect: handleSyncFromProject
           }
         ]
       },
@@ -572,6 +548,7 @@ const loadRecord = async ({ force = false } = {}) => {
   if (!uid) {
     recordData.value = null
     loadedRecordId.value = ''
+    clearLastAccessedRecordId()
     return
   }
 
@@ -675,8 +652,15 @@ const loadRecord = async ({ force = false } = {}) => {
       return null
     }
 
+    // Ensure doc id exists on the record object.
+    if (data && typeof data === 'object') data.id = String(id)
+
     recordData.value = data
     loadedRecordId.value = id
+
+    // Latest record is defined as: the last record we accessed.
+    latestRecordStore.setLatestRecordData(recordData.value)
+    writeLastAccessedRecordId(id)
     return data
   })()
 
@@ -702,6 +686,175 @@ function goWatchResult() {
   })
 }
 
+function stableStringify(value) {
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return ''
+  }
+}
+
+function normalizeImageUrls(raw) {
+  const list = Array.isArray(raw) ? raw : []
+  return list
+    .map((u) => (typeof u === 'string' ? u.trim() : ''))
+    .filter(Boolean)
+}
+
+function stripComponentProgressForCompare(component) {
+  if (!component || typeof component !== 'object') return component
+  const cloned = JSON.parse(JSON.stringify(component))
+  if (cloned && typeof cloned === 'object') {
+    delete cloned.end_at
+    delete cloned.is_completed
+    delete cloned._instance
+  }
+  return cloned
+}
+
+async function handleSyncFromProject() {
+  if (authPending.value) return
+  const uid = currentUser.value?.uid
+  if (!uid) return
+
+  const record = recordData.value
+  if (!record || typeof record !== 'object') return
+
+  const pid = projectId.value
+  if (!pid) {
+    await openNotice({
+      title: t('common.notice'),
+      message: t('record.noProjectId'),
+      confirmText: t('common.ok')
+    })
+    return
+  }
+
+  const ok = await openConfirmation({ type: 'syncProject' })
+  if (!ok) return
+
+  try {
+    const project = await callApi('fetchProject', String(pid))
+    if (!project) {
+      await openNotice({
+        title: t('common.notice'),
+        message: t('common.loading'),
+        confirmText: t('common.ok')
+      })
+      return
+    }
+
+    const projectUpdatedMs = toMs(project?.updated_at) ?? toMs(project?.updatedAt) ?? 0
+    const recordSyncedMs =
+      toMs(record?.sync_at) ??
+      toMs(record?.synced_at) ??
+      toMs(record?.syncedAt) ??
+      0
+
+    if (projectUpdatedMs > 0 && recordSyncedMs > 0 && projectUpdatedMs <= recordSyncedMs) {
+      await openNotice({
+        title: t('common.notice'),
+        message: t('record.syncNoChangesNotice'),
+        confirmText: t('common.ok')
+      })
+      return
+    }
+
+    const nextName = String(project?.name || '').trim() || String(record?.project_name || '')
+    const nextDescription = String(project?.description || '').trim() || String(record?.project_description || '')
+    const nextImages = normalizeImageUrls(project?.images)
+    const nextCover = nextImages[0] || (typeof project?.image === 'string' ? project.image.trim() : '') || null
+
+    const projectComponentsRaw = Array.isArray(project?.component_list) ? project.component_list : []
+    const projectComponentsExpanded = projectComponentsRaw.length
+      ? expandComponentListByCount(projectComponentsRaw, { resetEndAt: false })
+      : []
+    const recordComponents = Array.isArray(record?.component_list) ? record.component_list : []
+
+    const nextComponentList = projectComponentsExpanded.length
+      ? projectComponentsExpanded.map((component, idx) => {
+          const base = JSON.parse(JSON.stringify(component))
+          const existing = recordComponents[idx]
+          if (existing && typeof existing === 'object') {
+            base.end_at = existing?.end_at ?? null
+            base.is_completed = Boolean(existing?.is_completed)
+          } else {
+            base.end_at = null
+            base.is_completed = false
+          }
+          return base
+        })
+      : recordComponents
+
+    const nextTimeSlots = Array.isArray(record?.time_slots)
+      ? record.time_slots.map((slot) => {
+          if (!slot || typeof slot !== 'object') return slot
+          if (!Array.isArray(slot.end_at_list)) return slot
+          const next = slot.end_at_list
+            .slice(0, nextComponentList.length)
+            .map((e) => (e ? { ...e } : null))
+          while (next.length < nextComponentList.length) next.push(null)
+          return { ...slot, end_at_list: next }
+        })
+      : record?.time_slots
+
+    const updatedSections = []
+    if (String(record?.project_name || '') !== nextName) updatedSections.push(t('record.syncUpdatedSections.name'))
+    if (String(record?.project_description || '') !== nextDescription) updatedSections.push(t('record.syncUpdatedSections.description'))
+    if (stableStringify(normalizeImageUrls(record?.project_images)) !== stableStringify(nextImages)) {
+      updatedSections.push(t('record.syncUpdatedSections.images'))
+    }
+
+    const prevChart = stableStringify((recordComponents || []).map(stripComponentProgressForCompare))
+    const nextChart = stableStringify((nextComponentList || []).map(stripComponentProgressForCompare))
+    if (prevChart !== nextChart) updatedSections.push(t('record.syncUpdatedSections.chart'))
+
+    if (updatedSections.length === 0) {
+      await openNotice({
+        title: t('common.notice'),
+        message: t('record.syncNoChangesNotice'),
+        confirmText: t('common.ok')
+      })
+      return
+    }
+
+    const nowIso = new Date().toISOString()
+
+    const patch = {
+      project_name: nextName,
+      project_image: nextCover,
+      project_description: nextDescription,
+      project_images: nextImages,
+      component_list: nextComponentList,
+      time_slots: nextTimeSlots,
+      synced_at: nowIso
+    }
+
+    await callApi('mergeUserRecord', String(uid), String(recordId.value), patch)
+
+    const nextRecord = { ...record, ...patch }
+    nextRecord.id = String(recordId.value)
+    recordData.value = nextRecord
+
+    // Keep dock record reference aligned with the record page.
+    latestRecordStore.setLatestRecordData(nextRecord)
+
+    const joiner = String(locale.value || '').startsWith('zh') ? '、' : ', '
+    await openNotice({
+      title: t('common.notice'),
+      message: t('record.syncUpdatedNotice', { items: updatedSections.join(joiner) }),
+      confirmText: t('common.ok')
+    })
+  } catch (e) {
+    console.error('RecordView: sync from project failed:', e)
+    await openError({
+      title: t('common.error'),
+      message: t('record.syncFailedNotice'),
+      confirmText: t('common.ok')
+    })
+  }
+}
+
 async function handleDeleteRecord() {
   if (authPending.value) return
   const uid = currentUser.value?.uid
@@ -721,6 +874,13 @@ async function handleDeleteRecord() {
 
     recordData.value = null
     loadedRecordId.value = ''
+
+    const dock = latestRecordStore.latestRecordData
+    const dockId = String(dock?.id || '').trim()
+    if (dockId && dockId === String(recordId.value)) {
+      latestRecordStore.setLatestRecordData(null)
+      clearLastAccessedRecordId()
+    }
 
     await openNotice({
       title: t('common.notice'),

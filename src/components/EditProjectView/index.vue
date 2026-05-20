@@ -62,6 +62,7 @@ import ProjectWizardLayout from '@/components/projects/ProjectWizardLayout.vue'
 import AddProjectInfo from '@/components/AddProjectView/AddProjectInfo.vue'
 import AddProjectDesign from '@/components/AddProjectView/AddProjectDesign.vue'
 import { normalizeEmptyNotesForSaveInPlace } from '@/utils/normalizeEmptyNotesForSave'
+import { DEFAULT_PROJECT_CRAFT_TYPES, normalizeProjectCraftTypes } from '@/constants/projectCraft'
 
 import { auth, storage } from '@/firebaseConfig'
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
@@ -101,9 +102,10 @@ const step2CanSubmit = computed(() => {
 
 const basicInfo = ref({
   name: '',
+  craft_types: [...DEFAULT_PROJECT_CRAFT_TYPES],
   description: '',
   image_files: [],
-  materials: { hook: [], yarn: [] }
+  materials: { hook: [], needle: [], yarn: [] }
 })
 
 const existingImages = ref([])
@@ -253,9 +255,13 @@ onMounted(async () => {
     basicInfo.value = {
       name: String(data.name || ''),
       description: String(data.description || ''),
+      craft_types: normalizeProjectCraftTypes(data?.craft_types),
       // File picker only; if user doesn't pick, keep existing project images.
       image_files: [],
-      materials: extractedMaterials
+      materials: {
+        ...extractedMaterials,
+        needle: []
+      }
     }
 
     designData.value = {
@@ -267,7 +273,11 @@ onMounted(async () => {
     initialBasicInfo.value = {
       name: String(data.name || ''),
       description: String(data.description || ''),
-      materials: extractedMaterialsSnapshot
+      craft_types: normalizeProjectCraftTypes(data?.craft_types),
+      materials: {
+        ...extractedMaterialsSnapshot,
+        needle: []
+      }
     }
 
     // Snapshot after load so committedDirty reflects changes relative to the server state.
@@ -318,6 +328,7 @@ function extractMaterialsFromComponents(componentList) {
 
   return {
     hook: uniqueList(hookOut),
+    needle: [],
     yarn: normalizeYarnMetaList(uniqueList(yarnOut))
   }
 }
@@ -326,7 +337,7 @@ function extractMaterials(project) {
   const fromProject = project?.materials
   const hook = uniqueList(normalizeStringList(fromProject?.hook))
   const yarn = normalizeYarnMetaList(fromProject?.yarn)
-  if (hook.length > 0 || yarn.length > 0) return { hook, yarn }
+  if (hook.length > 0 || yarn.length > 0) return { hook, needle: [], yarn }
   return extractMaterialsFromComponents(project?.component_list)
 }
 
@@ -381,8 +392,10 @@ const handleSubmit = async (data) => {
   await callApi('updateProject', id, {
     name: basicInfo.value.name,
     description: basicInfo.value.description,
+    craft_types: normalizeProjectCraftTypes(basicInfo.value?.craft_types),
     materials: {
       hook: Array.isArray(basicInfo.value?.materials?.hook) ? basicInfo.value.materials.hook : [],
+      needle: [],
       yarn: Array.isArray(basicInfo.value?.materials?.yarn) ? basicInfo.value.materials.yarn : []
     },
     component_list: componentList,

@@ -1,6 +1,7 @@
 <template>
   <ProjectWizardLayout
     :title="pageTitle"
+    :show-banner="false"
     :show-steps="false"
     :is-dirty="isDirty"
     @last-page="$router.back()"
@@ -81,7 +82,7 @@
 
       </form>
 
-      <!-- Footer actions are rendered by App (meta.footer = 'actions'). -->
+      <!-- Footer actions are rendered by App (meta.footer = 'action'). -->
     </template>
   </ProjectWizardLayout>
 </template>
@@ -223,8 +224,8 @@ const buildComponentList = (projectName, groups) => {
       name: `${projectName} 1`,
       type: 'component',
       count: 1,
-      yarn: [''],
-      hook: [''],
+      yarn: [],
+      hook: [],
       metadata: {
         yarn: [],
         hook: []

@@ -65,6 +65,19 @@ const props = defineProps({
   rowCount: {
     type: Number,
     default: 1
+  },
+  // Optional overrides for other crafts (e.g. knitting)
+  getNodeSizeFn: {
+    type: Function,
+    default: null
+  },
+  computeGenerateDoneFn: {
+    type: Function,
+    default: null
+  },
+  getNodeLabelFn: {
+    type: Function,
+    default: null
   }
 })
 
@@ -105,8 +118,10 @@ const pathLevels = computed(() => {
   return pathNodes.value
     .map((node) => ({
       node,
-      size: getNodeSize(node),
-      label: getPatternItemDisplayWithoutCount(node, crochetLang.value, stitchLookup.value)
+      size: typeof props.getNodeSizeFn === 'function' ? props.getNodeSizeFn(node) : getNodeSize(node),
+      label: typeof props.getNodeLabelFn === 'function'
+        ? props.getNodeLabelFn(node)
+        : getPatternItemDisplayWithoutCount(node, crochetLang.value, stitchLookup.value)
     }))
     .filter((lvl) => lvl.size > 1)
 })
@@ -136,12 +151,14 @@ const handleCountChange = (index, value) => {
 
 const handleConfirm = () => {
   selectionCounts.value = [...pendingCounts.value]
-  const generateCount = computeGenerateDone(
-    props.selectionList,
-    props.stitchList,
-    selectionCounts.value,
-    selfDefinedCtx.list.value
-  )
+  const generateCount = typeof props.computeGenerateDoneFn === 'function'
+    ? props.computeGenerateDoneFn(props.selectionList, props.stitchList, selectionCounts.value)
+    : computeGenerateDone(
+      props.selectionList,
+      props.stitchList,
+      selectionCounts.value,
+      selfDefinedCtx.list.value
+    )
   emit('update-end-at', props.rowIndex, generateCount)
 }
 

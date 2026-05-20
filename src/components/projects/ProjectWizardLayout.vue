@@ -227,6 +227,7 @@ onBeforeUnmount(() => {
 
 :deep(input[type='text']),
 :deep(input[type='number']),
+:deep(textarea),
 :deep(select) {
   width: 100%;
   padding: 0.75rem;
@@ -268,10 +269,8 @@ onBeforeUnmount(() => {
 :deep(.label-wrapper) {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 0.25rem;
-  margin-bottom: 0.5rem;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 :deep(.required-badge) {

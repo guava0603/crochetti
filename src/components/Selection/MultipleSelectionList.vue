@@ -5,7 +5,7 @@
       :class="{ 'multiple-selection__control--disabled': disabled }"
       @mousedown.prevent="focusInput"
     >
-      <div v-if="selected.length" class="multiple-selection__chips" aria-hidden="true">
+      <div v-if="showChips && selected.length" class="multiple-selection__chips" aria-hidden="true">
         <span v-for="(v, idx) in selected" :key="`${v}-${idx}`" class="multiple-selection__chip">
           <span class="multiple-selection__chip-text">{{ labelForValue(v) }}</span>
           <button
@@ -52,6 +52,8 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import { toTrimmedText as toText } from '@/utils/text'
+import { buildValueLabelMap, getAvailableSelectionOptions } from '@/utils/selectionOptions'
 
 const props = defineProps({
   modelValue: {
@@ -85,6 +87,10 @@ const props = defineProps({
   maxItems: {
     type: Number,
     default: 12
+  },
+  showChips: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -93,10 +99,6 @@ const emit = defineEmits(['update:modelValue', 'blur', 'focus'])
 const inputRef = ref(null)
 const isMenuOpen = ref(false)
 const query = ref('')
-
-function toText(v) {
-  return String(v ?? '').trim()
-}
 
 const selected = computed(() => {
   const seen = new Set()
@@ -111,60 +113,11 @@ const selected = computed(() => {
   return out
 })
 
-function normalizeOption(raw) {
-  if (raw == null) return null
-  if (typeof raw === 'string') {
-    const v = toText(raw)
-    return v ? { value: v, label: v } : null
-  }
-  if (typeof raw !== 'object') return null
-  const value = toText(raw.value)
-  const label = toText(raw.label)
-  if (!value) return null
-  return { value, label: label || value }
-}
-
-const normalizedOptions = computed(() => {
-  const rawOptions = Array.isArray(props.options) ? props.options : []
-  if (rawOptions.length === 0) return []
-
-  const seen = new Set()
-  const out = []
-  for (const raw of rawOptions) {
-    const opt = normalizeOption(raw)
-    if (!opt) continue
-    if (seen.has(opt.value)) continue
-    seen.add(opt.value)
-    out.push(opt)
-  }
-  return out
-})
-
-const normalizedSuggestions = computed(() => {
-  const seen = new Set()
-  const out = []
-  for (const raw of Array.isArray(props.suggestions) ? props.suggestions : []) {
-    const v = toText(raw)
-    if (!v) continue
-    if (seen.has(v)) continue
-    seen.add(v)
-    out.push({ value: v, label: v })
-  }
-  return out
-})
-
 const availableOptions = computed(() => {
-  return normalizedOptions.value.length ? normalizedOptions.value : normalizedSuggestions.value
+  return getAvailableSelectionOptions({ options: props.options, suggestions: props.suggestions })
 })
 
-const valueLabelMap = computed(() => {
-  const map = new Map()
-  for (const opt of availableOptions.value) {
-    if (!opt?.value) continue
-    if (!map.has(opt.value)) map.set(opt.value, opt.label || opt.value)
-  }
-  return map
-})
+const valueLabelMap = computed(() => buildValueLabelMap(availableOptions.value))
 
 function labelForValue(v) {
   const value = toText(v)
@@ -304,17 +257,12 @@ function removeValue(v) {
   padding: 0.3rem 0.8rem;
 }
 
-.multiple-selection__control:focus-within {
-  border-color: var(--color-icon-add);
-  box-shadow: 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.1);
-}
-
 .multiple-selection__menu {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  z-index: 20;
+  z-index: var(--z-dropdown-menu);
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 10px;

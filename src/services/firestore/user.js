@@ -26,7 +26,7 @@ export function isCurrentUser(userId) {
   return String(uid) === String(userId)
 }
 
-export function subscribeUserProfile({ appId, userId, fallbackProfile = null, onData, onError }) {
+export function subscribeUserProfile({ appId, userId, fallbackProfile: _fallbackProfile = null, onData, onError }) {
   const resolvedAppId = appId || getAppId()
   if (!resolvedAppId) throw new Error('subscribeUserProfile: missing appId')
   if (!userId) throw new Error('subscribeUserProfile: missing userId')
@@ -48,13 +48,29 @@ export function subscribeUserProfile({ appId, userId, fallbackProfile = null, on
       if (docSnapshot.exists()) {
         onData(docSnapshot.data())
       } else {
-        onData(fallbackProfile)
+        onData(null)
       }
     },
     (error) => {
       if (typeof onError === 'function') onError(error)
     }
   )
+}
+
+/**
+ * Fetch a user's profile doc (`artifacts/{appId}/users/{userId}/profile/info`).
+ *
+ * @param {{appId?: string, userId: string}} params
+ * @returns {Promise<object|null>}
+ */
+export async function fetchUserProfile({ appId, userId }) {
+  const resolvedAppId = appId || getAppId()
+  const uid = userId != null ? String(userId).trim() : ''
+  if (!resolvedAppId) throw new Error('fetchUserProfile: missing appId')
+  if (!uid) throw new Error('fetchUserProfile: missing userId')
+
+  const snap = await getDoc(userProfileDocRef(resolvedAppId, uid))
+  return snap.exists() ? (snap.data() || {}) : null
 }
 
 export async function updateUserProfile({ appId, userId, profileData }) {

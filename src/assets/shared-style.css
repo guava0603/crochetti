@@ -14,3 +14,32 @@
   font-weight: 700;
   color: var(--color-border-hover);
 }
+
+/* Shared subsection header: used across cards and forms (e.g., related components, notes, wish pool). */
+.subsection-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.subsection-header h5 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--color-font-dark);
+}
+
+.component-material-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.component-material-field__label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #6b7280;
+}

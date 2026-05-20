@@ -1,4 +1,5 @@
 import { isRangeSelection } from '@/constants/selection.js'
+import { getRopeChainCount } from '@/utils/ropeChainCount'
 
 export const computeCurrentSelectedData = (selectionList, stitchNodeList) => {
   const safeList = Array.isArray(selectionList) ? selectionList : []
@@ -81,6 +82,15 @@ export const computeCurrentSelectedData = (selectionList, stitchNodeList) => {
       selectedNodeType: 'bundle',
       selectedCount: node.count || 1,
       currentPattern: Array.isArray(node.bundle) ? node.bundle : []
+    }
+  }
+
+  if (node.type === 'rope') {
+    return {
+      selectionState,
+      selectedNodeType: 'rope',
+      selectedCount: getRopeChainCount(node),
+      currentPattern: [node]
     }
   }
 

@@ -10,7 +10,8 @@ const ICON_PATH_BY_CATEGORY = {
   // Category ids from `functions/achievements/defaults.js`
   projects: 'assets/image/achievement/noun-badge-3025290.svg',
   time: 'assets/image/achievement/noun-crocheting-7322622.svg',
-  special: 'assets/image/achievement/noun-badge-3025290.svg'
+  special: 'assets/image/achievement/noun-badge-3025290.svg',
+  avatar: 'assets/image/achievement/noun-badge-3025290.svg'
 }
 
 function publicAssetUrl(path) {

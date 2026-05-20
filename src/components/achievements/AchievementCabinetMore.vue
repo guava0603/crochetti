@@ -3,14 +3,17 @@
     <div class="cabinet__header">
       <h3 class="cabinet__title">{{ title }}</h3>
       <div class="cabinet__header-actions">
-        <button
+        <div
           class="cabinet__action"
-          type="button"
-          :disabled="loading || !merged.length"
-          @click="playAwardAnimation"
+          role="button"
+          :tabindex="(loading || !merged.length) ? -1 : 0"
+          :aria-disabled="loading || !merged.length"
+          @click="(loading || !merged.length) ? null : playAwardAnimation()"
+          @keydown.enter.prevent="(loading || !merged.length) ? null : playAwardAnimation()"
+          @keydown.space.prevent="(loading || !merged.length) ? null : playAwardAnimation()"
         >
           Play award animation
-        </button>
+        </div>
 
         <div v-if="subtitle" class="cabinet__subtitle">{{ subtitle }}</div>
       </div>
@@ -28,7 +31,7 @@
         <div class="cabinet__category-title">{{ g.title }}</div>
 
         <div class="cabinet__grid" role="list">
-          <button
+          <div
             v-for="a in g.items"
             :key="a.id"
             class="cabinet__item"
@@ -39,9 +42,11 @@
                 'cabinet__item--award': Boolean(awardFlashById[a.id])
               }
             ]"
-            type="button"
             role="listitem"
             @click="openDetail(a)"
+            tabindex="0"
+            @keydown.enter.prevent="openDetail(a)"
+            @keydown.space.prevent="openDetail(a)"
           >
             <div
               class="cabinet__icon"
@@ -52,7 +57,7 @@
             </div>
 
             <div class="cabinet__name">{{ displayName(a) }}</div>
-          </button>
+          </div>
         </div>
       </section>
     </div>
@@ -62,7 +67,16 @@
         <div class="cabinet-modal__backdrop" @click="closeDetail" />
 
         <div class="cabinet-modal__card">
-          <button class="cabinet-modal__close" type="button" @click="closeDetail">×</button>
+          <div
+            class="cabinet-modal__close"
+            role="button"
+            tabindex="0"
+            @click="closeDetail"
+            @keydown.enter.prevent="closeDetail"
+            @keydown.space.prevent="closeDetail"
+          >
+            ×
+          </div>
 
           <div class="cabinet-modal__head">
             <div
@@ -103,6 +117,8 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAchievementStore } from '@/stores/achievementStore'
+import { auth } from '@/firebaseConfig'
 
 import { fetchAchievementCabinet } from '@/services/firestore/achievements'
 import { achievementIconUrl } from '@/services/achievements/icons'
@@ -133,6 +149,28 @@ const props = defineProps({
 })
 
 const { t, te, locale } = useI18n({ useScope: 'global' })
+
+const achievementStore = useAchievementStore()
+
+const isMyPage = computed(() => {
+  const viewed = String(props.userId || '').trim()
+  const current = auth?.currentUser?.uid != null ? String(auth.currentUser.uid).trim() : ''
+  return Boolean(viewed && current && viewed === current)
+})
+
+const getMyEarnedIdSet = () => {
+  const v = achievementStore?.earnedAchievementIds
+  return v && typeof v === 'object' && 'value' in v ? v.value : v
+}
+
+const canRevealDescription = (a) => {
+  const id = a?.id != null ? String(a.id).trim() : ''
+  if (!id) return false
+  if (!a?.isEarned) return false
+
+  const myIds = getMyEarnedIdSet()
+  return Boolean(myIds && typeof myIds.has === 'function' && myIds.has(id))
+}
 
 const loading = ref(false)
 const error = ref('')
@@ -250,6 +288,12 @@ function displayName(a) {
 }
 
 function displayDescription(a) {
+  if (!a) return ''
+
+  // When viewing someone else's achievements (e.g. shared cabinet pages),
+  // only reveal description if both users earned it.
+  if (!isMyPage.value && !canRevealDescription(a)) return '???'
+
   return resolveAchievementDescription(a, { t, te }, '')
 }
 

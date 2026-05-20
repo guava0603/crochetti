@@ -1,6 +1,5 @@
 <template>
   <div class="row-main">
-    <slot name="leading" />
     <div
       class="row"
       :class="rowRootClasses"
@@ -58,10 +57,6 @@ const props = defineProps({
     type: Object,
     default: null
   },
-  groupStart: {
-    type: Boolean,
-    default: false
-  },
   previousGenerate: {
     type: Number,
     default: 0
@@ -85,6 +80,13 @@ const emit = defineEmits([
 ])
 
 const crochetDisplayRef = ref(null)
+const callDisplay = (method, ...args) => {
+  const inst = crochetDisplayRef.value
+  const fn = inst?.[method]
+  if (typeof fn !== 'function') return
+  return fn.apply(inst, args)
+}
+
 const handleDisplaySelectionChange = (nextSelectionList) => {
   const safeList = Array.isArray(nextSelectionList) ? nextSelectionList : []
   emit('selection-change', props.row.row_index, safeList)
@@ -118,21 +120,15 @@ const handleRowNumberClick = () => {
 }
 
 const clearSelection = () => {
-  if (crochetDisplayRef.value && typeof crochetDisplayRef.value.clearSelection === 'function') {
-    crochetDisplayRef.value.clearSelection()
-  }
+  callDisplay('clearSelection')
 }
 
 const setSelection = (nextSelectionList) => {
-  if (crochetDisplayRef.value && typeof crochetDisplayRef.value.setSelection === 'function') {
-    crochetDisplayRef.value.setSelection(nextSelectionList)
-  }
+  callDisplay('setSelection', nextSelectionList)
 }
 
 const addInnerSelection = (nextSelection) => {
-  if (crochetDisplayRef.value && typeof crochetDisplayRef.value.addInnerSelection === 'function') {
-    crochetDisplayRef.value.addInnerSelection(nextSelection)
-  }
+  callDisplay('addInnerSelection', nextSelection)
 }
 
 // Validate if row consume matches previous row generate
@@ -147,65 +143,44 @@ const validationClass = computed(() => {
 // Get row number display
 const rowNumberDisplay = computed(() => `${props.row.row_index}`)
 
-
 const addStitch = (payload) => {
-  if (!crochetDisplayRef.value) return
-  crochetDisplayRef.value.addStitch(payload)
+  callDisplay('addStitch', payload)
 }
 
 const addBundle = (bundle) => {
-  if (crochetDisplayRef.value) {
-    crochetDisplayRef.value.addBundle(bundle)
-  }
+  callDisplay('addBundle', bundle)
 }
 
 const deleteSelected = () => {
-  if (crochetDisplayRef.value && typeof crochetDisplayRef.value.deleteSelected === 'function') {
-    crochetDisplayRef.value.deleteSelected()
-  }
+  callDisplay('deleteSelected')
 }
 
-
 const createPatternFromRange = (count) => {
-  if (crochetDisplayRef.value && typeof crochetDisplayRef.value.createPatternFromRange === 'function') {
-    crochetDisplayRef.value.createPatternFromRange(count)
-  }
+  callDisplay('createPatternFromRange', count)
 }
 
 const updateNodeCount = (count) => {
-  if (crochetDisplayRef.value && typeof crochetDisplayRef.value.updateNodeCount === 'function') {
-    crochetDisplayRef.value.updateNodeCount(count)
-  }
+  callDisplay('updateNodeCount', count)
 }
 
 const changeSelectedStitch = (payload) => {
-  if (crochetDisplayRef.value && typeof crochetDisplayRef.value.changeSelectedStitch === 'function') {
-    crochetDisplayRef.value.changeSelectedStitch(payload)
-  }
+  callDisplay('changeSelectedStitch', payload)
 }
 
 const updateNodePattern = (pattern) => {
-  if (crochetDisplayRef.value && typeof crochetDisplayRef.value.updateNodePattern === 'function') {
-    crochetDisplayRef.value.updateNodePattern(pattern)
-  }
+  callDisplay('updateNodePattern', pattern)
 }
 
 const replaceSelectedNode = (nextNode) => {
-  if (crochetDisplayRef.value && typeof crochetDisplayRef.value.replaceSelectedNode === 'function') {
-    crochetDisplayRef.value.replaceSelectedNode(nextNode)
-  }
+  callDisplay('replaceSelectedNode', nextNode)
 }
 
 const setStitchNodeList = (nextList) => {
-  if (crochetDisplayRef.value && typeof crochetDisplayRef.value.setStitchNodeList === 'function') {
-    crochetDisplayRef.value.setStitchNodeList(nextList)
-  }
+  callDisplay('setStitchNodeList', nextList)
 }
 
 const createPatternFromWholeRow = (count) => {
-  if (crochetDisplayRef.value && typeof crochetDisplayRef.value.createPatternFromWholeRow === 'function') {
-    crochetDisplayRef.value.createPatternFromWholeRow(count)
-  }
+  callDisplay('createPatternFromWholeRow', count)
 }
 
 const handleUpdateContent = (updatedContent) => {
@@ -231,6 +206,6 @@ defineExpose({
   replaceSelectedNode,
   setStitchNodeList
 })
-
 </script>
+  if (!props.isEditing || props.tableType !== 'edit') return
 

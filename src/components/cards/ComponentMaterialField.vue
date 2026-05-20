@@ -35,13 +35,13 @@
             @blur="() => $emit('item-blur', idx)"
           />
 
-          <textarea
+          <LimitedTextArea
             v-else
-            :value="getTextValue(item)"
+            :model-value="getTextValue(item)"
             :placeholder="placeholder"
             :class="inputClass || undefined"
             :rows="rows"
-            @input="(e) => updateTextAt(idx, e?.target?.value ?? '')"
+            @update:modelValue="(v) => updateTextAt(idx, v)"
             @blur="() => $emit('item-blur', idx)"
           />
         </div>
@@ -56,8 +56,9 @@
 import { computed } from 'vue'
 import AddNew from '@/components/buttons/AddNew.vue'
 import ButtonDeleteLight from '@/components/buttons/ButtonDeleteLight.vue'
-import SelectionInput from '@/components/tools/SelectionInput.vue'
+import SelectionInput from '@/components/Selection/SelectionInput.vue'
 import SelectionInputCombineList from '@/components/Input/SelectionInputCombineList.vue'
+import LimitedTextArea from '@/components/Input/LimitedTextArea.vue'
 
 const props = defineProps({
   items: {
@@ -142,7 +143,7 @@ const rowClass = computed(() => {
 })
 
 const showDelete = computed(() => {
-  return props.removable && props.variant !== 'notes'
+  return props.removable
 })
 
 function removeAt(idx) {
@@ -162,18 +163,6 @@ const canAddComputed = computed(() => {
 </script>
 
 <style scoped>
-.component-material-field {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 0.75rem;
-}
-
-.component-material-field__label {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #6b7280;
-}
-
 .component-material-input-list {
   display: grid;
   grid-template-columns: 1fr;

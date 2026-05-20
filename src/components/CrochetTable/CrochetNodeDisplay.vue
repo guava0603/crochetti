@@ -6,7 +6,7 @@
         :node="stitchNode"
         :level="0"
         :selection="null"
-        @selection-change="handleNodeClick(nIndex)"
+        @selection-change="(payload) => handleNodeSelection(nIndex, payload)"
       />
       <span v-if="nIndex < nodeList.length - 1" class="separator">, </span>
     </template>
@@ -38,10 +38,17 @@ watch(() => props.nodeList, (newList) => {
 
 const emit = defineEmits(['add-inner-selection'])
 
-const handleNodeClick = (nIndex) => {
-  if (props.canSelectInner) {
-    emit('add-inner-selection', createSelection(nIndex, nIndex))
+const handleNodeSelection = (rootIndex, payload) => {
+  if (!props.canSelectInner) return
+
+  const innerPath = Array.isArray(payload) ? payload : []
+
+  if (innerPath.length > 0) {
+    emit('add-inner-selection', { rootIndex, innerPath })
+    return
   }
+
+  emit('add-inner-selection', createSelection(rootIndex, rootIndex))
 }
 </script>
 

@@ -1,6 +1,7 @@
 // Utilities for validating/normalizing crochet data structures.
 
 import { getVariantStitchId } from '@/constants/crochetData'
+import { getRopeChainCount } from '@/utils/ropeChainCount'
 
 const getRepeatedStitchInfo = (node) => {
   if (!node || typeof node !== 'object') return null
@@ -33,6 +34,29 @@ const getRepeatedStitchInfo = (node) => {
   }
 
   return null
+}
+
+const isEmptyPatternNode = (node) => {
+  if (!node || typeof node !== 'object') return false
+  if (node.type !== 'pattern') return false
+  const inner = Array.isArray(node.pattern) ? node.pattern : []
+  return inner.length === 0
+}
+
+const isEmptyBundleNode = (node) => {
+  if (!node || typeof node !== 'object') return false
+  if (node.type !== 'bundle') return false
+  const inner = Array.isArray(node.bundle) ? node.bundle : []
+  return inner.length === 0
+}
+
+// Rule: remove empty wrapper nodes.
+// - pattern: { type:'pattern', pattern:[] }
+// - bundle:  { type:'bundle', bundle:[] }
+// This is applied in list contexts so we can drop nodes cleanly.
+const pruneEmptyWrappers = (list) => {
+  const safe = Array.isArray(list) ? list : []
+  return safe.filter((node) => !isEmptyPatternNode(node) && !isEmptyBundleNode(node))
 }
 
 const collapseConsecutiveSameStitchesToPattern = (list) => {
@@ -162,8 +186,12 @@ const flattenCountOnePatterns = (list) => {
       const count = Number(node.count || 1)
       const repeat = Number.isFinite(count) && count > 0 ? Math.floor(count) : 1
       const hasLabel = Boolean(node.label)
+
+      // Rule: drop empty pattern wrappers.
+      const inner = Array.isArray(node.pattern) ? node.pattern : []
+      if (inner.length === 0) continue
+
       if (!hasLabel && repeat === 1) {
-        const inner = Array.isArray(node.pattern) ? node.pattern : []
         for (const innerNode of inner) {
           out.push(innerNode)
         }
@@ -189,11 +217,20 @@ const flattenCountOnePatterns = (list) => {
 function normalizeNode(node) {
   if (!node || typeof node !== 'object') return node
 
+  if (node.type === 'rope') {
+    const label = node.label
+    const out = { type: 'rope', chain_count: getRopeChainCount(node) }
+    if (label) out.label = label
+    return out
+  }
+
   if (node.type === 'bundle') {
     const bundle = Array.isArray(node.bundle) ? node.bundle : []
-    const normalizedChildren = bundle.map(normalizeNode)
+    let normalizedChildren = bundle.map(normalizeNode)
+    normalizedChildren = pruneEmptyWrappers(normalizedChildren)
     const flattened = flattenNestedBundles(normalizedChildren)
-    const nextBundle = collapseConsecutiveSameStitchesToPattern(flattened)
+    let nextBundle = collapseConsecutiveSameStitchesToPattern(flattened)
+    nextBundle = pruneEmptyWrappers(nextBundle)
 
     // Rule: bundle of two identical stitches in the same stitch
     // e.g. [X, X] -> V, [T, T] -> TV, [F, F] -> FV, [E, E] -> EV
@@ -281,8 +318,11 @@ function normalizeNode(node) {
 
   // Normalize children first.
   let nextPattern = patternA.map(normalizeNode)
+  nextPattern = pruneEmptyWrappers(nextPattern)
   nextPattern = flattenCountOnePatterns(nextPattern)
+  nextPattern = pruneEmptyWrappers(nextPattern)
   nextPattern = collapseConsecutiveSameStitchesToPattern(nextPattern)
+  nextPattern = pruneEmptyWrappers(nextPattern)
 
   // Merge consecutive single-item pattern wrappers.
   // Keep folding while the direct child is also a single-item pattern.
@@ -300,11 +340,14 @@ function normalizeNode(node) {
     const countB = Number(child.count || 1)
     nextCount *= countB
     nextPattern = collapseConsecutiveSameStitchesToPattern(childPattern.map(normalizeNode))
+    nextPattern = pruneEmptyWrappers(nextPattern)
   }
 
   // After folding wrappers, collapse consecutive identical stitches again.
   nextPattern = flattenCountOnePatterns(nextPattern)
+  nextPattern = pruneEmptyWrappers(nextPattern)
   nextPattern = collapseConsecutiveSameStitchesToPattern(nextPattern)
+  nextPattern = pruneEmptyWrappers(nextPattern)
 
   return {
     ...node,
@@ -316,14 +359,14 @@ function normalizeNode(node) {
 function isCrochetNode(value) {
   if (!value || typeof value !== 'object') return false
   const t = value.type
-  return t === 'stitch' || t === 'pattern' || t === 'bundle'
+  return t === 'stitch' || t === 'pattern' || t === 'bundle' || t === 'rope'
 }
 
 function normalizeNodeList(list) {
   const safe = Array.isArray(list) ? list : []
-  const normalized = safe.map(normalizeNode)
-  const flattened = flattenCountOnePatterns(normalized)
-  return collapseConsecutiveSameStitchesToPattern(flattened)
+  const normalized = pruneEmptyWrappers(safe.map(normalizeNode))
+  const flattened = pruneEmptyWrappers(flattenCountOnePatterns(normalized))
+  return pruneEmptyWrappers(collapseConsecutiveSameStitchesToPattern(flattened))
 }
 
 /**

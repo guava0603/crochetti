@@ -46,16 +46,24 @@ const langKey = computed({
     if (props.modelValue !== undefined) {
       if (props.modelValue === 'text') return 'text'
       if (props.modelValue === 'icon') return 'icon'
+      if (props.modelValue === 'uk') return 'uk'
       return 'jp'
     }
 
     // Uncontrolled mode: reflect global crochetLang.
     if (crochetLang.value === CROCHET_LANG.text_zh) return 'text'
     if (crochetLang.value === CROCHET_LANG.icon) return 'icon'
+    if (crochetLang.value === CROCHET_LANG.symbol_uk) return 'uk'
     return 'jp'
   },
   set: (next) => {
-    const key = next === 'text' ? 'text' : next === 'icon' ? 'icon' : 'jp'
+    const key = next === 'text'
+      ? 'text'
+      : next === 'icon'
+        ? 'icon'
+        : next === 'uk'
+          ? 'uk'
+          : 'jp'
 
     // Controlled: only emit.
     if (props.modelValue !== undefined) {
@@ -68,7 +76,9 @@ const langKey = computed({
       ? CROCHET_LANG.text_zh
       : key === 'icon'
         ? CROCHET_LANG.icon
-        : CROCHET_LANG.symbol_jp
+        : key === 'uk'
+          ? CROCHET_LANG.symbol_uk
+          : CROCHET_LANG.symbol_jp
     void setCrochetLang(nextId)
   }
 })
@@ -77,6 +87,10 @@ const langItems = computed(() => ([
   {
     key: 'jp',
     label: t('toolbar.editRow.crochetLangSymbolJp')
+  },
+  {
+    key: 'uk',
+    label: t('toolbar.editRow.crochetLangSymbolUk')
   },
   {
     key: 'text',
@@ -93,5 +107,15 @@ const langItems = computed(() => ([
 .translate-toggle {
   display: flex;
   flex: none;
+}
+
+.translate-toggle :deep(.selection-button-group) {
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.translate-toggle :deep(.selection-button-group__btn) {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
 }
 </style>

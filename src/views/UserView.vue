@@ -24,6 +24,8 @@ import {
   unfollowUser
 } from '@/services/firestore/user'
 
+import { fetchUsersPublicProfiles } from '@/services/functions/user'
+
 const apiHandlers = {
   createProject,
   fetchProject,
@@ -31,6 +33,7 @@ const apiHandlers = {
   listUserRecordSummaries,
   fetchUserProjectSummaries,
   fetchUsers,
+  fetchUsersPublicProfiles,
   followUser,
   isCurrentUser,
   subscribeUserProfile,

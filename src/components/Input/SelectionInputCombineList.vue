@@ -164,7 +164,7 @@ const showMenu = computed(() => {
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  z-index: 20;
+  z-index: var(--z-dropdown-menu);
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 10px;

@@ -1,10 +1,14 @@
 <template>
-	<div class="crochet-table crochet-table--record row-list-vertical">
+	<div class="crochet-table-shell">
+		<div v-if="showTranslateButton" class="crochet-table__corner-actions" @click.stop>
+			<ButtonTranslate />
+		</div>
+		<div class="crochet-table crochet-table--record row-list-vertical">
 		<div class="row-container row-container--header" @click.stop>
 			<div class="row-table row-table--header">
-				<div class="row-table-cell row-number">{{ t('crochetTable.header.rowNumber') }}</div>
-				<div class="row-table-cell row-stitches">{{ t('crochetTable.header.stitch') }}</div>
-				<div class="row-table-cell row-generate">{{ t('crochetTable.header.totalStitches') }}</div>
+				<div class="row-table-cell row-number">{{ t(`${headerKeyPrefix}.rowNumber`) }}</div>
+				<div class="row-table-cell row-stitches">{{ t(`${headerKeyPrefix}.stitch`) }}</div>
+				<div class="row-table-cell row-generate">{{ t(`${headerKeyPrefix}.totalStitches`) }}</div>
 			</div>
 		</div>
 
@@ -18,14 +22,17 @@
       }"
 			@click.stop="handleRowContainerClick(row.row_index, $event)"
 		>
-			<CrochetRow
+			<component
+				:is="rowComponent"
 				:ref="setRowRef(row.row_index)"
 				:row="visibleRows[idx]"
 				:previous-generate="getPreviousGenerate(row.row_index)"
 				:is-editing="false"
 				:table-type="type"
+				v-bind="rowExtraProps(visibleRows[idx], { groupReminderByRowIndex })"
 				@selection-change="handleRowSelectionChange"
 			/>
+		</div>
 		</div>
 	</div>
 
@@ -35,6 +42,9 @@
 			:stitch-list="activeRow.content?.stitch_node_list || []"
 			:row-index="activeRow.row_index"
 			:row-count="activeRow.count || 1"
+			:get-node-size-fn="getNodeSizeFn"
+			:compute-generate-done-fn="computeGenerateDoneFn"
+			:get-node-label-fn="getNodeLabelFn"
 			@cancel="handleCancelSetSelectionPosition"
 			@update-end-at="handleUpdateEndAt"
 		/>
@@ -42,12 +52,12 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, nextTick } from 'vue'
+import { computed, ref, watch, nextTick, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 import CrochetRow from './Crochet/CrochetRow.vue'
-import CrochetNode from './Crochet/CrochetNode.vue'
 import BottomToolbar from '@/components/BottomToolbar/BottomToolbar.vue'
 import SetSelectionPosition from '@/components/BottomToolbar/SetSelectionPosition.vue'
+import ButtonTranslate from '@/components/buttons/svg/ButtonTranslate.vue'
 import { isRowContainerGroupedStart } from '@/utils/crochetTable.js'
 import { openConfirmation } from '@/services/ui/confirmation'
 
@@ -70,7 +80,70 @@ const props = defineProps({
 		type: String,
 		default: ''
 	},
+	headerKeyPrefix: {
+		type: String,
+		default: 'crochetTable.header'
+	},
+	rowComponent: {
+		type: Object,
+		default: () => CrochetRow
+	},
+	rowExtraProps: {
+		type: Function,
+		default: () => ({})
+	},
+	showTranslateButton: {
+		type: Boolean,
+		default: true
+	},
+	getNodeSizeFn: {
+		type: Function,
+		default: null
+	},
+	computeGenerateDoneFn: {
+		type: Function,
+		default: null
+	},
+	getNodeLabelFn: {
+		type: Function,
+		default: null
+	},
+	// Optional injections for other crafts (e.g. knitting)
+	stitchComponent: {
+		type: [Object, Function],
+		default: null
+	},
+	bundleComponent: {
+		type: [Object, Function],
+		default: null
+	},
+	patternComponent: {
+		type: [Object, Function],
+		default: null
+	},
+	ropeComponent: {
+		type: [Object, Function],
+		default: null
+	},
+	showZhRepeatOverride: {
+		type: Boolean,
+		default: null
+	},
+	stitchLookup: {
+		type: [Array, Object],
+		default: null
+	}
 })
+
+// Provide craft overrides down to CrochetNode/CrochetPattern tree.
+if (props.stitchComponent) provide('stitchComponent', props.stitchComponent)
+if (props.bundleComponent) provide('bundleComponent', props.bundleComponent)
+if (props.patternComponent) provide('patternComponent', props.patternComponent)
+if (props.ropeComponent) provide('ropeComponent', props.ropeComponent)
+if (props.showZhRepeatOverride !== null && props.showZhRepeatOverride !== undefined) {
+	provide('showZhRepeatOverride', props.showZhRepeatOverride)
+}
+if (props.stitchLookup) provide('stitchLookup', props.stitchLookup)
 
 const emit = defineEmits(['update-end-at', 'revert-selection'])
 
@@ -265,8 +338,7 @@ const handleUpdateEndAt = (rowIndex, crochetCount) => {
 }
 
 defineExpose({
-	applySelection,
-	CrochetNode
+	applySelection
 })
 
 const visibleRows = computed(() => {
@@ -324,6 +396,35 @@ const getRepeatCountForGroup = (groupIndex) => {
 	return Math.max(1, Number(group?.repeat_count || 1))
 }
 
+const groupReminderByRowIndex = computed(() => {
+	const rows = visibleRows.value
+	const map = {}
+
+	let i = 0
+	while (i < rows.length) {
+		const groupIndex = rows[i]?.group_index
+		if (groupIndex === undefined || groupIndex === null) {
+			i += 1
+			continue
+		}
+
+		let j = i
+		while (j < rows.length && rows[j]?.group_index === groupIndex) j += 1
+
+		const endRow = rows[j - 1]
+		if (endRow) {
+			map[endRow.row_index] = {
+				n: j - i,
+				m: getRepeatCountForGroup(groupIndex)
+			}
+		}
+
+		i = j
+	}
+
+	return map
+})
+
 const getPreviousGenerate = (rowIndex) => {
 	const currentRowArrayIndex = visibleRows.value.findIndex(r => r.row_index === rowIndex)
 	if (currentRowArrayIndex <= 0) return 0
@@ -345,7 +446,7 @@ const getPreviousGenerate = (rowIndex) => {
 }
 
 .crochet-table--record :deep(.row-table) {
-	grid-template-columns: 56px 1fr 72px;
+	grid-template-columns: 3.5rem 1fr 3.5rem;
 }
 
 .crochet-table--record :deep(.row-number) {

@@ -83,6 +83,8 @@ watch(
       ? 'text'
       : crochetId === CROCHET_LANG.icon
         ? 'icon'
+        : crochetId === CROCHET_LANG.symbol_uk
+          ? 'uk'
         : 'jp'
 
     initialLocale.value = normalizedLocale
@@ -95,7 +97,13 @@ watch(
 
 const isDirty = computed(() => {
   const l = draftLocale.value === 'zh-TW' ? 'zh-TW' : 'en'
-  const c = draftCrochetKey.value === 'text' ? 'text' : draftCrochetKey.value === 'icon' ? 'icon' : 'jp'
+  const c = draftCrochetKey.value === 'text'
+    ? 'text'
+    : draftCrochetKey.value === 'icon'
+      ? 'icon'
+      : draftCrochetKey.value === 'uk'
+        ? 'uk'
+        : 'jp'
   return l !== initialLocale.value || c !== initialCrochetKey.value
 })
 
@@ -120,7 +128,9 @@ async function handleConfirm() {
       ? CROCHET_LANG.text_zh
       : draftCrochetKey.value === 'icon'
         ? CROCHET_LANG.icon
-        : CROCHET_LANG.symbol_jp
+        : draftCrochetKey.value === 'uk'
+          ? CROCHET_LANG.symbol_uk
+          : CROCHET_LANG.symbol_jp
     setI18nLocale(nextLocale)
     await setCrochetLang(nextCrochet)
     emit('close')

@@ -17,7 +17,18 @@
     </div>
 
     <div class="tab__content" role="tabpanel">
-      <slot :name="activeKey" />
+      <template v-if="keepAlive">
+        <div
+          v-for="t in tabs"
+          :key="t.key"
+          class="tab__panel"
+          :class="{ 'tab__panel--active': t.key === activeKey }"
+          :hidden="t.key !== activeKey"
+        >
+          <slot :name="t.key" />
+        </div>
+      </template>
+      <slot v-else :name="activeKey" />
     </div>
   </div>
 </template>
@@ -39,6 +50,10 @@ const props = defineProps({
   defaultKey: {
     type: String,
     default: ''
+  },
+  keepAlive: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -178,5 +193,17 @@ function setActive(key) {
   min-width: 0;
   display: flex;
   flex: 1;
+}
+
+.tab__panel {
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab__panel[hidden] {
+  display: none;
 }
 </style>

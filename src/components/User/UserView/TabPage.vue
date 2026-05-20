@@ -297,6 +297,7 @@ const showPrivacyNotice = computed(() => Boolean(props.userIsPrivacy) && !isMyPa
   padding: 1rem;
 }
 
+.user-tab-sheet :deep(.no-projects),
 .following-tab__state {
   display: flex;
   align-items: center;
@@ -304,6 +305,13 @@ const showPrivacyNotice = computed(() => Boolean(props.userIsPrivacy) && !isMyPa
   min-height: 240px;
   color: #6b7280;
   text-align: center;
+}
+
+.user-tab-sheet :deep(.no-projects p),
+.following-tab__state p {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
 }
 
 .following-tab__list {

@@ -3,88 +3,48 @@
     <div class="add-crochet__body">
       <CrochetList
         :disabled="disabled"
+        :craft-key="craftKey"
         :preset-stitch-id="presetStitchId"
         :preset-position="presetPosition"
         :default-position="defaultPosition"
         :stitches="stitchesForList"
-        :self-defined-stitches="selfDefinedStitches"
+        :self-defined-stitches="selfDefinedStitchesForList"
+        :rope-presets="ropePresets"
         :enabled-stitch-ids="null"
-        :show-custom-button="showCustomButton"
+        :show-custom-button="resolvedShowCustomButton"
         :emit-on-decrease-toggle="emitOnDecreaseToggle"
         @stitch-click="handleCrochetClick"
         @position-change="handlePositionChange"
-        @custom-click="openBundleWizard"
+        @bundle-click="openRopeBundleWizard"
+        @raised-click="openRaisedWizard"
+        @custom-click="openCustomWizard"
+        @rope-preset-click="handleRopePresetClick"
       />
     </div>
 
-    <!-- Bundle Wizard Modal -->
-    <div v-if="showBundleWizard" class="bundle-wizard-overlay" @click="closeBundleWizard">
-      <div class="bundle-wizard" @click.stop>
-        <h3>{{ t('toolbar.addCrochet.bundleWizard.title') }}</h3>
-
-        <div class="wizard-section">
-          <label>{{ t('toolbar.addCrochet.bundleWizard.nameLabel') }}</label>
-          <input
-            v-model="bundleName"
-            type="text"
-            class="wizard-input"
-            :placeholder="t('toolbar.addCrochet.bundleWizard.namePlaceholder')"
-          />
-        </div>
-
-        <div class="wizard-section">
-          <label>{{ t('toolbar.addCrochet.bundleWizard.descriptionLabel') }}</label>
-          <textarea
-            v-model="bundleDescription"
-            class="wizard-textarea"
-            rows="3"
-            :placeholder="t('toolbar.addCrochet.bundleWizard.descriptionPlaceholder')"
-          />
-        </div>
-
-        <div class="wizard-section">
-          <div class="wizard-stats">
-            <div class="stat-item">
-              <span>{{ t('toolbar.addCrochet.bundleWizard.consumeLabel') }}</span>
-              <InputNumber v-model="bundleConsume" :min="1" :max="99" size="sm" />
-            </div>
-            <div class="stat-item">
-              <span>{{ t('toolbar.addCrochet.bundleWizard.generateLabel') }}</span>
-              <InputNumber v-model="bundleGenerate" :min="0" :max="999" size="sm" />
-            </div>
-          </div>
-        </div>
-
-        <div class="wizard-actions">
-          <button type="button" class="btn-cancel" @click="closeBundleWizard">
-            {{ t('common.cancel') }}
-          </button>
-          <button
-            type="button"
-            class="btn-confirm"
-            :disabled="!bundleName.trim()"
-            @click="confirmBundle"
-          >
-            {{ t('common.confirm') }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <Teleport v-if="enableWizard" to="body">
+      <AddCrochetWizard v-model="showMoreWizard" :start-at="wizardStartAt" @submit="handleWizardSubmit" />
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { BasicStitchGeneral } from '@/constants/crochetData'
-import InputNumber from '@/components/Input/InputNumber.vue'
+import { BasicStitchGeneral, createRope } from '@/constants/crochetData'
 import CrochetList from './CrochetList.vue'
+import AddCrochetWizard from '@/components/Wizard/AddCrochet/index.vue'
 import { useSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
 import { openError } from '@/services/ui/notice'
+import { normalizeRopeChainCount } from '@/utils/ropeChainCount'
 
 const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps({
+  craftKey: {
+    type: String,
+    default: 'crochet'
+  },
   disabled: {
     type: Boolean,
     default: false
@@ -104,10 +64,26 @@ const props = defineProps({
   defaultPosition: {
     type: String,
     default: ''
+  },
+  stitches: {
+    type: Array,
+    default: () => BasicStitchGeneral
+  },
+  showCustomButton: {
+    type: Boolean,
+    default: true
+  },
+  enableWizard: {
+    type: Boolean,
+    default: true
+  },
+  enableSelfDefinedStitches: {
+    type: Boolean,
+    default: true
   }
 })
 
-const emit = defineEmits(['add-crochet', 'add-bundle', 'position-change'])
+const emit = defineEmits(['add-crochet', 'add-bundle', 'add-rope', 'position-change'])
 
 // mode: 'normal' => append stitches as usual
 // mode: 'same-stitch' => append into a top-level bundle (consume must be 1)
@@ -116,9 +92,18 @@ const mode = ref('normal')
 const { list: selfDefinedStitches, addStitch: addSelfDefinedStitch } = useSelfDefinedStitchesContext()
 
 const stitchesForList = computed(() => {
-  return BasicStitchGeneral
+  return Array.isArray(props.stitches) ? props.stitches : BasicStitchGeneral
 })
-const showCustomButton = computed(() => true)
+
+const resolvedShowCustomButton = computed(() => {
+  if (!props.enableWizard) return false
+  return Boolean(props.showCustomButton)
+})
+
+const selfDefinedStitchesForList = computed(() => {
+  if (!props.enableSelfDefinedStitches) return []
+  return Array.isArray(selfDefinedStitches.value) ? selfDefinedStitches.value : []
+})
 
 
 const handleCrochetClick = (payload) => {
@@ -141,56 +126,106 @@ const handlePositionChange = (pos) => {
   emit('position-change', pos)
 }
 
-const showBundleWizard = ref(false)
-const bundleConsume = ref(1)
-const bundleGenerate = ref(0)
-const bundleName = ref('')
-const bundleDescription = ref('')
+const showMoreWizard = ref(false)
 
-const openBundleWizard = () => {
-  if (props.disabled) return
-  showBundleWizard.value = true
-  bundleConsume.value = 1
-  bundleGenerate.value = 0
-  bundleName.value = ''
-  bundleDescription.value = ''
+const wizardStartAt = ref('root')
+
+const openRaisedWizard = () => {
+  if (props.disabled || !props.enableWizard) return
+  wizardStartAt.value = 'raised-list'
+  showMoreWizard.value = true
 }
 
-const closeBundleWizard = () => {
-  showBundleWizard.value = false
+const openCustomWizard = () => {
+  if (props.disabled || !props.enableWizard) return
+  wizardStartAt.value = 'custom'
+  showMoreWizard.value = true
 }
 
-const confirmBundle = () => {
-  if (!String(bundleName.value || '').trim()) return
+const ropePresets = ref([])
 
-  // Prefer storing as a project-level self-defined stitch.
-  if (!addSelfDefinedStitch) {
-    openError({
-      title: t('common.error'),
-      message: t('common.saveFailed'),
-      confirmText: t('common.ok')
-    })
-    return
-  }
+const normalizeChainCount = (v) => {
+  return normalizeRopeChainCount(v)
+}
 
+const pushRopePreset = (chainCount) => {
+  const safe = normalizeChainCount(chainCount)
+  const next = [{ chainCount: safe }, ...(Array.isArray(ropePresets.value) ? ropePresets.value : [])]
+  // Dedupe + cap
+  const seen = new Set()
+  ropePresets.value = next.filter((p) => {
+    const k = String(p?.chainCount)
+    if (seen.has(k)) return false
+    seen.add(k)
+    return true
+  }).slice(0, 12)
+}
+
+const openRopeBundleWizard = () => {
+  if (props.disabled || !props.enableWizard) return
+  wizardStartAt.value = 'rope-details'
+  showMoreWizard.value = true
+}
+
+const handleRopePresetClick = (payload) => {
+  if (props.disabled || !props.enableWizard) return
+  const count = typeof payload === 'number' ? payload : payload?.chainCount
+  const safe = normalizeChainCount(count)
+  const node = createRope(safe)
+  emit('add-rope', node)
+}
+
+const getNextSelfDefinedStitchId = () => {
   const list = Array.isArray(selfDefinedStitches.value) ? selfDefinedStitches.value : []
   const ids = list
     .map((s) => Number(s?.stitch_id))
     .filter((n) => Number.isFinite(n))
-
   const minId = ids.length ? Math.min(...ids) : 0
-  // Use negative ids to avoid colliding with built-in stitches (0..).
-  const nextId = minId < 0 ? minId - 1 : -1
+  return minId < 0 ? minId - 1 : -1
+}
+
+const ensureCanAddSelfDefined = () => {
+  if (!props.enableSelfDefinedStitches) return false
+  if (addSelfDefinedStitch) return true
+  openError({
+    title: t('common.error'),
+    message: t('common.saveFailed'),
+    confirmText: t('common.ok')
+  })
+  return false
+}
+
+const handleWizardSubmit = (draft) => {
+  if (!props.enableWizard) return
+  if (!draft || typeof draft !== 'object') return
+
+  if (draft.kind === 'rope') {
+    const safe = normalizeChainCount(draft.chainCount)
+    const node = createRope(safe)
+    pushRopePreset(safe)
+    emit('add-rope', node)
+    return
+  }
+
+  if (!ensureCanAddSelfDefined()) return
+
+  const symbolJp = typeof draft.symbol_jp === 'string' ? String(draft.symbol_jp).trim() : ''
+  const textZh = typeof draft.text_zh === 'string' ? String(draft.text_zh).trim() : ''
+
+  const nextId = getNextSelfDefinedStitchId()
 
   addSelfDefinedStitch({
     stitch_id: nextId,
-    name: String(bundleName.value || '').trim(),
-    description: String(bundleDescription.value || ''),
-    consume: bundleConsume.value,
-    generate: bundleGenerate.value
+    name: String(draft.name || '').trim(),
+    symbol_jp: symbolJp || undefined,
+    text_zh: textZh || undefined,
+    description: String(draft.description || ''),
+    consume: Number(draft.consume) || 1,
+    generate: Number(draft.generate) || 0
   })
 
-  closeBundleWizard()
+  // Auto-insert once after creating it.
+  emit('add-crochet', { stitchId: nextId, position: '', mode: 'normal' })
 }
 </script>
 
@@ -249,160 +284,5 @@ h4 {
   border-color: rgb(var(--color-icon-add-rgb) / 0.55);
   background: rgb(var(--color-icon-add-rgb) / 0.12);
   color: #0f5132;
-}
-
-.bundle-wizard-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal);
-}
-
-.bundle-wizard {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 600px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-.bundle-wizard h3 {
-  margin: 0 0 1.5rem 0;
-  color: #111827;
-}
-
-.wizard-section {
-  margin-bottom: 1.5rem;
-}
-
-.wizard-section label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #374151;
-}
-
-.wizard-input,
-.wizard-textarea {
-  width: 100%;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 0.75rem;
-  font-size: 0.95rem;
-  font-weight: 650;
-  color: #111827;
-  background: #fff;
-}
-
-.wizard-textarea {
-  resize: vertical;
-}
-
-.wizard-stitches {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-  gap: 0.5rem;
-}
-
-.wizard-stitch-button {
-  padding: 0.75rem;
-  background: #f9fafb;
-  border: 2px solid #e5e7eb;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: all 0.2s;
-}
-
-.wizard-stitch-button:hover {
-  background: var(--color-icon-add);
-  border-color: var(--color-icon-add);
-  color: white;
-}
-
-.bundle-preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  min-height: 40px;
-  padding: 0.75rem;
-  background: #f9fafb;
-  border: 2px dashed #d1d5db;
-  border-radius: 6px;
-}
-
-.empty-hint {
-  color: #9ca3af;
-  font-size: 0.875rem;
-}
-
-.wizard-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.stat-value {
-  padding: 0.5rem;
-  background: #f0fdf4;
-  border: 1px solid #86efac;
-  border-radius: 4px;
-  color: #166534;
-  font-weight: 600;
-  text-align: center;
-}
-
-.wizard-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.btn-cancel,
-.btn-confirm {
-  flex: 1;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-cancel {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.btn-cancel:hover {
-  background: #e5e7eb;
-}
-
-.btn-confirm {
-  background: var(--color-icon-add);
-  color: white;
-}
-
-.btn-confirm:hover:not(:disabled) {
-  background: #359268;
-}
-
-.btn-confirm:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 </style>

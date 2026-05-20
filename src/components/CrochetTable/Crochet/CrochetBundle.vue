@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { createSelection, isInSelection } from '@/constants/selection.js'
 import { CROCHET_LANG } from '@/constants/crochetData.js'
@@ -51,6 +51,7 @@ const emit = defineEmits(['selection-change'])
 
 const { t } = useI18n({ useScope: 'global' })
 const { crochetLang } = useCrochetLang()
+const showZhRepeatOverride = inject('showZhRepeatOverride', null)
 
 const bundleNodes = computed(() => {
   return Array.isArray(props.node?.bundle) ? props.node.bundle : []
@@ -61,7 +62,12 @@ const bundleCount = computed(() => {
   return typeof count === 'number' && Number.isFinite(count) ? count : 1
 })
 
-const showZhRepeat = computed(() => crochetLang.value === CROCHET_LANG.text_zh && bundleCount.value > 1)
+const showZhRepeat = computed(() => {
+  if (typeof showZhRepeatOverride === 'boolean') {
+    return showZhRepeatOverride && bundleCount.value > 1
+  }
+  return crochetLang.value === CROCHET_LANG.text_zh && bundleCount.value > 1
+})
 
 const handleSelection = (nIndex) => {
   if (!props.selection) return null

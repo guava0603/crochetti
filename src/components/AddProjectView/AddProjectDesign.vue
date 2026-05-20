@@ -32,10 +32,6 @@
               :component-index="index"
               :is-editing="true"
               :materials="materials"
-              :help-topic-ids="{
-                stitch: 'addProjectTableHeaderStitch',
-                total: 'addProjectTableHeaderTotalStitches'
-              }"
               @remove="removeComponent(index)"
             />
           </template>
@@ -50,6 +46,7 @@
           >
             {{ $t('addProject.design.addComponent') }}
           </button>
+
           <button
             type="button"
             class="add-component-actions__btn"
@@ -81,6 +78,13 @@ import {
   normalizeYarnMetaList,
   yarnMetaIdMap
 } from '@/utils/yarnMeta'
+import {
+  COMPONENT_TYPE_CROCHET,
+  COMPONENT_TYPE_STITCH,
+  isComponentType,
+  isStitchType,
+  normalizeComponentType
+} from '@/utils/componentTypes'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -191,6 +195,8 @@ function addSelfDefinedStitch(stitch) {
   const next = {
     stitch_id: id,
     name: String(stitch.name || '').trim(),
+    symbol_jp: typeof stitch.symbol_jp === 'string' ? String(stitch.symbol_jp).trim() : undefined,
+    text_zh: typeof stitch.text_zh === 'string' ? String(stitch.text_zh).trim() : undefined,
     description: String(stitch.description || ''),
     consume: Number(stitch.consume || 0),
     generate: Number(stitch.generate || 0)
@@ -215,6 +221,12 @@ function ensureComponentIdsAndStitchFieldsInPlace(componentList) {
     if (!c || typeof c !== 'object') continue
     if (!c.id) c.id = uuidv4()
 
+    // Normalize legacy component types so the rest of the UI can rely on a stable set.
+    const rawType = String(c.type || '')
+    if (!isStitchType(rawType)) {
+      c.type = normalizeComponentType(rawType, { defaultComponentType: COMPONENT_TYPE_CROCHET })
+    }
+
     if (c.type === 'stitch') {
       if (!Array.isArray(c.related_component_ids)) c.related_component_ids = []
       if (c.related_component_ids.length === 0) c.related_component_ids.push('')
@@ -227,7 +239,17 @@ function ensureComponentIdsAndStitchFieldsInPlace(componentList) {
   }
 }
 
+function normalizeComponentTypesToCrochetInPlace(componentList) {
+  const list = Array.isArray(componentList) ? componentList : []
+  for (const c of list) {
+    if (!c || typeof c !== 'object') continue
+    if (isStitchType(c.type)) continue
+    c.type = COMPONENT_TYPE_CROCHET
+  }
+}
+
 ensureComponentIdsAndStitchFieldsInPlace(projectData.value.component_list)
+normalizeComponentTypesToCrochetInPlace(projectData.value.component_list)
 
 const initialSnapshot = ref(null)
 
@@ -253,7 +275,7 @@ const createPart = () => ({
   generate: 0
 })
 
-const createComponent = (index, type = 'component') => {
+const createComponent = (index, type = COMPONENT_TYPE_CROCHET) => {
   const component = {
     id: uuidv4(),
     name: `${props.projectName} ${index + 1}`,
@@ -261,13 +283,15 @@ const createComponent = (index, type = 'component') => {
     count: 1,
     yarn: [],
     hook: [],
+    needle: [],
     metadata: {
       yarn: [],
-      hook: []
+      hook: [],
+      needle: []
     }
   }
 
-  if (type === 'component') {
+  if (isComponentType(type)) {
     component.content = createPart()
   } else {
     component.content = { text: '' }
@@ -299,7 +323,7 @@ const addComponentOfType = async (type, options = {}) => {
   const insertAt = Math.min(list.length, Math.max(0, currentIndex + 1))
 
   const next = createComponent(list.length, type)
-  if (type === 'stitch') {
+  if (type === COMPONENT_TYPE_STITCH) {
     const n = countStitchesUpToIndex(list, insertAt) + 1
     next.name = t('addProject.design.stitchDefaultName', { n })
   }
@@ -320,11 +344,11 @@ const addComponentOfType = async (type, options = {}) => {
 }
 
 async function handleAddPart() {
-  await addComponentOfType('component')
+  await addComponentOfType(COMPONENT_TYPE_CROCHET)
 }
 
 async function handleAddStitch() {
-  await addComponentOfType('stitch')
+  await addComponentOfType(COMPONENT_TYPE_STITCH)
 }
 
 const removeComponent = (index) => {
@@ -364,7 +388,7 @@ function findEmptyRowsAfterTrim(componentList) {
 
   for (let cIndex = 0; cIndex < list.length; cIndex += 1) {
     const component = list[cIndex]
-    const isPart = !component?.type || component?.type === 'component'
+    const isPart = isComponentType(component?.type)
     if (!isPart) continue
 
     const rowListRaw = component?.content?.row_list
@@ -387,7 +411,7 @@ function findEmptyRowsAfterTrim(componentList) {
 function trimTrailingEmptyRowsInPlace(componentList) {
   const list = Array.isArray(componentList) ? componentList : []
   for (const component of list) {
-    const isPart = !component?.type || component?.type === 'component'
+    const isPart = isComponentType(component?.type)
     if (!isPart) continue
     if (!component.content || typeof component.content !== 'object') component.content = {}
 
@@ -397,13 +421,24 @@ function trimTrailingEmptyRowsInPlace(componentList) {
   }
 }
 
+function isBlankText(value) {
+  return !String(value ?? '').trim()
+}
+
+function trimComponentNamesInPlace(componentList) {
+  const list = Array.isArray(componentList) ? componentList : []
+  for (const component of list) {
+    component.name = String(component?.name ?? '').trim()
+  }
+}
+
 const hasAnyCrochetRow = computed(() => {
   const list = Array.isArray(projectData.value.component_list)
     ? projectData.value.component_list
     : []
 
   return list.some((c) => {
-    const isPart = !c?.type || c?.type === 'component'
+    const isPart = isComponentType(c?.type)
     if (!isPart) return false
     const rowList = c?.content?.row_list
     if (!Array.isArray(rowList) || rowList.length === 0) return false
@@ -414,9 +449,23 @@ const hasAnyCrochetRow = computed(() => {
 const emptyCrochetRows = computed(() => findEmptyRowsAfterTrim(projectData.value.component_list))
 const hasEmptyCrochetRow = computed(() => emptyCrochetRows.value.length > 0)
 
+const firstEmptyComponentNameIndex = computed(() => {
+  const list = Array.isArray(projectData.value.component_list)
+    ? projectData.value.component_list
+    : []
+
+  for (let i = 0; i < list.length; i += 1) {
+    if (isBlankText(list[i]?.name)) return i
+  }
+  return -1
+})
+
+const hasEmptyComponentName = computed(() => firstEmptyComponentNameIndex.value >= 0)
+
 const canSubmit = computed(() => {
   if (loading.value) return false
   if (!Array.isArray(projectData.value.component_list) || projectData.value.component_list.length === 0) return false
+  if (hasEmptyComponentName.value) return false
   if (!hasAnyCrochetRow.value) return false
   return !hasEmptyCrochetRow.value
 })
@@ -427,7 +476,7 @@ function findUnexpectedGenerateRows(componentList) {
 
   for (let cIndex = 0; cIndex < list.length; cIndex += 1) {
     const component = list[cIndex]
-    const isPart = !component?.type || component?.type === 'component'
+    const isPart = isComponentType(component?.type)
     if (!isPart) continue
 
     const rowList = Array.isArray(component?.content?.row_list)
@@ -473,15 +522,17 @@ function uniqueNonEmpty(list) {
   return out
 }
 
-function normalizeProjectMaterialsInPlace(componentList, yarnMetaRaw) {
+function normalizeProjectMaterialsInPlace(componentList) {
   const list = Array.isArray(componentList) ? componentList : []
 
-  const baseYarnMeta = normalizeYarnMetaList(yarnMetaRaw)
+  const baseHook = uniqueNonEmpty((props.materials && typeof props.materials === 'object') ? props.materials.hook : [])
+
+  const baseYarnMeta = normalizeYarnMetaList((props.materials && typeof props.materials === 'object') ? props.materials.yarn : [])
   const baseYarnIdMap = yarnMetaIdMap(baseYarnMeta)
   const legacyTypePool = []
 
   for (const component of list) {
-    const isPart = !component?.type || component?.type === 'component'
+    const isPart = isComponentType(component?.type)
     if (!isPart) continue
 
     const legacyYarn = typeof component?.metadata?.yarn === 'string' ? component.metadata.yarn : ''
@@ -497,35 +548,45 @@ function normalizeProjectMaterialsInPlace(componentList, yarnMetaRaw) {
     : []
 
   for (const component of list) {
-    const isPart = !component?.type || component?.type === 'component'
+    const isPart = isComponentType(component?.type)
     if (!isPart) continue
 
-    // Legacy: metadata may contain strings
     const legacyYarn = typeof component?.metadata?.yarn === 'string' ? component.metadata.yarn : ''
     const legacyHook = typeof component?.metadata?.hook === 'string' ? component.metadata.hook : ''
 
     const yarnRaw = component?.yarn?.length ? component.yarn : legacyYarn
     const yarnValues = uniqueNonEmpty(yarnRaw)
-    const hookValues = uniqueNonEmpty(component?.hook?.length ? component.hook : legacyHook)
+    const hookValues = baseHook.length
+      ? uniqueNonEmpty(component?.hook?.length ? component.hook : legacyHook)
+      : []
 
     component.yarn = effectiveYarnMeta.length
       ? normalizeComponentYarnSelection(yarnValues, effectiveYarnMeta)
       : yarnValues
     component.hook = hookValues
+    component.needle = []
 
     if (!component.metadata || typeof component.metadata !== 'object') component.metadata = {}
     component.metadata.yarn = component.yarn
     component.metadata.hook = hookValues
+    component.metadata.needle = []
   }
 }
 
 const handleSubmit = async () => {
   if (loading.value) return
 
-  normalizeProjectMaterialsInPlace(projectData.value.component_list, props.materials?.yarn)
+  trimComponentNamesInPlace(projectData.value.component_list)
+  normalizeProjectMaterialsInPlace(projectData.value.component_list)
 
   if (!Array.isArray(projectData.value.component_list) || projectData.value.component_list.length === 0) {
     openError({ title: t('common.error'), message: t('addProject.design.errors.atLeastOneComponent') })
+    return
+  }
+
+  if (hasEmptyComponentName.value) {
+    const n = firstEmptyComponentNameIndex.value + 1
+    openError({ title: t('common.error'), message: t('addProject.design.errors.componentNameRequired', { n }) })
     return
   }
 
@@ -570,7 +631,7 @@ const handleSubmit = async () => {
 // Add at least one component by default if none exist
 ;(async () => {
   if (projectData.value.component_list.length === 0) {
-    await addComponentOfType('component', { scrollToLatest: false })
+    await addComponentOfType(COMPONENT_TYPE_CROCHET, { scrollToLatest: false })
   }
   initialSnapshot.value = deepClone(projectData.value)
   emit('dirty-change', false)
@@ -623,6 +684,21 @@ defineExpose({
 	user-select: none;
 }
 
+/* Visibility toggle (Public/Private): selected states */
+.section-header__right :deep(.selection-button-group__btn.is-selected) {
+  --text-main: var(--color-white);
+  color: var(--color-white);
+  box-shadow: none;
+}
+
+.section-header__right :deep(.selection-button-group__btn.is-selected:nth-child(1)) {
+  background-color: var(--color-completed-green); /* green */
+}
+
+.section-header__right :deep(.selection-button-group__btn.is-selected:nth-child(2)) {
+  background-color: var(--color-warning); /* red */
+}
+
 .section-header__right-label {
 	font-size: 0.9rem;
 	font-weight: 800;
@@ -650,6 +726,7 @@ defineExpose({
   cursor: pointer;
   transition: background 0.15s ease, transform 0.12s ease;
   border: none;
+  text-align: center;
 }
 
 .add-component-actions__btn:disabled {

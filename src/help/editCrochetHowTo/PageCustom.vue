@@ -2,9 +2,16 @@
   <div class="help-page">
     <div class="help-page__header">
       <h3 class="help-page__title">{{ t('help.editCrochetHowTo.pageCustom.title') }}</h3>
-      <button type="button" class="help-page__back" @click.stop="goHelpPage(0)">
+      <div
+        class="help-page__back"
+        role="button"
+        tabindex="0"
+        @click.stop="goHelpPage(0)"
+        @keydown.enter.prevent="goHelpPage(0)"
+        @keydown.space.prevent="goHelpPage(0)"
+      >
         {{ t('help.editCrochetHowTo.back') }}
-      </button>
+      </div>
     </div>
     <p class="help-page__text">{{ t('help.editCrochetHowTo.pageCustom.body') }}</p>
   </div>

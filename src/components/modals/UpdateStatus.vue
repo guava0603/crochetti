@@ -49,7 +49,7 @@
 <script setup>
 import { computed, nextTick, ref, toRefs, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import SelectionInput from '@/components/tools/SelectionInput.vue'
+import SelectionInput from '@/components/Selection/SelectionInput.vue'
 import SelectionInputCombineList from '@/components/Input/SelectionInputCombineList.vue'
 const { t } = useI18n({ useScope: 'global' })
 const props = defineProps({
@@ -161,7 +161,7 @@ const handleCancel = () => {
 }
 
 // SelectionInput handles click-outside + escape.
-const noteDraft = ref('')
+const noteDraft = ref(String(modalStatusNote.value))
 
 const isNumericStatusId = computed(() => {
   return !isAdding.value && Number.isFinite(Number(modalStatusId.value))
@@ -175,8 +175,12 @@ const noteSuggestions = computed(() => {
     .filter(Boolean)
 })
 
-watch(modalStatusId, () => {
-  noteDraft.value = ''
+watch(modalStatusId, (next, prev) => {
+  // When switching status, reset note draft.
+  // Don't clear on initial mount, so the default value can come from modalStatusNote.
+  if (prev !== undefined && String(next) !== String(prev)) {
+    noteDraft.value = ''
+  }
 
   if (isAdding.value) {
     nextTick(() => {
@@ -185,10 +189,14 @@ watch(modalStatusId, () => {
   }
 })
 
-watch(modalStatusNote, (val) => {
-  // Keep modal note in sync when opening/reopening modal.
-  noteDraft.value = String(val || '')
-})
+watch(
+  modalStatusNote,
+  (val) => {
+    // Keep modal note in sync when opening/reopening modal.
+    noteDraft.value = String(val || '')
+  },
+  { immediate: true }
+)
 
 const handleSave = () => {
   if (isAdding.value) {

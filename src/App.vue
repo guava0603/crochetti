@@ -2,7 +2,7 @@
   <div
     class="app-shell"
     :class="{
-      'app-shell--bottom-dock': footerType === 'record-options' && !isRecordResultSharing
+      'app-shell--bottom-dock': footerType === 'bar' && !isRecordResultSharing
     }"
   >
     <TopBanner />
@@ -11,7 +11,7 @@
       <RouterView />
     </main>
 
-    <FooterHost />
+    <Footer />
   </div>
 
   <AchievementToastHost />
@@ -32,10 +32,12 @@ import ToastHost from '@/components/ui/ToastHost.vue'
 import ErrorHost from '@/components/ui/ErrorHost.vue'
 import TopBanner from '@/components/layout/TopBanner.vue'
 import { RouterView, useRoute } from 'vue-router'
+import { provideAppBanner } from '@/composables/appBanner'
 import { provideFooterContext } from '@/composables/footerContext'
-import FooterHost from '@/components/Footer/FooterHost.vue'
+import Footer from '@/components/Footer/index.vue'
 
 const route = useRoute()
+provideAppBanner()
 provideFooterContext()
 
 const isRecordResultSharing = computed(() => {
@@ -43,7 +45,12 @@ const isRecordResultSharing = computed(() => {
   return Object.prototype.hasOwnProperty.call(route.query || {}, 'result-sharing')
 })
 
-const footerType = computed(() => String(route.meta?.footer || 'none'))
+const footerType = computed(() => {
+  const raw = String(route.meta?.footer || 'none')
+  if (raw === 'record-options') return 'bar'
+  if (raw === 'actions') return 'action'
+  return raw
+})
 </script>
 
 <style scoped>
@@ -58,7 +65,7 @@ const footerType = computed(() => String(route.meta?.footer || 'none'))
 
   /* App shell fixed regions */
   --app-banner-height: 4rem;
-  --app-footer-height: 5rem;
+  --app-footer-height: 4rem;
 
   height: 100vh;
   height: 100svh;
@@ -113,7 +120,7 @@ nav a:first-of-type {
   border: 0;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
   nav {
     text-align: left;
     margin-left: -1rem;

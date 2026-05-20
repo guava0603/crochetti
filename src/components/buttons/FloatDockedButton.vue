@@ -81,8 +81,8 @@ function handleKeydown(e) {
 
 <style scoped>
 .float-docked-button {
-  width: 100%;
-  height: 100%;
+  width: 3rem;
+  height: 3rem;
   border-radius: 999rem;
   border: none;
   background: var(--color-icon-add);
@@ -96,13 +96,14 @@ function handleKeydown(e) {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  overflow: hidden;
 }
 
 .float-docked-button__icon {
   width: inherit;
   height: inherit;
   display: block;
-  transform: scale(2);
+  transform: scale(3);
 }
 
 .float-docked-button__icon--inverted {

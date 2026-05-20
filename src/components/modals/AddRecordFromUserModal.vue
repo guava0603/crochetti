@@ -7,15 +7,36 @@
         <p class="message">{{ t('user.addRecord.message') }}</p>
 
         <div class="choice-list">
-          <button class="choice" type="button" @click="$emit('add-project')">
+          <div
+            class="choice"
+            role="button"
+            tabindex="0"
+            @click="$emit('add-project')"
+            @keydown.enter.prevent="$emit('add-project')"
+            @keydown.space.prevent="$emit('add-project')"
+          >
             {{ t('user.addRecord.actions.addProject') }}
-          </button>
-          <button class="choice" type="button" @click="step = 'select-project'">
+          </div>
+          <div
+            class="choice"
+            role="button"
+            tabindex="0"
+            @click="step = 'select-project'"
+            @keydown.enter.prevent="step = 'select-project'"
+            @keydown.space.prevent="step = 'select-project'"
+          >
             {{ t('user.addRecord.actions.selectProject') }}
-          </button>
-          <button class="choice choice--primary" type="button" @click="onQuickStart">
+          </div>
+          <div
+            class="choice choice--primary"
+            role="button"
+            tabindex="0"
+            @click="onQuickStart"
+            @keydown.enter.prevent="onQuickStart"
+            @keydown.space.prevent="onQuickStart"
+          >
             {{ t('user.addRecord.actions.quickAddProject', { stitch: t('crochet.stitches.singleCrochet') }) }}
-          </button>
+          </div>
         </div>
 
         <div class="modal-actions">

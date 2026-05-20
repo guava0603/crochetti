@@ -13,11 +13,13 @@
       aria-haspopup="menu"
       @click="toggle"
     >
-      <slot name="icon">
-        <span class="more-menu__icon" aria-hidden="true">
-          <ButtonSettingIcon />
-        </span>
-      </slot>
+      <img
+        class="more-menu__icon-img"
+        :src="settingsIconUrl"
+        alt=""
+        aria-hidden="true"
+        draggable="false"
+      />
       <span class="sr-only">{{ label }}</span>
     </button>
 
@@ -31,7 +33,7 @@
             class="more-menu__sheet-content"
             role="menu"
             @touchstart.passive="onSheetTouchStart"
-            @touchmove="onSheetTouchMove"
+            @touchmove.passive="onSheetTouchMove"
             @touchend="onSheetTouchEnd"
             @touchcancel="onSheetTouchEnd"
           >
@@ -60,11 +62,11 @@
                     @click="() => handleItemClick(item)"
                   >
                     <span class="more-menu__sheet-item-name">{{ item.label }}</span>
-                    <span v-if="item.icon" class="more-menu__sheet-item-icon" aria-hidden="true">
+                    <span v-if="item.icon && !item.danger" class="more-menu__sheet-item-icon" aria-hidden="true">
                       <component :is="item.icon" />
                     </span>
                     <img
-                      v-else-if="item.iconUrl"
+                      v-else-if="item.iconUrl && !item.danger"
                       class="more-menu__sheet-item-img"
                       :src="item.iconUrl"
                       alt=""
@@ -75,8 +77,6 @@
                 </div>
               </div>
             </template>
-
-            <slot v-else :close="close" />
           </div>
         </div>
       </div>
@@ -86,7 +86,6 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import ButtonSettingIcon from '@/components/buttons/svg/ButtonSetting.vue'
 
 const props = defineProps({
   disabled: { type: Boolean, default: false },
@@ -114,6 +113,11 @@ const rootRef = ref(null)
 const sheetContentRef = ref(null)
 const open = ref(false)
 const busyAction = ref('')
+
+const settingsIconUrl = computed(() => {
+  const base = import.meta.env.BASE_URL || '/'
+  return `${base}assets/image/settings/082__setting_cog.svg`
+})
 
 const pullState = {
   active: false,
@@ -174,9 +178,6 @@ function onSheetTouchMove(event) {
   }
 
   if (deltaY <= 0) return
-
-  // Prevent rubber-band / scroll chaining while pulling.
-  event.preventDefault()
 
   if (deltaY >= PULL_CLOSE_THRESHOLD_PX) {
     pullState.active = false
@@ -293,22 +294,12 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-.more-menu__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.more-menu__icon-img {
   width: 20px;
   height: 20px;
-  color: #111827;
-}
-
-/* Flatten ButtonSettingIcon when used inside this button */
-.more-menu__icon :deep(.svg-button-block) {
-  width: 20px;
-  height: 20px;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  display: block;
+  object-fit: contain;
+  transform: scale(2);
 }
 
 .more-menu__sheet-layer {

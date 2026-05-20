@@ -11,6 +11,7 @@ import {
 
 import { listUserRecords } from '@/services/firestore/records'
 import { fetchAllAchievements, fetchEarnedAchievements } from '@/services/firestore/achievements'
+import { fetchUserProfile } from '@/services/firestore/user'
 import { ACHIEVEMENT_EVALUATORS } from '@/services/achievements/evaluators'
 import { toMs } from '@/utils/toMs'
 
@@ -48,11 +49,11 @@ async function fetchUserProjects(uid) {
   return snap.docs.map((d) => Object.assign({ id: d.id }, d.data()))
 }
 
-function shouldAward(achievement, { metrics, projects, records }) {
+function shouldAward(achievement, { metrics, projects, records, profile }) {
   const id = achievement?.id != null ? String(achievement.id).trim() : ''
   const evaluator = id ? ACHIEVEMENT_EVALUATORS?.[id] : null
   if (typeof evaluator === 'function') {
-    return { ok: Boolean(evaluator({ achievement, metrics, projects, records })) }
+    return { ok: Boolean(evaluator({ achievement, metrics, projects, records, profile })) }
   }
 
   const type = String(achievement?.conditionType || '').trim()
@@ -101,9 +102,10 @@ export async function checkAndAwardAchievements(params = {}) {
   const dryRun = Boolean(params.dryRun)
 
   // Fetch core data.
-  const [projects, records] = await Promise.all([
+  const [projects, records, profile] = await Promise.all([
     fetchUserProjects(uid),
-    listUserRecords(uid)
+    listUserRecords(uid),
+    fetchUserProfile({ userId: uid }).catch(() => null)
   ])
 
   const metrics = {
@@ -128,7 +130,7 @@ export async function checkAndAwardAchievements(params = {}) {
 
     if (earnedIds.has(id)) continue
 
-    const verdict = shouldAward(a, { metrics, projects, records })
+    const verdict = shouldAward(a, { metrics, projects, records, profile })
     if (verdict.ok) {
       toAward.push(id)
     }

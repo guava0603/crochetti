@@ -21,9 +21,8 @@
     <div
       v-if="showDelete"
       class="image-box__delete"
-      @click.stop="emitDelete"
     >
-      <ButtonDeleteLight variant="small" />
+      <ButtonDeleteLight variant="small" @click="emitDelete" />
     </div>
 
     <Teleport to="body">

@@ -54,13 +54,13 @@
 
             <div class="field">
               <label class="label" for="record-thought">{{ t('recordResult.thoughtLabel') }}</label>
-              <textarea
+              <LimitedTextArea
                 id="record-thought"
                 v-model="draftThought"
                 class="textarea"
                 :disabled="saving"
                 :placeholder="t('recordResult.thoughtPlaceholder')"
-                rows="4"
+                :rows="4"
               />
             </div>
 
@@ -85,6 +85,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ImageUploader from '@/components/Input/ImageUploader.vue'
 import ImageBox from '@/components/Image/ImageBox.vue'
+import LimitedTextArea from '@/components/Input/LimitedTextArea.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 

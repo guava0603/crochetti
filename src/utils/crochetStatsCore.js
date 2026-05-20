@@ -1,3 +1,5 @@
+import { getRopeChainCount } from '@/utils/ropeChainCount'
+
 const isCrochetNode = (value) => {
   return !!value && typeof value === 'object' && typeof value.type === 'string'
 }
@@ -36,6 +38,15 @@ export const calculateConsumeGenerateCore = (input, repeatCount = 1, basicStitch
         return
       }
 
+      if (node.type === 'rope') {
+        const count = Math.max(1, Number(node.count || 1))
+
+        totalConsume += 0
+        // Rope is a leaf node that generates `chain_count` stitches.
+        totalGenerate += getRopeChainCount(node) * count
+        return
+      }
+
       if (node.type === 'bundle') {
         const count = node.count || 1
         totalConsume += (node.consume || 1) * count
@@ -65,7 +76,7 @@ export const calculateConsumeGenerateCore = (input, repeatCount = 1, basicStitch
     return { consume: 0, generate: 0 }
   }
 
-  if (input.type === 'stitch' || input.type === 'bundle') {
+  if (input.type === 'stitch' || input.type === 'bundle' || input.type === 'rope') {
     return calcList([input], repeatCount)
   }
 

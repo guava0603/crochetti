@@ -60,11 +60,18 @@ const emit = defineEmits(['open', 'copy', 'share', 'delete'])
 }
 
 .projects-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 1rem;
   margin-bottom: 2rem;
   width: 100%;
+}
+
+@media (min-width: 640px) {
+  .projects-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
 }
 
 .no-projects {

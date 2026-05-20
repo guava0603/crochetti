@@ -22,20 +22,22 @@
 
         <template v-else>
           <div class="profile-content">
-            <UserDataDisplay
-              :name="profile.name"
-              :avatar="profile.avatar"
-              :fan-list="profile?.fan_list"
-              :is-my-page="true"
-              :badge-text="$t('user.myPageBadge')"
-            />
+            <div class="profile-content-top">
+              <UserDataDisplay
+                :name="profile.name"
+                :avatar="profile.avatar"
+                :fan-list="profile?.fan_list"
+                :is-my-page="true"
+                :badge-text="$t('user.myPageBadge')"
+              />
 
-            <AchievementCabinet
-              v-if="currentUser?.uid"
-              :user-id="String(currentUser.uid)"
-              :is-my-page="true"
-              :title="$t('achievement.sectionTitle')"
-            />
+              <AchievementCabinet
+                v-if="currentUser?.uid"
+                :user-id="String(currentUser.uid)"
+                :is-my-page="true"
+                :title="$t('achievement.sectionTitle')"
+              />
+            </div>
 
             <UserTabPage
               v-model="activeTab"
@@ -108,6 +110,7 @@ import { openError, openNotice } from '@/services/ui/notice'
 import { openToast } from '@/services/ui/toast'
 
 import { useAchievementStore } from '@/stores/achievementStore'
+import { AVATAR_IDS, avatarIdFromValue } from '@/constants/avatarPresets'
 
 defineOptions({ name: 'HomeViewMain' })
 
@@ -197,24 +200,32 @@ const profileTabs = computed(() => [
 ])
 
 const bannerTitle = computed(() => {
-  const name = profile.value?.name != null ? String(profile.value.name).trim() : ''
-  return name || t('user.anonymous')
+  const profileName = profile.value?.name != null ? String(profile.value.name).trim() : ''
+  if (profileName) return profileName
+
+  const authName = currentUser.value?.displayName != null ? String(currentUser.value.displayName).trim() : ''
+  if (authName) return authName
+
+  const email = currentUser.value?.email != null ? String(currentUser.value.email).trim() : ''
+  if (email && email.includes('@')) return email.split('@')[0]
+
+  return t('user.anonymous')
 })
 
 watch(
-  () => [route.fullPath, Boolean(currentUser.value), Boolean(profile.value), bannerTitle.value],
+  () => [route.fullPath, loading.value, Boolean(currentUser.value), Boolean(profile.value), bannerTitle.value],
   () => {
-    if (!currentUser.value || !profile.value) {
+    if (loading.value) {
+      appBanner?.setBanner({ visible: true, title: t('common.loading'), showBack: false, onBack: null })
+      return
+    }
+
+    if (!currentUser.value) {
       appBanner?.setBanner({ visible: true, title: '', showBack: false, onBack: null })
       return
     }
 
-    appBanner?.setBanner({
-      visible: true,
-      title: bannerTitle.value,
-      showBack: false,
-      onBack: null
-    })
+    appBanner?.setBanner({ visible: true, title: bannerTitle.value, showBack: false, onBack: null })
   },
   { immediate: true }
 )
@@ -280,7 +291,7 @@ watch(
 
     followingLoading.value = true
     try {
-      const users = await callApi('fetchUsers', { userIds: ids })
+      const users = await callApi('fetchUsersPublicProfiles', { userIds: ids })
       if (token !== followingFetchToken) return
 
       const map = new Map(users.map((u) => [String(u.id), u]))
@@ -300,11 +311,40 @@ const saveProfileSettings = async (next) => {
   if (!currentUser.value?.uid) return
   if (!profile.value) return
 
+  const allowedAvatarIdSet = new Set(AVATAR_IDS)
+  const nextAvatarId = avatarIdFromValue(next?.avatar)
+  const shouldTrackAvatar = nextAvatarId && allowedAvatarIdSet.has(nextAvatarId)
+
+  const prevUsed = Array.isArray(profile.value?.avatar_used_ids)
+    ? profile.value.avatar_used_ids
+    : []
+
+  const nextUsed = (() => {
+    const out = []
+    const seen = new Set()
+
+    for (const raw of prevUsed) {
+      const v = String(raw ?? '').trim()
+      if (!v) continue
+      if (!allowedAvatarIdSet.has(v)) continue
+      if (seen.has(v)) continue
+      seen.add(v)
+      out.push(v)
+    }
+
+    if (shouldTrackAvatar && !seen.has(nextAvatarId)) {
+      out.push(nextAvatarId)
+    }
+
+    return out
+  })()
+
   const profileData = {
     ...profile.value,
     name: String(next?.name || '').trim() || (profile.value?.name || ''),
     is_privacy: Boolean(next?.is_privacy ?? profile.value?.is_privacy ?? false),
-    avatar: next?.avatar || null
+    avatar: next?.avatar || null,
+    avatar_used_ids: nextUsed
   }
 
   savingProfile.value = true
@@ -314,6 +354,8 @@ const saveProfileSettings = async (next) => {
       profileData
     })
     if (ok) {
+      // Award any avatar-related achievements immediately after saving.
+      achievementStore.scanAndAwardNow(String(currentUser.value.uid)).catch(() => {})
       showProfileSettings.value = false
       openNotice({
         title: t('common.notice'),
@@ -474,7 +516,7 @@ const settingsMenuSections = computed(() => [
       {
         action: 'system-settings',
         label: t('user.moreMenu.systemSettings'),
-        iconUrl: `${SETTINGS_ICON_BASE}noun-translate-8201308-FFFFFF.svg`,
+        iconUrl: `${SETTINGS_ICON_BASE}082__setting_cog.svg`,
         onSelect: openSystemSettings
       },
       {
@@ -575,49 +617,6 @@ watch(
 </script>
 
 <style scoped>
-.home-view {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.user-view {
-  min-height: 100%;
-  background: #f9fafb;
-}
-
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-  color: #6b7280;
-}
-
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  color: #6b7280;
-}
-
-.error-container h2 {
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-.profile-content {
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-
 .home-banner-actions {
   display: flex;
   align-items: center;

@@ -1,6 +1,6 @@
 <template>
   <div class="edit-row-crochet-tabs">
-    <Tab :tabs="tabs" :model-value="tab" default-key="row" @update:model-value="setTab">
+    <Tab :tabs="tabs" :model-value="tab" default-key="row" keep-alive @update:model-value="setTab">
       <template #row>
         <div class="edit-row-crochet-tabs__panel">
           <EditRow
@@ -21,39 +21,67 @@
             @copy-group="() => $emit('copy-group')"
             @move-row="(payload) => $emit('move-row', payload)"
             @close="() => $emit('close')"
+            @dirty-change="rowDirty = $event"
           />
         </div>
       </template>
 
       <template #crochet>
         <div class="edit-row-crochet-tabs__panel">
+          <div class="edit-row-crochet-tabs__panel-actions" @click.stop>
+            <HelpIconButton
+              v-if="showHelpButton"
+              class="help-btn"
+              :topic-id="helpTopicId"
+              :aria-label="t('help.editCrochetHowTo.aria')"
+            />
+          </div>
           <EditCrochet
             v-if="currentSelectedData"
             ref="editCrochetRef"
+            :craft-key="craftKey"
+            :stitches-for-list="stitchesForList"
+            :show-custom-button="showCustomButton"
+            :enable-wizard="enableWizard"
+            :enable-self-defined-stitches="enableSelfDefinedStitches"
             :selected-node-type="currentSelectedData.selectedNodeType"
             :selected-count="currentSelectedData.selectedCount"
             :virtual-whole-row="Boolean(currentSelectedData.virtualWholeRow)"
             :current-pattern="currentSelectedData.currentPattern"
             :can-go-parent="canGoParent"
+            :selection-path="selectionPath"
+            :row-copy="rowCopy"
             @delete-selection="() => $emit('delete-selection')"
             @add-inner-selection="(next) => $emit('add-inner-selection', next)"
             @draft-pattern-change="(next) => $emit('draft-pattern-change', next)"
+            @row-copy-count-change="(payload) => $emit('row-copy-count-change', payload)"
             @confirm="(changes) => $emit('confirm', changes)"
             @cancel="() => $emit('cancel')"
             @go-parent="(event) => $emit('go-parent', event)"
+            @dirty-change="crochetDirty = $event"
           />
         </div>
       </template>
     </Tab>
 
     <div class="edit-row-crochet-tabs__actions">
-      <ButtonDelete :text="t('common.delete')" :type="deleteConfirmType" @click="handleDelete" />
+      <ButtonDelete
+        v-if="showDeleteButton"
+        :text="t('common.delete')"
+        :type="deleteConfirmType"
+        @click="handleDelete"
+      />
       <div class="edit-row-crochet-tabs__actions-right">
         <button type="button" class="action-btn action-btn--secondary" @click="handleCancel">
           {{ t('common.cancel') }}
         </button>
-        <button type="button" class="action-btn action-btn--primary" @click="handleConfirm">
-          {{ t('common.confirm') }}
+        <button
+          type="button"
+          class="action-btn action-btn--primary"
+          :disabled="!isDirty"
+          @click="handleConfirm"
+        >
+          {{ t('common.save') }}
         </button>
       </div>
     </div>
@@ -66,11 +94,45 @@ import { useI18n } from 'vue-i18n'
 import EditCrochet from '@/components/BottomToolbar/EditCrochet.vue'
 import EditRow from '@/components/BottomToolbar/EditRow.vue'
 import ButtonDelete from '@/components/buttons/ButtonDelete.vue'
+import HelpIconButton from '@/components/help/HelpIconButton.vue'
 import Tab from '@/components/tools/Tab.vue'
+import { openConfirmation } from '@/services/ui/confirmation'
 
 const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps({
+  craftKey: {
+    type: String,
+    default: 'crochet'
+  },
+  stitchesForList: {
+    type: Array,
+    default: null
+  },
+  showCustomButton: {
+    type: Boolean,
+    default: true
+  },
+  enableWizard: {
+    type: Boolean,
+    default: true
+  },
+  enableSelfDefinedStitches: {
+    type: Boolean,
+    default: true
+  },
+  craftTabLabel: {
+    type: String,
+    default: ''
+  },
+  showHelpButton: {
+    type: Boolean,
+    default: true
+  },
+  helpTopicId: {
+    type: String,
+    default: 'editCrochetHowTo'
+  },
   tab: {
     type: String,
     default: 'row'
@@ -88,6 +150,18 @@ const props = defineProps({
     default: false
   },
   canGoParent: {
+    type: Boolean,
+    default: false
+  },
+  selectionPath: {
+    type: Array,
+    default: () => []
+  },
+  rowCopy: {
+    type: Array,
+    default: () => []
+  },
+  hasCrochetDraft: {
     type: Boolean,
     default: false
   },
@@ -126,6 +200,7 @@ const emit = defineEmits([
   'delete-selection',
   'add-inner-selection',
   'draft-pattern-change',
+  'row-copy-count-change',
   'confirm',
   'cancel',
   'go-parent',
@@ -134,10 +209,14 @@ const emit = defineEmits([
 
 const editRowRef = ref(null)
 const editCrochetRef = ref(null)
+const rowDirty = ref(false)
+const crochetDirty = ref(false)
+
+const isDirty = computed(() => rowDirty.value || crochetDirty.value || props.hasCrochetDraft)
 
 const tabs = computed(() => [
   { key: 'row', label: t('toolbar.editTabs.row') },
-  { key: 'crochet', label: t('toolbar.editTabs.crochet') }
+  { key: 'crochet', label: props.craftTabLabel || t('toolbar.editTabs.crochet') }
 ])
 
 const deleteConfirmType = computed(() => {
@@ -150,7 +229,21 @@ const deleteConfirmType = computed(() => {
   return 'deleteItem'
 })
 
+const showDeleteButton = computed(() => {
+  // Row tab always supports deletion.
+  if (props.tab === 'row') return true
+
+  // Crochet tab: only show when there is a parent context (matches UX requirement).
+  return !!props.canGoParent
+})
+
 const setTab = (next) => {
+  // Multi-row selection mode is a Row-tab-only interaction (used for building row groups).
+  // If the user switches to Crochet tab, exit multi-row selection so the Crochet editor
+  // is not effectively blocked by the row-range selection behavior.
+  if (next === 'crochet' && props.isSelectingMultipleRows) {
+    emit('toggle-select-multiple-rows', false)
+  }
   emit('update:tab', next)
 }
 
@@ -169,36 +262,48 @@ const handleDelete = () => {
   emit('delete-selection')
 }
 
-const handleCancel = () => {
-  if (props.tab === 'row') {
-    if (editRowRef.value && typeof editRowRef.value.cancel === 'function') {
-      editRowRef.value.cancel()
-      return
-    }
+const handleCancel = async () => {
+  if (!isDirty.value) {
     emit('close')
     return
   }
 
-  if (editCrochetRef.value && typeof editCrochetRef.value.cancel === 'function') {
-    editCrochetRef.value.cancel()
+  const ok = await openConfirmation({ type: 'discardChanges' })
+  if (!ok) return
+
+  if (rowDirty.value && editRowRef.value && typeof editRowRef.value.cancel === 'function') {
+    await editRowRef.value.cancel({ close: false, skipConfirm: true })
+  }
+
+  if (crochetDirty.value) {
+    if (editCrochetRef.value && typeof editCrochetRef.value.cancel === 'function') {
+      await editCrochetRef.value.cancel({ close: false, skipConfirm: true })
+    }
+    emit('cancel')
     return
   }
-  emit('cancel')
+
+  emit('close')
 }
 
-const handleConfirm = () => {
-  if (props.tab === 'row') {
-    if (editRowRef.value && typeof editRowRef.value.confirm === 'function') {
-      editRowRef.value.confirm()
+const handleConfirm = async () => {
+  if (!isDirty.value) return
+
+  if (rowDirty.value && editRowRef.value && typeof editRowRef.value.confirm === 'function') {
+    await editRowRef.value.confirm({ close: false })
+  }
+
+  if (crochetDirty.value) {
+    if (editCrochetRef.value && typeof editCrochetRef.value.confirm === 'function') {
+      await editCrochetRef.value.confirm({ close: true })
       return
     }
-    emit('close')
+    // Fallback: commit row_copy draft even if EditCrochet is unavailable.
+    emit('confirm', { applyDraft: true })
     return
   }
 
-  if (editCrochetRef.value && typeof editCrochetRef.value.confirm === 'function') {
-    editCrochetRef.value.confirm()
-  }
+  emit('close')
 }
 </script>
 
@@ -207,9 +312,17 @@ const handleConfirm = () => {
   position: relative;
   display: flex;
   flex-direction: column;
-  max-height: 50vh;
-  min-height: 260px;
   background-color: var(--color-background);
+}
+
+.edit-row-crochet-tabs__panel-actions {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0 0.5rem;
+  background: var(--color-background);
 }
 
 /* Override ToolsTab styling to match toolbar tabs */
@@ -248,16 +361,18 @@ const handleConfirm = () => {
 .edit-row-crochet-tabs__actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 0.75rem;
   border-top: 1px solid #e5e7eb;
-  padding: 1rem 1.8rem 1.5rem;
+  padding: 0.5rem 1.8rem 0.8rem;
+  padding-bottom: calc(0.8rem + var(--safe-area-bottom));
   background: #fff;
 }
 
 .edit-row-crochet-tabs__actions-right {
   display: flex;
   gap: 0.75rem;
+  margin-left: auto;
 }
 
 .action-btn {
@@ -270,6 +385,10 @@ const handleConfirm = () => {
   border: none;
   height: 40px;
   min-width: 92px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .action-btn--secondary {
@@ -286,7 +405,12 @@ const handleConfirm = () => {
   color: white;
 }
 
-.action-btn--primary:hover {
+.action-btn--primary:hover:not(:disabled) {
   background: #369970;
+}
+
+.action-btn--primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 </style>

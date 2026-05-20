@@ -70,7 +70,20 @@ const displayText = computed(() => {
   const s = stitchData.value
   if (!s) return ''
   if (s.kind === 'self') {
-    const base = String(s.value.name)
+    const name = String(s.value.name || '')
+    const symbolJp = String(s.value.symbol_jp || '').trim()
+    const symbolUk = String(s.value.symbol_uk || '').trim()
+    const textZh = String(s.value.text_zh || '').trim()
+
+    const lang = Number(crochetLang.value)
+    const base = (() => {
+      if (isIconMode.value) return textZh || name
+      if (lang === CROCHET_LANG.symbol_uk) return symbolUk || symbolJp || name
+      if (lang === CROCHET_LANG.symbol_jp) return symbolJp || name
+      if (lang === CROCHET_LANG.text_zh) return textZh || name
+      return name
+    })()
+
     return countValue.value > 1 ? `${countValue.value}${base}` : base
   }
 
@@ -116,5 +129,6 @@ const displayText = computed(() => {
   height: 20px;
   object-fit: contain;
   vertical-align: -3px;
+  transform: scale(1.2);
 }
 </style>

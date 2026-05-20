@@ -1,3 +1,5 @@
+import { toTrimmedText as toText } from '@/utils/text'
+
 // Central list of selectable preset avatars.
 //
 // Storage format:
@@ -131,6 +133,17 @@ function normalizePresetName(rawIdOrFile) {
   return lowered
 }
 
+/**
+ * Resolve the normalized animal name for a preset avatar.
+ *
+ * Examples:
+ * - "001-cat" -> "cat"
+ * - "/assets/image/avatar/wildlife/039-racoon.svg" -> "raccoon"
+ */
+export function avatarNameFromId(idOrValue) {
+  return normalizePresetName(idOrValue)
+}
+
 const nameToId = (() => {
   const map = new Map()
   for (const id of AVATAR_IDS) {
@@ -140,10 +153,6 @@ const nameToId = (() => {
   }
   return map
 })()
-
-function toText(v) {
-  return String(v ?? '').trim()
-}
 
 export function avatarSrcFromId(id) {
   const key = toText(id)

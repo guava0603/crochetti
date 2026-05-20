@@ -31,6 +31,8 @@ import {
   updateUserProfile as updateUserProfileDoc
 } from '@/services/firestore/user'
 
+import { fetchUsersPublicProfiles } from '@/services/functions/user'
+
 const { t } = useI18n({ useScope: 'global' })
 
 const { currentUser, profile, loading } = useCurrentUserProfile({
@@ -47,6 +49,7 @@ const apiHandlers = {
   mergeUserRecord,
   fetchUserProjectSummaries,
   fetchUsers,
+  fetchUsersPublicProfiles,
   subscribeUserProfile,
   updateUserProfileDoc
 }

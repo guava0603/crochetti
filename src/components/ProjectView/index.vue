@@ -39,17 +39,8 @@
         :style="{ '--bottom-sheet-max-width': '1200px', '--bottom-sheet-z': '55' }"
       >
         <template #header>
-          <div class="header-with-time">
-            <div class="project-title-section">
-              <span>{{ projectData.name }}</span>
-            </div>
-
-            <div v-if="projectCreatedAtCompact" class="created-time-pill" role="note" aria-label="Created time">
-              <div class="created-time-pill__row">發佈於：{{ projectCreatedAtCompact }}</div>
-              <div v-if="showProjectUpdatedLine" class="created-time-pill__row">
-                更新於：{{ projectUpdatedAtCompact }}
-              </div>
-            </div>
+          <div class="project-title-section">
+            <span>{{ projectData.name }}</span>
           </div>
         </template>
 
@@ -76,6 +67,24 @@
             </div>
           </div>
 
+          <div
+            v-if="selfDefinedStitchIntroductions.length > 0"
+            class="project-stitch-intro"
+            :aria-label="t('project.stitchIntroduction.title')"
+          >
+            <div class="project-stitch-intro__title">{{ t('project.stitchIntroduction.title') }}</div>
+            <ul class="project-stitch-intro__list">
+              <li
+                v-for="stitch in selfDefinedStitchIntroductions"
+                :key="stitch.stitch_id"
+                class="project-stitch-intro__item"
+              >
+                <div class="project-stitch-intro__name">{{ stitch.name }}</div>
+                <p class="project-stitch-intro__description">{{ stitch.description }}</p>
+              </li>
+            </ul>
+          </div>
+
           <button
             type="button"
             class="btn-playing project-start-cta"
@@ -85,46 +94,6 @@
             {{ t('project.startMakingCta') }}
           </button>
         </div>
-
-        <section v-if="false" class="project-record-tracking" aria-label="record tracking">
-          <div class="project-record-tracking__header">
-            <span class="project-record-tracking__title">{{ t('project.recordTracking.title') }}</span>
-          </div>
-
-          <div class="project-record-tracking__lists">
-            <div class="project-record-tracking__list">
-              <div class="project-record-tracking__label">
-                {{ t('project.recordTracking.ongoing') }} ({{ projectRecordOngoingIds.length }})
-              </div>
-              <ul v-if="projectRecordOngoingIds.length" class="project-record-tracking__items">
-                <li
-                  v-for="rid in projectRecordOngoingIds"
-                  :key="`ongoing-${rid}`"
-                  class="project-record-tracking__item"
-                >
-                  {{ rid }}
-                </li>
-              </ul>
-              <div v-else class="project-record-tracking__empty">{{ t('project.recordTracking.empty') }}</div>
-            </div>
-
-            <div class="project-record-tracking__list">
-              <div class="project-record-tracking__label">
-                {{ t('project.recordTracking.completed') }} ({{ projectRecordCompletedIds.length }})
-              </div>
-              <ul v-if="projectRecordCompletedIds.length" class="project-record-tracking__items">
-                <li
-                  v-for="rid in projectRecordCompletedIds"
-                  :key="`completed-${rid}`"
-                  class="project-record-tracking__item"
-                >
-                  {{ rid }}
-                </li>
-              </ul>
-              <div v-else class="project-record-tracking__empty">{{ t('project.recordTracking.empty') }}</div>
-            </div>
-          </div>
-        </section>
 
         <!-- Display each component -->
         <div class="design-cards">
@@ -151,6 +120,15 @@
               </div>
             </template>
           </CarouselWithDot>
+        </div>
+
+        <div v-if="projectCreatedAtCompact" class="header-with-time">
+          <div class="created-time-pill" role="note" aria-label="Created time">
+            <div class="created-time-pill__row">發佈於：{{ projectCreatedAtCompact }}</div>
+            <div v-if="showProjectUpdatedLine" class="created-time-pill__row">
+              更新於：{{ projectUpdatedAtCompact }}
+            </div>
+          </div>
         </div>
       </BottomSheetScroll>
 
@@ -185,9 +163,11 @@ import { useAppBanner } from '@/composables/appBanner'
 
 import { openError } from '@/services/ui/notice'
 import { openToast } from '@/services/ui/toast'
+import { openConfirmation } from '@/services/ui/confirmation'
 import { formatDateTimeCompact } from '@/utils/dateTime'
 import { toMs } from '@/utils/toMs'
 import { normalizeYarnMetaList } from '@/utils/yarnMeta'
+import { toTrimmedText as toText, uniqueTrimmedStrings } from '@/utils/text'
 
 defineOptions({ name: 'ProjectViewMain' })
 
@@ -278,6 +258,8 @@ async function addSelfDefinedStitch(stitch) {
   const name = String(stitch.name || '').trim()
   if (!name) return
 
+  const symbolJp = typeof stitch.symbol_jp === 'string' ? String(stitch.symbol_jp).trim() : ''
+  const textZh = typeof stitch.text_zh === 'string' ? String(stitch.text_zh).trim() : ''
   const description = String(stitch.description || '').trim()
   const consume = Number(stitch.consume)
   const generate = Number(stitch.generate)
@@ -285,6 +267,8 @@ async function addSelfDefinedStitch(stitch) {
   const normalized = {
     stitch_id: id,
     name,
+    symbol_jp: symbolJp || undefined,
+    text_zh: textZh || undefined,
     description,
     consume: Number.isFinite(consume) ? consume : 1,
     generate: Number.isFinite(generate) ? generate : 0
@@ -320,33 +304,9 @@ provideSelfDefinedStitchesContext({
 const noticeMessage = ref('')
 let noticeTimer = null
 
-function toText(v) {
-  return String(v ?? '').trim()
-}
-
-function normalizeStringList(value) {
-  const list = Array.isArray(value) ? value : []
-  return list
-    .map((v) => toText(v))
-    .filter(Boolean)
-}
-
-function uniqueList(list) {
-  const seen = new Set()
-  const out = []
-  for (const raw of Array.isArray(list) ? list : []) {
-    const v = toText(raw)
-    if (!v) continue
-    if (seen.has(v)) continue
-    seen.add(v)
-    out.push(v)
-  }
-  return out
-}
-
 const projectMaterialsHookLines = computed(() => {
   const raw = projectData.value?.materials?.hook
-  return uniqueList(normalizeStringList(raw))
+  return uniqueTrimmedStrings(raw)
 })
 
 const projectMaterialsYarnLines = computed(() => {
@@ -359,6 +319,26 @@ const projectMaterialsYarnLines = computed(() => {
       return amount ? `${type}: ${amount}` : type
     })
     .filter(Boolean)
+})
+
+const selfDefinedStitchIntroductions = computed(() => {
+  const list = projectData.value?.self_defined_stitches
+  if (!Array.isArray(list)) return []
+
+  const out = []
+  for (const stitch of list) {
+    if (!stitch || typeof stitch !== 'object') continue
+    const name = String(stitch.name || '').trim()
+    const description = String(stitch.description || '').trim()
+    if (!name || !description) continue
+    out.push({
+      stitch_id: stitch.stitch_id,
+      name,
+      description
+    })
+  }
+
+  return out.sort((a, b) => Number(a.stitch_id) - Number(b.stitch_id))
 })
 
 const isProjectOwner = computed(() => {
@@ -380,7 +360,8 @@ const SETTINGS_ICON_BASE = `${import.meta.env.BASE_URL}assets/image/settings/`
 const PROJECT_ACTION_ICONS = {
   copyLink: `${SETTINGS_ICON_BASE}069__hyperlink.svg`,
   downloadDesign: `${SETTINGS_ICON_BASE}027__download.svg`,
-  editProject: `${SETTINGS_ICON_BASE}083__setting_edit.svg`
+  editProject: `${SETTINGS_ICON_BASE}083__setting_edit.svg`,
+  deleteProject: `${SETTINGS_ICON_BASE}017__circle_close.svg`
 }
 
 const projectActionItems = computed(() => {
@@ -403,6 +384,13 @@ const projectActionItems = computed(() => {
         icon: PROJECT_ACTION_ICONS.editProject,
         ariaLabel: t('project.actions.editProject'),
         onClick: goEditProject
+      },
+      {
+        key: 'delete-project',
+        icon: PROJECT_ACTION_ICONS.deleteProject,
+        ariaLabel: t('project.actions.deleteProject'),
+        danger: true,
+        onClick: handleDeleteProject
       }
     ]
   }
@@ -441,7 +429,8 @@ function toMoreMenuItem(raw) {
   const item = {
     key,
     label,
-    onSelect: typeof raw.onClick === 'function' ? raw.onClick : undefined
+    onSelect: typeof raw.onClick === 'function' ? raw.onClick : undefined,
+    danger: Boolean(raw.danger)
   }
 
   if (key === 'save-project') {
@@ -472,15 +461,14 @@ const projectSettingsMenuSections = computed(() => {
   const byKey = new Map(list.map((i) => [String(i?.key || ''), i]))
 
   const edit = toMoreMenuItem(byKey.get('edit-project'))
+  const del = toMoreMenuItem(byKey.get('delete-project'))
   const copy = toMoreMenuItem(byKey.get('copy-link'))
   const download = toMoreMenuItem(byKey.get('download-design'))
 
-  const firstGroup = [edit].filter(Boolean)
-  const secondGroup = [copy, download].filter(Boolean)
-
-  const sections = []
-  if (firstGroup.length) sections.push({ key: 'owner-manage', label: '', items: firstGroup })
-  if (secondGroup.length) sections.push({ key: 'owner-share', label: '', items: secondGroup })
+  const sections = [
+    { key: 'owner-share', label: '', items: [copy, download] },
+    { key: 'owner-manage', label: '', items: [edit, del] }
+  ]
   return sections
 })
 
@@ -488,6 +476,29 @@ const goEditProject = () => {
   router.push({
     name: 'project-edit',
     params: { project_id: projectId.value }
+  })
+}
+
+const handleDeleteProject = async () => {
+  if (!isProjectOwner.value) return
+  if (!projectId.value) return
+
+  await openConfirmation({
+    type: { id: 'deleteProject', params: { name: projectData.value?.name || '' } },
+    onConfirm: async () => {
+      try {
+        await callApi('deleteProjectDoc', String(projectId.value))
+        openToast({ message: t('project.toasts.deletedProject') })
+        router.push('/home')
+      } catch (error) {
+        console.error('Error deleting project:', error)
+        openError({
+          title: t('common.error'),
+          message: t('project.errors.deleteProjectFailed'),
+          confirmText: t('common.ok')
+        })
+      }
+    }
   })
 }
 
@@ -613,16 +624,6 @@ const handleComponentSlideClick = async (index, event) => {
   if (target?.closest?.('button, a, input, textarea, select, label')) return
   await scrollToComponentTable(index)
 }
-
-const projectRecordOngoingIds = computed(() => {
-  const list = projectData.value?.record?.ongoing_list
-  return Array.isArray(list) ? list.map(String).filter(Boolean) : []
-})
-
-const projectRecordCompletedIds = computed(() => {
-  const list = projectData.value?.record?.completed_list
-  return Array.isArray(list) ? list.map(String).filter(Boolean) : []
-})
 
 function showNotice(message) {
   noticeMessage.value = String(message || '')
@@ -773,6 +774,10 @@ const handleStartCta = async () => {
   flex-direction: column;
 }
 
+:deep(.bottom-sheet__header) {
+  width: fit-content;
+  background: none;
+}
 
 .project-banner-actions {
   display: flex;
@@ -822,9 +827,10 @@ const handleStartCta = async () => {
   overflow: hidden;
 }
 
-/* ProjectView: the image carousel should occupy the visible space above the fixed bottom sheet. */
+/* ProjectView: stay in the top band above the fixed bottom sheet (min 65%). */
 :deep(.image-carousel.project-image-carousel) {
-  height: calc(35% + 3.1rem);
+  flex: 0 0 auto;
+  height: calc(35% + 3rem);
   min-height: 0;
 }
 
@@ -916,6 +922,53 @@ const handleStartCta = async () => {
   font-size: 0.9rem;
   font-weight: 800;
   color: #111827;
+  white-space: pre-wrap;
+}
+
+.project-stitch-intro {
+  width: min(680px, 100%);
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(17, 24, 39, 0.06);
+}
+
+.project-stitch-intro__title {
+  font-weight: 900;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.project-stitch-intro__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.project-stitch-intro__item {
+  padding: 0.5rem 0;
+  border-top: 1px solid rgba(17, 24, 39, 0.06);
+}
+
+.project-stitch-intro__item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.project-stitch-intro__name {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #111827;
+}
+
+.project-stitch-intro__description {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #374151;
+  line-height: 1.5;
   white-space: pre-wrap;
 }
 

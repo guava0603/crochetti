@@ -1,8 +1,10 @@
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { auth } from '@/firebaseConfig'
 import { onAuthStateChanged } from 'firebase/auth'
-import { subscribeUserProfile } from '@/services/firestore/user'
+import { subscribeUserProfile, updateUserProfile } from '@/services/firestore/user'
+import { getOrCreateCurrentUserFriendCode } from '@/services/firestore/friendCode'
 import { useLatestRecordStore } from '@/stores/latestRecordStore'
+import { clearLastAccessedRecordId, readLastAccessedRecordId } from '@/utils/lastAccessedRecord'
 
 function getAuthFallbackProfile(authUser, anonymousLabel = 'Anonymous') {
   const provider = Array.isArray(authUser?.providerData)
@@ -62,6 +64,12 @@ export function useCurrentUserProfile(options = {}) {
   let unsubscribeAuth = null
   let unsubscribeProfile = null
 
+  let friendCodeAttemptedForUid = null
+  let friendCodeAttemptInFlight = false
+
+  let baselineProfileAttemptedForUid = null
+  let baselineProfileAttemptInFlight = false
+
   onMounted(() => {
     unsubscribeAuth = onAuthStateChanged(auth, (u) => {
       currentUser.value = u || null
@@ -93,8 +101,18 @@ export function useCurrentUserProfile(options = {}) {
         loading.value = false
 
         latestRecordStore.reset()
+        clearLastAccessedRecordId()
+
+        friendCodeAttemptedForUid = null
+        friendCodeAttemptInFlight = false
         return
       }
+
+      friendCodeAttemptedForUid = null
+      friendCodeAttemptInFlight = false
+
+      baselineProfileAttemptedForUid = null
+      baselineProfileAttemptInFlight = false
 
       loading.value = true
 
@@ -109,16 +127,76 @@ export function useCurrentUserProfile(options = {}) {
 
       // Fetch latest record in parallel with profile snapshot.
       // Do not block the profile loading state on this.
-      latestRecordStore.fetchLatestRecord(userId)
+      try {
+        void latestRecordStore.hydrateLatestRecord(userId, {
+          preferredRecordId: readLastAccessedRecordId()
+        })
+      } catch {
+        void latestRecordStore.fetchLatestRecord(userId)
+      }
 
       unsubscribeProfile = subscribeUserProfile({
         userId,
         fallbackProfile: fallback,
         onData: (profileData) => {
+          const raw = (profileData && typeof profileData === 'object') ? profileData : null
+
           profile.value = normalize
-            ? normalizeProfileWithFallback(profileData, fallback, anonymousLabel)
-            : ((profileData && typeof profileData === 'object') ? profileData : fallback)
+            ? normalizeProfileWithFallback(raw, fallback, anonymousLabel)
+            : (raw || fallback)
           loading.value = false
+
+          // Best-effort: ensure basic public profile fields exist so other users
+          // can see correct name/avatar on UserView.
+          try {
+            if (!baselineProfileAttemptInFlight && baselineProfileAttemptedForUid !== userId) {
+              const rawName = raw?.name != null ? String(raw.name).trim() : ''
+              const rawAvatar = raw?.avatar != null ? String(raw.avatar).trim() : ''
+
+              const patch = {}
+              const fbName = fallback?.name != null ? String(fallback.name).trim() : ''
+              const fbAvatar = fallback?.avatar != null ? String(fallback.avatar).trim() : ''
+
+              if (!rawName && fbName) patch.name = fbName
+              if (!rawAvatar && fbAvatar) patch.avatar = fbAvatar
+
+              if (Object.keys(patch).length) {
+                baselineProfileAttemptInFlight = true
+                baselineProfileAttemptedForUid = userId
+                void updateUserProfile({ userId, profileData: patch })
+                  .catch(() => {})
+                  .finally(() => {
+                    baselineProfileAttemptInFlight = false
+                  })
+              } else {
+                baselineProfileAttemptedForUid = userId
+              }
+            }
+          } catch {
+            // ignore
+          }
+
+          // Ensure friend_code exists for all users (new + legacy).
+          // Best-effort: attempt at most once per uid per session to avoid spamming transactions.
+          try {
+            if (!friendCodeAttemptInFlight && friendCodeAttemptedForUid !== userId) {
+              const current = profile.value
+              const existing = String(current?.friend_code || current?.friendCode || '').trim()
+              if (!existing) {
+                friendCodeAttemptInFlight = true
+                friendCodeAttemptedForUid = userId
+                void getOrCreateCurrentUserFriendCode(current || {})
+                  .catch(() => {})
+                  .finally(() => {
+                    friendCodeAttemptInFlight = false
+                  })
+              } else {
+                friendCodeAttemptedForUid = userId
+              }
+            }
+          } catch {
+            // ignore
+          }
         },
         onError: (error) => {
           console.error('Error listening to current user profile:', error)

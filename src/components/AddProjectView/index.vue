@@ -8,9 +8,12 @@
   >
     <template #step-1>
       <AddProjectInfo
+        :key="`add-project-info-${prefillKey}`"
         ref="step1Ref"
         :initial-data="basicInfo"
         :component-list="designData?.component_list"
+        :existing-images="existingImages"
+        @remove-existing-image="(idx) => existingImages.splice(idx, 1)"
         @next="handleNextStep"
         @update:component-list="(list) => {
           if (designData) designData.component_list = Array.isArray(list) ? list : []
@@ -21,6 +24,7 @@
 
     <template #step-2>
       <AddProjectDesign
+        :key="`add-project-design-${prefillKey}`"
         ref="step2Ref"
         :project-name="basicInfo.name"
         :initial-data="designData"
@@ -36,19 +40,22 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAchievementStore } from '@/stores/achievementStore'
 import { v4 as uuidv4 } from '@lukeed/uuid'
 import AddProjectInfo from './AddProjectInfo.vue'
 import AddProjectDesign from './AddProjectDesign.vue'
 import ProjectWizardLayout from '@/components/projects/ProjectWizardLayout.vue'
 import { normalizeEmptyNotesForSaveInPlace } from '@/utils/normalizeEmptyNotesForSave'
+import { DEFAULT_PROJECT_CRAFT_TYPES, normalizeProjectCraftTypes } from '@/constants/projectCraft'
+import { toTrimmedText as toText, uniqueTrimmedStrings } from '@/utils/text'
 
 import { auth, storage } from '@/firebaseConfig'
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
 
 import { openError } from '@/services/ui/notice'
 import { useFooterContext } from '@/composables/footerContext'
+import { fetchProject } from '@/services/firestore/projects'
 
 defineOptions({ name: 'AddProjectViewMain' })
 
@@ -62,22 +69,174 @@ function callApi(name, ...args) {
 
 const { t } = useI18n({ useScope: 'global' })
 
+const route = useRoute()
 const router = useRouter()
 const achievementStore = useAchievementStore()
 const footer = useFooterContext()
 const currentStep = ref(1)
 const step1Dirty = ref(false)
 const step2Dirty = ref(false)
+const existingImages = ref([])
+const prefillKey = ref(0)
 const basicInfo = ref({
   name: '',
+  craft_types: [...DEFAULT_PROJECT_CRAFT_TYPES],
   description: '',
   image_files: [],
-  materials: { hook: [], yarn: [] }
+  materials: { hook: [], needle: [], yarn: [] }
 })
 const designData = ref(null)
 
+function parseCopyFromIds(value) {
+  const raw = typeof value === 'string' ? value : ''
+  return raw
+    .split(',')
+    .map((x) => toText(x))
+    .filter(Boolean)
+}
+
+function deepClone(value) {
+  return JSON.parse(JSON.stringify(value))
+}
+
+function normalizeExistingImageUrls(value) {
+  const list = Array.isArray(value) ? value : []
+  return list
+    .filter((x) => typeof x === 'string')
+    .map((x) => x.trim())
+    .filter(Boolean)
+}
+
+function mergeCraftTypes(projects) {
+  return [...DEFAULT_PROJECT_CRAFT_TYPES]
+}
+
+function mergeMaterials(projects) {
+  const hook = []
+  const needle = []
+  const yarn = []
+
+  for (const p of projects) {
+    const m = p?.materials
+    if (!m || typeof m !== 'object') continue
+    if (Array.isArray(m.hook)) hook.push(...m.hook)
+    if (Array.isArray(m.needle)) needle.push(...m.needle)
+    if (Array.isArray(m.yarn)) yarn.push(...m.yarn)
+  }
+
+  return {
+    hook: uniqueTrimmedStrings(hook),
+    needle: uniqueTrimmedStrings(needle),
+    yarn: Array.isArray(yarn) ? yarn.filter(Boolean) : []
+  }
+}
+
+function mergeSelfDefinedStitches(projects) {
+  const out = []
+  const seen = new Set()
+
+  for (const p of projects) {
+    const list = Array.isArray(p?.self_defined_stitches) ? p.self_defined_stitches : []
+    for (const s of list) {
+      const id = Number(s?.stitch_id)
+      if (!Number.isFinite(id)) continue
+      if (seen.has(id)) continue
+      seen.add(id)
+      out.push({ ...s, stitch_id: id })
+    }
+  }
+
+  return out
+}
+
+function mergeComponentLists(projects) {
+  const out = []
+  for (const p of projects) {
+    const list = Array.isArray(p?.component_list) ? p.component_list : []
+    for (const c of list) {
+      if (!c || typeof c !== 'object') continue
+      out.push({ ...c })
+    }
+  }
+  return out
+}
+
+async function applyCopyFromQuery() {
+  const ids = parseCopyFromIds(route.query?.copyFrom)
+  if (!ids.length) return
+
+  // Only apply once per entry to avoid overwriting user edits.
+  if (designData.value != null) return
+
+  if (ids.length === 1) {
+    const project = await fetchProject(ids[0]).catch(() => null)
+    if (!project) return
+
+    existingImages.value = normalizeExistingImageUrls(project?.images).slice(0, 3)
+
+    basicInfo.value = {
+      ...basicInfo.value,
+      name: toText(project?.name),
+      craft_types: normalizeProjectCraftTypes(project?.craft_types),
+      description: toText(project?.description),
+      image_files: [],
+      materials: {
+        hook: uniqueTrimmedStrings(project?.materials?.hook),
+        needle: uniqueTrimmedStrings(project?.materials?.needle),
+        yarn: Array.isArray(project?.materials?.yarn) ? deepClone(project.materials.yarn).filter(Boolean) : []
+      }
+    }
+
+    designData.value = {
+      component_list: Array.isArray(project?.component_list) ? deepClone(project.component_list) : [],
+      is_public: Boolean(project?.is_public),
+      self_defined_stitches: Array.isArray(project?.self_defined_stitches) ? deepClone(project.self_defined_stitches) : []
+    }
+
+    prefillKey.value += 1
+
+    return
+  }
+
+  const projects = (await Promise.all(ids.map((id) => fetchProject(id).catch(() => null))))
+    .filter(Boolean)
+
+  if (!projects.length) return
+
+  existingImages.value = []
+
+  basicInfo.value = {
+    ...basicInfo.value,
+    name: '',
+    description: '',
+    craft_types: mergeCraftTypes(projects),
+    materials: mergeMaterials(projects),
+    image_files: []
+  }
+
+  designData.value = {
+    component_list: mergeComponentLists(projects),
+    is_public: false,
+    self_defined_stitches: mergeSelfDefinedStitches(projects)
+  }
+
+  prefillKey.value += 1
+}
+
+watch(
+  () => route.query?.copyFrom,
+  () => {
+    applyCopyFromQuery().catch((e) => console.warn('applyCopyFromQuery failed:', e))
+  },
+  { immediate: true }
+)
+
 const step1Ref = ref(null)
 const step2Ref = ref(null)
+
+const step1CanSubmit = computed(() => {
+  return Boolean(step1Ref.value?.canSubmit?.value ?? step1Ref.value?.canSubmit)
+})
 
 const step2CanSubmit = computed(() => {
   return Boolean(step2Ref.value?.canSubmit?.value ?? step2Ref.value?.canSubmit)
@@ -106,7 +265,7 @@ const isDirty = computed(() => {
 })
 
 watch(
-  () => [currentStep.value, step1Dirty.value, step2Dirty.value, step2CanSubmit.value],
+  () => [currentStep.value, step1Dirty.value, step2Dirty.value, step1CanSubmit.value, step2CanSubmit.value],
   () => {
     if (currentStep.value === 1) {
       footer.setActions({
@@ -114,7 +273,7 @@ watch(
         justify: 'flex-end',
         primary: {
           label: t('addProject.common.next'),
-          disabled: false,
+          disabled: !step1CanSubmit.value,
           onClick: () => step1Ref.value?.submit?.()
         }
       })
@@ -156,6 +315,8 @@ const handleSubmit = async (data) => {
     const user = auth?.currentUser
     if (!user) return
 
+    const existingImageUrls = normalizeExistingImageUrls(existingImages.value).slice(0, 3)
+
     const imageFiles = Array.isArray(basicInfo.value?.image_files)
       ? basicInfo.value.image_files.filter((f) => f instanceof File).slice(0, 3)
       : []
@@ -169,13 +330,16 @@ const handleSubmit = async (data) => {
     const projectData = {
       name: basicInfo.value.name,
       description: basicInfo.value.description,
+      craft_types: normalizeProjectCraftTypes(basicInfo.value?.craft_types),
       materials: {
         hook: Array.isArray(basicInfo.value?.materials?.hook) ? basicInfo.value.materials.hook : [],
+        needle: [],
         yarn: Array.isArray(basicInfo.value?.materials?.yarn) ? basicInfo.value.materials.yarn : []
       },
       component_list: componentList,
       is_public: data.is_public,
       self_defined_stitches: Array.isArray(data?.self_defined_stitches) ? data.self_defined_stitches : [],
+      images: existingImageUrls,
       authorId: user.uid,
       createdAt: new Date().toISOString()
     }
@@ -195,7 +359,8 @@ const handleSubmit = async (data) => {
           urls.push(await getDownloadURL(objRef))
         }
 
-        await callApi('updateProject', projectId, { images: urls })
+        const merged = [...existingImageUrls, ...urls].filter(Boolean).slice(0, 3)
+        await callApi('updateProject', projectId, { images: merged })
       } catch (error) {
         console.warn('Failed to upload project images:', error)
         // Project is created; continue navigation.

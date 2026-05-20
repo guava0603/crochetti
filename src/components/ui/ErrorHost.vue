@@ -4,7 +4,17 @@
       <div class="error">
         <div v-if="err.title" class="error__title">{{ err.title }}</div>
         <div v-if="err.message" class="error__message">{{ err.message }}</div>
-        <button class="error__close" type="button" aria-label="Close" @click="closeError">×</button>
+        <div
+          class="error__close"
+          role="button"
+          tabindex="0"
+          aria-label="Close"
+          @click="closeError"
+          @keydown.enter.prevent="closeError"
+          @keydown.space.prevent="closeError"
+        >
+          ×
+        </div>
       </div>
     </div>
   </Transition>

@@ -6,9 +6,6 @@
       </div>
 
       <div class="header-with-time">
-        <div class="record-panel-actions" @click.stop>
-          <ButtonTranslate />
-        </div>
       </div>
 
       <div class="record-panel">
@@ -40,7 +37,7 @@
                   </div>
                 </div>
 
-                <RecordingTable
+                <CrochetRecordingTable
                   v-if="isRecordableComponent(item)"
                   :ref="setComponentTableRef(index)"
                   :model-value="item.content.row_list"
@@ -98,6 +95,7 @@ import { completeProjectRecord } from '@/services/firestore/projects'
 import { mergeUserRecord, setUserRecord } from '@/services/firestore/records'
 import { openConfirmation } from '@/services/ui/confirmation'
 import { formatDateTimeCompact } from '@/utils/dateTime'
+import { getRecordPreferredStatus, setRecordPendingStatus } from '@/utils/recordStatus'
 import { useRecordContext } from '@/composables/recordContext'
 import { useSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
 import { useAchievementStore } from '@/stores/achievementStore'
@@ -110,10 +108,9 @@ import {
   getLastEndAtForComponent,
   getComponentProgressPercent
 } from '@/utils/recordProgressGenerate.js'
-import RecordingTable from '@/components/CrochetTable/RecordingTable.vue'
+import CrochetRecordingTable from '@/components/CrochetTable/RecordingTable.vue'
 import CarouselWithDot from '@/components/Carousel/CarouselWithDot.vue'
 import ComponentCardStitch from '@/components/cards/ComponentCard.vue/Stitch.vue'
-import ButtonTranslate from '@/components/buttons/svg/ButtonTranslate.vue'
 import { originalStatuses } from '@/constants/status.js'
 import { yarnDisplayLines } from '@/utils/yarnMeta'
 
@@ -283,17 +280,6 @@ watch(
   }
 )
 
-// Debug helper: log a stable snapshot whenever end_at values change.
-// watch(
-//   () => (currentRecord.value?.component_list || [])
-//     .map((c) => (c?.end_at ? `${c.end_at.row_index}:${c.end_at.crochet_count}` : 'null'))
-//     .join('|'),
-//   () => {
-//     // Keep logs deterministic (devtools sometimes shows proxies out-of-date).
-//     console.log('[record] end_at changed:', snapshot((currentRecord.value?.component_list || []).map(c => c?.end_at ?? null)))
-//   }
-// )
-
 const handleCarouselActiveIndexChange = async (idx) => {
   await nextTick()
   selectedComponentIndex.value = clampComponentIndex(idx)
@@ -385,17 +371,27 @@ const modalStatusId = ref(currentStatusId.value)
 const modalStatusNote = ref(currentStatusNote.value)
 
 const syncLatestRecordStoreIfNeeded = () => {
-  const dockRef = latestRecordStore?.latestRecordData
-  if (!dockRef || typeof dockRef !== 'object' || !('value' in dockRef)) return
+  const dock = latestRecordStore?.latestRecordData
+
+  if (!dock || typeof dock !== 'object') return
 
   const record = currentRecord.value
   if (!record || typeof record !== 'object') return
 
-  const dockId = String(dockRef.value?.id || '').trim()
+  const dockId = String(dock?.id || '').trim()
   const rid = String(recordId.value || '').trim()
   if (!dockId || !rid || dockId !== rid) return
 
-  latestRecordStore.setLatestRecordData({ ...record, id: dockId })
+  // Keep dock record pointing at the same object as the record page.
+  try {
+    if (record && typeof record === 'object') record.id = dockId
+  } catch {
+    // ignore
+  }
+
+  if (dock !== record) {
+    latestRecordStore.setLatestRecordData(record)
+  }
 }
 
 const applyStatusChange = async ({ nextStatusId, nextStatusNote, prevStatusId, prevStatusNote }) => {
@@ -431,13 +427,22 @@ const applyStatusChange = async ({ nextStatusId, nextStatusNote, prevStatusId, p
     return
   }
 
-  // 2) If not playing: just edit the last slot's status.
+  // 2) If not playing: edit the last slot's status when one exists.
   if (last) {
     last.status_id = nextStatusId
     last.status_note = nextStatusNote
     await saveRecord()
     syncLatestRecordStoreIfNeeded()
+    return
   }
+
+  // 3) No time slots yet: persist the chosen status until the first slot starts.
+  setRecordPendingStatus(currentRecord.value, {
+    statusId: nextStatusId,
+    statusNote: nextStatusNote
+  })
+  await saveRecord()
+  syncLatestRecordStoreIfNeeded()
 }
 
 // Handler for status select in modal
@@ -528,7 +533,7 @@ const confirmAddCustomStatus = async (nameArg) => {
   return newStatus.id
 }
 
-// Set selection for each CrochetTable at mount
+// Set selection for each RecordingTable at mount
 const applySelectionForSelectedComponent = () => {
   const tableRef = componentTableRefs.value?.[clampComponentIndex(selectedComponentIndex.value)]
   if (!tableRef) return
@@ -550,6 +555,7 @@ const applySelectionForSelectedComponent = () => {
     clearSelection()
     return
   }
+
   const endAt = component?.end_at
   if (!endAt) {
     clearSelection()
@@ -596,6 +602,36 @@ const lastTimeSlot = computed(() => {
 const currentTimeSlot = computed(() => {
   return lastTimeSlot.value && lastTimeSlot.value.end === null ? lastTimeSlot.value : null
 })
+
+// Keep local refs consistent even if time slots are updated elsewhere (e.g. footer dock actions).
+watch(
+  () => currentTimeSlot.value,
+  (slot) => {
+    isRecording.value = Boolean(slot)
+  },
+  { immediate: true }
+)
+
+watch(
+  () => ({
+    slot: lastTimeSlot.value,
+    pendingId: currentRecord.value?.pending_status_id ?? null,
+    pendingNote: currentRecord.value?.pending_status_note ?? null
+  }),
+  ({ slot }) => {
+    if (!slot) {
+      const pending = getRecordPreferredStatus(currentRecord.value)
+      currentStatusId.value = pending.statusId
+      currentStatusNote.value = pending.statusNote
+      return
+    }
+
+    const nextId = Number(slot?.status_id ?? 0)
+    currentStatusId.value = Number.isFinite(nextId) ? nextId : 0
+    currentStatusNote.value = String(slot?.status_note || '').trim()
+  },
+  { immediate: true }
+)
 
 const pauseRecording = async () => {
   if (!currentTimeSlot.value) {
@@ -772,6 +808,13 @@ const handleUpdateEndAt = async (componentId, rowIndex, crochetCount) => {
   const prevRowIndex = hasPrevEndAt ? Number(prevEndAt?.row_index) : NaN
   const prevCrochetCount = hasPrevEndAt ? Number(prevEndAt?.crochet_count) : NaN
 
+  const didChangeEndAt = !(
+    Number.isFinite(prevRowIndex) &&
+    Number.isFinite(prevCrochetCount) &&
+    prevRowIndex === Number(rowIndex) &&
+    prevCrochetCount === Number(safeCrochetCount)
+  )
+
   const isMovingBackward =
     Number.isFinite(prevRowIndex) &&
     Number.isFinite(prevCrochetCount) &&
@@ -819,10 +862,37 @@ const handleUpdateEndAt = async (componentId, rowIndex, crochetCount) => {
     console.error('[handleUpdateEndAt] Error updating Firestore:', error)
   }
 
+  // When the user updates progress while recording, ask whether to stop recording.
+  // Skip this prompt if this change will immediately trigger the finish-component flow.
+  const last = getLastEndAtForComponent(component)
+  const willAutoFinishComponent =
+    isRecording.value &&
+    Number(last?.row_index) === Number(rowIndex) &&
+    Number(last?.crochet_count) === Number(safeCrochetCount)
+
+  if (isRecording.value && didChangeEndAt && !willAutoFinishComponent) {
+    const wantStop = await openConfirmation({
+      type: {
+        id: 'stopRecordingAfterEndAtChange',
+        params: {
+          name: getComponentLabel(component, componentId)
+        }
+      }
+    })
+
+    if (wantStop) {
+      try {
+        await pauseRecording()
+      } catch (error) {
+        console.warn('[handleUpdateEndAt] failed to pause recording:', error)
+      }
+    }
+  }
+
   // If the user records the last stitch of the last row while recording,
   // auto-trigger the finish flow.
   if (isRecording.value) {
-    const last = getLastEndAtForComponent(component)
+    // Reuse the computed last end_at above.
     if (
       Number(last?.row_index) === Number(rowIndex) &&
       Number(last?.crochet_count) === Number(safeCrochetCount)
@@ -905,6 +975,10 @@ const loadRecord = async () => {
       if (currentTimeSlot.value) {
         isRecording.value = true
       }
+    } else {
+      const pending = getRecordPreferredStatus(currentRecord.value)
+      currentStatusId.value = pending.statusId
+      currentStatusNote.value = pending.statusNote
     }
 
   } catch (error) {
@@ -938,11 +1012,6 @@ watch(isComponentEditing, async (isEditing) => {
   padding-bottom: var(--padding-bottom-record-options);
 }
 
-.header-with-time {
-  display: flex;
-  flex-direction: column;
-}
-
 .header-with-time h1 {
   margin: 0;
   color: #111827;
@@ -952,20 +1021,16 @@ watch(isComponentEditing, async (isEditing) => {
   width: 100%;
   text-align: right;
   font-size: 0.875rem;
-  color: var(--color-border-hover);
+  color: var(--color-text-note);
   font-weight: 500;
   padding: 0.4rem 0;
+  margin-left: var(--radius-card);
 }
 
 .record-panel {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-.record-panel-actions {
-  display: flex;
-  padding: 0 0.25rem;
 }
 
 /* Center the carousel items for this page.
@@ -988,10 +1053,10 @@ watch(isComponentEditing, async (isEditing) => {
   width: 100%;
   max-width: 1200px;
   margin-bottom: 2rem;
-  background: white;
+  background: var(--color-surface-page);
   padding: 1.5rem;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border);
   position: relative;
 }
 

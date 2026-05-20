@@ -45,15 +45,6 @@
           <span v-if="loading">{{ t('auth.loginModal.signingIn') }}</span>
           <span v-else>{{ t('auth.quickStart') }}</span>
         </button>
-
-        <button
-          class="cancel-button"
-          type="button"
-          @click="handleCancel"
-          :disabled="loading"
-        >
-          {{ t('auth.loginModal.cancel') }}
-        </button>
       </div>
     </section>
   </main>
@@ -227,14 +218,11 @@ const handleAppleLogin = async () => {
   }
 }
 
-const handleCancel = () => {
-  handleBack()
-}
 </script>
 
 <style scoped>
 .login-view {
-  min-height: calc(100vh - var(--banner-height, 0px));
+  min-height: 100%;
   display: grid;
   place-items: center;
   padding: 1.5rem 1.25rem;
@@ -274,8 +262,7 @@ const handleCancel = () => {
 
 .google-signin-button,
 .apple-signin-button,
-.quick-start-button,
-.cancel-button {
+.quick-start-button {
   width: 100%;
   padding: 0.85rem 1rem;
   border-radius: 14px;
@@ -301,11 +288,6 @@ const handleCancel = () => {
 .quick-start-button {
   background: rgba(255, 255, 255, 0.65);
   color: var(--color-font-dark);
-}
-
-.cancel-button {
-  background: transparent;
-  color: var(--color-font-invisible);
 }
 
 .google-icon,

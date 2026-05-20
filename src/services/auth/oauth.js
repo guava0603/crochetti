@@ -82,12 +82,6 @@ export async function getNativeAppleCredential() {
     })
   }
 
-  // Safe debug: do not log token contents.
-  console.info('[auth] native Apple sign-in result received', {
-    hasIdToken: Boolean(idToken),
-    hasRawNonce: Boolean(rawNonce)
-  })
-
   if (!rawNonce) {
     throw new Error('Missing Apple nonce from native sign-in result')
   }
