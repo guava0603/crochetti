@@ -671,6 +671,56 @@ const findNextIncompleteComponentIndex = (fromIndex) => {
   return null
 }
 
+const finishRecordAndNavigate = async () => {
+  if (!currentUser.value || !currentRecord.value) return
+
+  currentRecord.value.is_completed = true
+  selectedComponentIndex.value = 0
+  currentRecord.value.last_selected_component_index = 0
+
+  if (isRecording.value) {
+    try {
+      await pauseRecording()
+    } catch (error) {
+      console.warn('[finishRecord] failed to pause recording:', error)
+    }
+  }
+
+  try {
+    await mergeUserRecord(currentUser.value.uid, recordId.value, {
+      component_list: currentRecord.value.component_list,
+      is_completed: true,
+      last_selected_component_index: 0,
+      completed_at: new Date().toISOString()
+    })
+
+    try {
+      await completeProjectRecord(String(currentRecord.value?.project_id || ''), String(recordId.value))
+    } catch (error) {
+      const code = error?.code || error?.name || ''
+      if (String(code).includes('permission') || String(code).includes('unauthorized')) return
+      console.warn('[project record tracking] failed to complete project record:', error)
+    }
+  } catch (error) {
+    console.error('[finishRecord] Error updating Firestore:', error)
+  }
+
+  if (currentUser.value?.uid) {
+    achievementStore.scanAndAwardNow(currentUser.value.uid).catch((e) => {
+      console.warn('[achievements] scan after finish record failed:', e)
+    })
+  }
+
+  await router.push({
+    name: 'record',
+    params: { record_id: recordId.value },
+    query: {
+      'completed-result': '1',
+      'add-record-feedback': '1'
+    }
+  })
+}
+
 const handleFinishComponent = async () => {
   if (!currentUser.value) return
   if (!currentRecord.value) return
@@ -680,14 +730,9 @@ const handleFinishComponent = async () => {
   const list = currentRecord.value?.component_list
   if (!Array.isArray(list) || !list[targetIdx]) return
 
-  const ok = await openConfirmation({ type: 'finishComponent' })
-  if (!ok) return
-
-  // Mark as completed: clear end_at and set explicit flag.
   currentRecord.value.component_list[targetIdx].end_at = null
   currentRecord.value.component_list[targetIdx].is_completed = true
 
-  // Requirement: when a component becomes completed, stop recording.
   if (isRecording.value) {
     try {
       await pauseRecording()
@@ -696,11 +741,10 @@ const handleFinishComponent = async () => {
     }
   }
 
-  // Jump to the next incomplete component (wrap-around).
   const nextIdx = findNextIncompleteComponentIndex(targetIdx)
   if (nextIdx != null) {
     selectedComponentIndex.value = nextIdx
-    if (currentRecord.value) currentRecord.value.last_selected_component_index = clampComponentIndex(nextIdx)
+    currentRecord.value.last_selected_component_index = clampComponentIndex(nextIdx)
 
     try {
       await mergeUserRecord(currentUser.value.uid, recordId.value, {
@@ -718,69 +762,7 @@ const handleFinishComponent = async () => {
     return
   }
 
-  // All components are completed.
-  const okRecord = await openConfirmation({ type: 'finishRecord' })
-  if (!okRecord) {
-    // Still persist component completion.
-    try {
-      await mergeUserRecord(currentUser.value.uid, recordId.value, {
-        component_list: currentRecord.value.component_list
-      })
-    } catch (error) {
-      console.error('[finishComponent] Error updating Firestore:', error)
-    }
-    return
-  }
-
-  currentRecord.value.is_completed = true
-  selectedComponentIndex.value = 0
-  currentRecord.value.last_selected_component_index = 0
-
-  // Also ensure we are not recording when finishing the record.
-  if (isRecording.value) {
-    try {
-      await pauseRecording()
-    } catch (error) {
-      console.warn('[finishRecord] failed to pause recording:', error)
-    }
-  }
-
-  try {
-    await mergeUserRecord(currentUser.value.uid, recordId.value, {
-      component_list: currentRecord.value.component_list,
-      is_completed: true,
-      last_selected_component_index: 0,
-      // Use client timestamp for immediate achievement evaluation.
-      completed_at: new Date().toISOString()
-    })
-
-    try {
-      await completeProjectRecord(String(currentRecord.value?.project_id || ''), String(recordId.value))
-    } catch (error) {
-      const code = error?.code || error?.name || ''
-      if (String(code).includes('permission') || String(code).includes('unauthorized')) return
-      console.warn('[project record tracking] failed to complete project record:', error)
-    }
-  } catch (error) {
-    console.error('[finishRecord] Error updating Firestore:', error)
-  }
-
-  // Grant achievements immediately after finishing a record.
-  // Non-blocking: navigation to result screen should stay snappy.
-  if (currentUser.value?.uid) {
-    achievementStore.scanAndAwardNow(currentUser.value.uid).catch((e) => {
-      console.warn('[achievements] scan after finish record failed:', e)
-    })
-  }
-
-  const wantEdit = await openConfirmation({ type: 'editResultAfterFinishRecord' })
-  await router.push({
-    name: 'record',
-    params: { record_id: recordId.value },
-    query: wantEdit
-      ? { 'completed-result': '1', 'edit-result': '1' }
-      : { 'completed-result': '1' }
-  })
+  await finishRecordAndNavigate()
 }
 
 const handleUpdateEndAt = async (componentId, rowIndex, crochetCount) => {
@@ -866,7 +848,6 @@ const handleUpdateEndAt = async (componentId, rowIndex, crochetCount) => {
   // Skip this prompt if this change will immediately trigger the finish-component flow.
   const last = getLastEndAtForComponent(component)
   const willAutoFinishComponent =
-    isRecording.value &&
     Number(last?.row_index) === Number(rowIndex) &&
     Number(last?.crochet_count) === Number(safeCrochetCount)
 
@@ -889,16 +870,9 @@ const handleUpdateEndAt = async (componentId, rowIndex, crochetCount) => {
     }
   }
 
-  // If the user records the last stitch of the last row while recording,
-  // auto-trigger the finish flow.
-  if (isRecording.value) {
-    // Reuse the computed last end_at above.
-    if (
-      Number(last?.row_index) === Number(rowIndex) &&
-      Number(last?.crochet_count) === Number(safeCrochetCount)
-    ) {
-      await handleFinishComponent()
-    }
+  // Last stitch of the last row: advance to next component or finish record.
+  if (willAutoFinishComponent) {
+    await handleFinishComponent()
   }
 }
 

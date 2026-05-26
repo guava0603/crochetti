@@ -3,6 +3,7 @@ import { createI18n } from 'vue-i18n'
 import en from '@/locales/en.json'
 import zhTW from '@/locales/zh-TW.json'
 
+// Device-only UI language. See docs/data-model.md §11.
 const STORAGE_KEY = 'corchetti.locale'
 
 export const SUPPORTED_LOCALES = [

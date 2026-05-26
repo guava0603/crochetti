@@ -69,6 +69,8 @@ const isDragging = ref(false)
 const isProgrammaticScroll = ref(true)
 const hasUserInteracted = ref(false)
 let programmaticScrollClearTimer = null
+let scrollEndTimer = null
+let suppressEmitUntil = 0
 let expectedScrollTop = null
 
 const ITEM_HEIGHT = computed(() => (props.size === 'sm' ? 22 : 28))
@@ -95,21 +97,63 @@ function resolveSelectedIndex(value) {
   return 0
 }
 
-function scrollToValue(value, behavior = 'auto') {
+function clearPendingScrollEmit() {
+  if (scrollRaf) {
+    cancelAnimationFrame(scrollRaf)
+    scrollRaf = null
+  }
+  if (scrollEndTimer) {
+    clearTimeout(scrollEndTimer)
+    scrollEndTimer = null
+  }
+}
+
+function snapScrollToValue(value) {
   const el = scrollRef.value
   if (!el) return
+
+  clearPendingScrollEmit()
 
   isProgrammaticScroll.value = true
   if (programmaticScrollClearTimer) clearTimeout(programmaticScrollClearTimer)
 
   const target = resolveSelectedIndex(value) * ITEM_HEIGHT.value
   expectedScrollTop = target
-  el.scrollTo({ top: target, behavior })
+  suppressEmitUntil = Date.now() + 180
+
+  el.style.scrollBehavior = 'auto'
+  el.scrollTop = target
 
   programmaticScrollClearTimer = setTimeout(() => {
     isProgrammaticScroll.value = false
     expectedScrollTop = null
-  }, behavior === 'smooth' ? 400 : 120)
+    el.style.scrollBehavior = 'smooth'
+  }, 80)
+}
+
+function scrollToValue(value, behavior = 'auto') {
+  if (behavior === 'smooth') {
+    const el = scrollRef.value
+    if (!el) return
+
+    clearPendingScrollEmit()
+
+    isProgrammaticScroll.value = true
+    if (programmaticScrollClearTimer) clearTimeout(programmaticScrollClearTimer)
+
+    const target = resolveSelectedIndex(value) * ITEM_HEIGHT.value
+    expectedScrollTop = target
+    suppressEmitUntil = Date.now() + 450
+    el.scrollTo({ top: target, behavior: 'smooth' })
+
+    programmaticScrollClearTimer = setTimeout(() => {
+      isProgrammaticScroll.value = false
+      expectedScrollTop = null
+    }, 400)
+    return
+  }
+
+  snapScrollToValue(value)
 }
 
 let startY = 0
@@ -144,9 +188,23 @@ function markUserInteracted() {
 }
 
 let scrollRaf = null
-function handleScroll() {
-  if (!hasUserInteracted.value && !isDragging.value) return
 
+function emitValueFromScrollPosition() {
+  if (isProgrammaticScroll.value) return
+  if (Date.now() < suppressEmitUntil) return
+
+  const el = scrollRef.value
+  if (!el) return
+
+  const idx = Math.round(el.scrollTop / ITEM_HEIGHT.value)
+  const clampedIdx = Math.max(0, Math.min(normalizedOptions.value.length - 1, idx))
+  const next = normalizedOptions.value[clampedIdx]
+  if (next !== props.modelValue) {
+    emit('update:modelValue', next)
+  }
+}
+
+function handleScroll() {
   if (isProgrammaticScroll.value) {
     const el = scrollRef.value
     if (!el) return
@@ -161,17 +219,15 @@ function handleScroll() {
     return
   }
 
+  if (!hasUserInteracted.value && !isDragging.value) return
+
   if (scrollRaf) cancelAnimationFrame(scrollRaf)
   scrollRaf = requestAnimationFrame(() => {
-    const el = scrollRef.value
-    if (!el) return
-
-    const idx = Math.round(el.scrollTop / ITEM_HEIGHT.value)
-    const clampedIdx = Math.max(0, Math.min(normalizedOptions.value.length - 1, idx))
-    const next = normalizedOptions.value[clampedIdx]
-    if (next !== props.modelValue) {
-      emit('update:modelValue', next)
-    }
+    if (scrollEndTimer) clearTimeout(scrollEndTimer)
+    scrollEndTimer = setTimeout(() => {
+      scrollEndTimer = null
+      emitValueFromScrollPosition()
+    }, 80)
   })
 }
 
@@ -192,7 +248,7 @@ async function syncToModelValue() {
 
   if (isDragging.value) return
   await nextTick()
-  scrollToValue(props.modelValue)
+  snapScrollToValue(props.modelValue)
 }
 
 onMounted(async () => {

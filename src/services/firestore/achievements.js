@@ -55,8 +55,8 @@ function timestampToIso(value) {
 /**
  * Fetch global achievements.
  *
- * Architecture note: the catalog is local (code + i18n). Firestore is used only
- * for per-user earned achievement IDs.
+ * Architecture: catalog in app bundle; Firestore only for earned IDs.
+ * See docs/data-model.md §1 and §8.
  *
  * @returns {Promise<Achievement[]>}
  */

@@ -33,7 +33,7 @@
               class="input-number-modal__step"
               :disabled="!canDecrease"
               :aria-label="t('input.decrease')"
-              @click="decrease"
+              @click.stop="decrease"
             >
               <span aria-hidden="true">−</span>
             </button>
@@ -51,7 +51,7 @@
               class="input-number-modal__step"
               :disabled="!canIncrease"
               :aria-label="t('input.increase')"
-              @click="increase"
+              @click.stop="increase"
             >
               <span aria-hidden="true">+</span>
             </button>
@@ -165,12 +165,14 @@ function saveModal() {
 
 function decrease() {
   if (!canDecrease.value) return
-  draftValue.value = clampInputNumber(draftValue.value - 1, { min: props.min, max: props.max })
+  const base = clampInputNumber(draftValue.value, { min: props.min, max: props.max })
+  draftValue.value = clampInputNumber(base - 1, { min: props.min, max: props.max })
 }
 
 function increase() {
   if (!canIncrease.value) return
-  draftValue.value = clampInputNumber(draftValue.value + 1, { min: props.min, max: props.max })
+  const base = clampInputNumber(draftValue.value, { min: props.min, max: props.max })
+  draftValue.value = clampInputNumber(base + 1, { min: props.min, max: props.max })
 }
 </script>
 

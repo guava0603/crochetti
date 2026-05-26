@@ -87,6 +87,8 @@ import ImageUploader from '@/components/Input/ImageUploader.vue'
 import ImageBox from '@/components/Image/ImageBox.vue'
 import LimitedTextArea from '@/components/Input/LimitedTextArea.vue'
 
+defineOptions({ name: 'AddRecordFeedbackModal' })
+
 const { t } = useI18n({ useScope: 'global' })
 
 const MAX_IMAGES = 3
@@ -105,7 +107,7 @@ const keptImageUrls = ref([])
 const newImageFiles = ref([])
 const draftThought = ref('')
 
-const computedTitle = computed(() => props.title || t('recordResult.editResultTitle'))
+const computedTitle = computed(() => props.title || t('recordResult.addRecordFeedbackTitle'))
 
 const remainingSlots = computed(() => {
   const kept = Array.isArray(keptImageUrls.value) ? keptImageUrls.value.length : 0

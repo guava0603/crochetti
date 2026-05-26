@@ -50,6 +50,7 @@ function publicRecordSummariesCol({ appId, userId }) {
  *
  * Stored at: artifacts/{appId}/users/{uid}/records/{recordId}
  * Security: anyone can read; only the owner can write.
+ * Full record body: users/{uid}/records/{recordId}. See docs/data-model.md §4 and §7.
  */
 export async function upsertPublicUserRecordSummary({
   appId,

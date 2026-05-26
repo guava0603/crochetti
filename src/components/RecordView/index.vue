@@ -37,13 +37,13 @@
       />
     </div>
 
-    <EditRecordResultModal
-      :show="showEditResultModal"
+    <AddRecordFeedbackModal
+      :show="showRecordFeedbackModal"
       :saving="savingResult"
       :initial-images="recordData?.result?.images"
       :initial-thought="recordData?.result?.thought"
-      @close="closeEditResult"
-      @save="handleSaveEditResult"
+      @close="closeRecordFeedbackModal"
+      @save="handleSaveRecordFeedback"
     />
   </div>
 </template>
@@ -70,7 +70,7 @@ import { provideSelfDefinedStitchesContext } from '@/composables/selfDefinedStit
 import { useAppBanner } from '@/composables/appBanner'
 
 import { expandComponentListByCount, normalizeRecordForComponentCountsInPlace } from '@/utils/componentInstances'
-import EditRecordResultModal from '@/components/modals/EditRecordResultModal.vue'
+import AddRecordFeedbackModal from '@/components/modals/AddRecordFeedbackModal.vue'
 import { getLastEndAtForComponent, getRecordProgressPercent } from '@/utils/recordProgressGenerate'
 import { toMs } from '@/utils/toMs'
 
@@ -117,7 +117,7 @@ const loadedProjectIdForMaterials = ref('')
 provideSelfDefinedStitchesContext({ stitchesRef: selfDefinedStitches })
 
 const savingResult = ref(false)
-const showEditResultModal = ref(false)
+const showRecordFeedbackModal = ref(false)
 
 const latestRecordStore = useLatestRecordStore()
 
@@ -207,7 +207,9 @@ const hasTimeSlotsQuery = computed(() => Object.prototype.hasOwnProperty.call(ro
 const hasResultSharingQuery = computed(() => Object.prototype.hasOwnProperty.call(route.query, 'result-sharing'))
 const hasTimeSlotIdQuery = computed(() => Object.prototype.hasOwnProperty.call(route.query, 'time_slot_id'))
 const hasCompletedResultQuery = computed(() => Object.prototype.hasOwnProperty.call(route.query, 'completed-result'))
-const hasEditResultQuery = computed(() => Object.prototype.hasOwnProperty.call(route.query, 'edit-result'))
+const hasAddRecordFeedbackQuery = computed(() =>
+  Object.prototype.hasOwnProperty.call(route.query, 'add-record-feedback')
+)
 
 const baseUrl = import.meta.env.BASE_URL || '/'
 const downloadIconUrl = `${baseUrl}assets/image/settings/027__download.svg`
@@ -273,10 +275,10 @@ const moreMenuSections = computed(() => {
         label: '',
         items: [
           {
-            action: 'modifyResult',
-            label: t('record.modifyResult'),
+            action: 'addRecordFeedback',
+            label: t('record.addRecordFeedback'),
             disabled: !recordData.value || recordLoading.value || savingResult.value,
-            onSelect: openEditResult
+            onSelect: openRecordFeedbackModal
           },
           {
             action: 'details',
@@ -391,12 +393,12 @@ function goTimeSlots() {
   })
 }
 
-function openEditResult() {
-  showEditResultModal.value = true
+function openRecordFeedbackModal() {
+  showRecordFeedbackModal.value = true
 }
 
-async function closeEditResult({ toCompletedResult = false } = {}) {
-  showEditResultModal.value = false
+async function closeRecordFeedbackModal({ toCompletedResult = false } = {}) {
+  showRecordFeedbackModal.value = false
 
   if (toCompletedResult) {
     await router.replace({
@@ -407,9 +409,9 @@ async function closeEditResult({ toCompletedResult = false } = {}) {
     return
   }
 
-  if (hasEditResultQuery.value) {
+  if (hasAddRecordFeedbackQuery.value) {
     const next = { ...route.query }
-    delete next['edit-result']
+    delete next['add-record-feedback']
     await router.replace({
       name: 'record',
       params: { record_id: recordId.value },
@@ -441,7 +443,7 @@ async function uploadResultImages(uid, recordIdArg, files) {
   return out
 }
 
-async function handleSaveEditResult(payload) {
+async function handleSaveRecordFeedback(payload) {
   if (savingResult.value) return
 
   if (authPending.value) return
@@ -479,7 +481,7 @@ async function handleSaveEditResult(payload) {
       result: nextResult
     })
 
-    await closeEditResult({ toCompletedResult: hadExistingResult })
+    await closeRecordFeedbackModal({ toCompletedResult: hadExistingResult })
   } catch (error) {
     console.error('RecordView: error saving result:', error)
     openError({
@@ -933,9 +935,9 @@ onUnmounted(() => {
 })
 
 watch(
-  () => hasEditResultQuery.value,
+  () => hasAddRecordFeedbackQuery.value,
   (v) => {
-    if (v) showEditResultModal.value = true
+    if (v) showRecordFeedbackModal.value = true
   },
   { immediate: true }
 )

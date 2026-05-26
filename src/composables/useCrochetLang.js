@@ -4,6 +4,7 @@ import { auth } from '@/firebaseConfig'
 import { subscribeUserProfile, updateUserProfile } from '@/services/firestore/user'
 import { CROCHET_LANG } from '@/constants/crochetData'
 
+// Local cache; signed-in users also persist profile.crochet_lang (docs/data-model.md §5, §11).
 const STORAGE_KEY = 'corchetti.crochet_lang'
 
 const crochetLang = ref(loadInitial())

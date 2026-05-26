@@ -26,7 +26,7 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 
 // export const db = getFirestore(app);
-// ✅ 啟用離線持久化快取
+// Offline persistence (IndexedDB). Authoritative paths: docs/data-model.md
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager()

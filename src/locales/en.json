@@ -561,9 +561,9 @@
       "message": "All components are completed. Mark this entire record as completed?",
       "confirmText": "Complete"
     },
-    "editResultAfterFinishRecord": {
-      "title": "Add photos or thoughts?",
-      "message": "Do you want to update the photos or write any thoughts about your piece?"
+    "addRecordFeedbackAfterFinishRecord": {
+      "title": "Add piece feedback?",
+      "message": "Share photos and thoughts about your finished piece."
     },
     "restartRecord": {
       "title": "Restart this record?",
@@ -823,6 +823,17 @@
       "saveProject": "Save project",
       "unsaveProject": "Remove from saved"
     },
+    "downloadDesignPage": {
+      "sectionsLabel": "Sections to include",
+      "sectionsPlaceholder": "Select sections…",
+      "sectionDescription": "Description",
+      "sectionNotes": "Notes",
+      "sectionMaterials": "Materials",
+      "sectionSelfDefinedStitches": "Stitch guide",
+      "shareOrDownload": "Share / save image",
+      "exportStarted": "Opening share options…",
+      "exportFailed": "Could not export image. Please try again."
+    },
     "toasts": {
       "savedProject": "Saved",
       "unsavedProject": "Removed from saved designs",
@@ -856,7 +867,7 @@
     "startAt": "Start at:",
     "goToProject": "Go to project",
     "watchResult": "Watch result",
-    "modifyResult": "Edit result",
+    "addRecordFeedback": "Add feedback",
     "recordDetails": "Details",
     "restartRecord": "Restart record",
     "finishComponent": "Complete component",
@@ -914,7 +925,7 @@
   },
   "recordResult": {
     "shareOrDownload": "Share / Download",
-    "editResultTitle": "Edit result",
+    "addRecordFeedbackTitle": "Add piece feedback",
     "imagesLabel": "Photos (max 3)",
     "thoughtLabel": "Thoughts",
     "thoughtPlaceholder": "Write something about your piece…",

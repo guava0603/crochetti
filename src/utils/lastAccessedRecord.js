@@ -1,6 +1,7 @@
 import { getAppId } from '@/utils/appId'
 
 function storageKey() {
+  // Resume hint only; record payload is in Firestore. docs/data-model.md §11.
   // Namespace by Firebase project id to avoid cross-env collisions.
   const appId = String(getAppId() || '').trim()
   return appId ? `${appId}:lastAccessedRecordId` : 'lastAccessedRecordId'

@@ -159,9 +159,9 @@ const CONFIRMATION_PRESETS = {
     confirmClass: 'btn-confirm'
   }),
 
-  editResultAfterFinishRecord: () => ({
-    title: t('confirmation.editResultAfterFinishRecord.title'),
-    message: t('confirmation.editResultAfterFinishRecord.message'),
+  addRecordFeedbackAfterFinishRecord: () => ({
+    title: t('confirmation.addRecordFeedbackAfterFinishRecord.title'),
+    message: t('confirmation.addRecordFeedbackAfterFinishRecord.message'),
     confirmText: t('confirmation.actions.yes'),
     cancelText: t('confirmation.actions.no'),
     confirmClass: 'btn-confirm'

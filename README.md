@@ -43,34 +43,34 @@ npm run build
 npm run lint
 ```
 
-## Achievements (Firestore Catalog)
+## Data model
 
-This app expects a global achievements catalog in Firestore at collection `achievements`.
-Clients are read-only for this catalog (by rules), so the collection is created/updated by Firebase Functions.
+Where each kind of data lives (Firestore, Storage, Auth, `localStorage`, app bundle) and rules for adding new fields:
 
-### 1) Deploy Functions
+**[docs/data-model.md](docs/data-model.md)**
+
+Update that doc when you add persisted fields or collections.
+
+## Achievements (ops / optional Firestore sync)
+
+The **client** reads achievement definitions from code (`src/services/achievements/catalog.js`). Per-user earned badges are in Firestore at `users/{uid}/earnedAchievements/{id}`.
+
+Cloud Functions can still sync the legacy global collection `/achievements` from code for maintenance. See `docs/data-model.md` §1 and §10.
+
+### Deploy Functions
 
 ```sh
 firebase deploy --only functions
 ```
 
-### 2) Set maintenance key
+### Maintenance key (optional sync)
 
-In Firestore, create this document:
+In Firestore: `_maintenance/achievements` with field `backfillKey` (string).
 
-- Path: `_maintenance/achievements`
-- Field: `backfillKey` (string)
-
-### 3) Sync catalog from code -> Firestore
-
-Call the HTTP function (replace placeholders):
+### Sync catalog code → Firestore (optional)
 
 ```sh
 curl -X POST "https://us-central1-<YOUR_PROJECT_ID>.cloudfunctions.net/syncAchievementsFromCodeHttp?key=<BACKFILL_KEY>&force=true"
 ```
 
-After this, you should see the `achievements` collection appear in Firestore.
-
-Notes:
-- `force=true` bumps `publishedDate` so existing users will run a retroactive scan on next login.
-- There is also a daily scheduled sync that keeps the catalog aligned with code.
+There is also a daily scheduled sync in Functions. This does not change the client catalog source (still the app bundle).

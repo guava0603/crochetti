@@ -561,9 +561,9 @@
       "message": "所有部件都已完成。要將整筆作品紀錄標記為已完成嗎？",
       "confirmText": "完成"
     },
-    "editResultAfterFinishRecord": {
-      "title": "要補上照片或心得嗎？",
-      "message": "你想要更新照片，或寫下完成作品的心得嗎？"
+    "addRecordFeedbackAfterFinishRecord": {
+      "title": "新增作品回饋？",
+      "message": "分享完成作品的照片與心得。"
     },
     "restartRecord": {
       "title": "重啟這筆紀錄？",
@@ -822,6 +822,17 @@
       "saveProject": "收藏設計稿",
       "unsaveProject": "取消收藏"
     },
+    "downloadDesignPage": {
+      "sectionsLabel": "顯示內容",
+      "sectionsPlaceholder": "選擇要顯示的區塊…",
+      "sectionDescription": "說明",
+      "sectionNotes": "備註",
+      "sectionMaterials": "材料",
+      "sectionSelfDefinedStitches": "針法介紹",
+      "shareOrDownload": "分享／儲存圖片",
+      "exportStarted": "正在開啟分享選項…",
+      "exportFailed": "無法匯出圖片，請再試一次。"
+    },
     "toasts": {
       "savedProject": "已收藏",
       "unsavedProject": "已取消收藏",
@@ -855,7 +866,7 @@
     "startAt": "開始於：",
     "goToProject": "前往原設計",
     "watchResult": "查看成果",
-    "modifyResult": "修改圖片與心得",
+    "addRecordFeedback": "新增回饋",
     "recordDetails": "詳細資料",
     "restartRecord": "重啟此紀錄",
     "finishComponent": "完成部件",
@@ -912,7 +923,7 @@
   },
   "recordResult": {
     "shareOrDownload": "分享／下載",
-    "editResultTitle": "修改成果",
+    "addRecordFeedbackTitle": "新增作品回饋",
     "imagesLabel": "照片（最多 3 張）",
     "thoughtLabel": "心得",
     "thoughtPlaceholder": "寫下你對作品的想法…",
