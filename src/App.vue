@@ -1,9 +1,7 @@
 <template>
   <div
     class="app-shell"
-    :class="{
-      'app-shell--bottom-dock': footerType === 'bar' && !isRecordResultSharing
-    }"
+    :class="{ 'app-shell--bottom-dock': footerType === 'bar' }"
   >
     <TopBanner />
 
@@ -39,11 +37,6 @@ import Footer from '@/components/Footer/index.vue'
 const route = useRoute()
 provideAppBanner()
 provideFooterContext()
-
-const isRecordResultSharing = computed(() => {
-  if (route.name !== 'record') return false
-  return Object.prototype.hasOwnProperty.call(route.query || {}, 'result-sharing')
-})
 
 const footerType = computed(() => {
   const raw = String(route.meta?.footer || 'none')

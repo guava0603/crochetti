@@ -1,5 +1,8 @@
 <template>
-  <div class="record-result-view" :class="{ 'is-capturing': isCapturing }">
+  <div
+    class="record-result-view"
+    :class="{ 'is-capturing': isCapturing, 'record-result-view--static': disableAnimations }"
+  >
     <div ref="pageContentEl" class="page-content">
       <div v-if="loading" class="result-empty">
         {{ t('common.loading') }}
@@ -9,17 +12,22 @@
         {{ t('record.noTimeSlots') }}
       </div>
 
-      <div v-else class="result-body">
-        <div v-if="showSummary" class="result-summary">
+      <div v-else class="result-body" :class="{ 'result-body--sharing': isSharingLayout }">
+        <slot v-if="isSharingLayout" name="extra-images" />
+
+        <div v-if="showSummaryBlock" class="result-summary">
           <div class="summary-line">{{ t('recordResult.spanLine', { span: spanText }) }}</div>
           <div class="summary-line">
             <span>{{ effortLineParts.before }}</span><span class="summary-highlight">{{ effortText }}</span><span>{{ effortLineParts.after }}</span>
           </div>
         </div>
-        <div class="result-header">
+
+        <div v-if="showResultHeaderBlock" class="result-header">
           <h2 class="result-title">{{ t('recordResult.title') }}</h2>
         </div>
-        <div class="top-card">
+
+        <div v-if="showTopCardBlock" class="top-card">
+          <span class="card-inner-frame" aria-hidden="true" />
           <div class="top-badge" aria-hidden="true">
             <div class="top-badge__circle" />
             <ProgressRing
@@ -28,6 +36,7 @@
               :size="188"
               :stroke="14"
               :show-percent-number="false"
+              :animate-on-mount="chartAnimateOnMount"
               track-color="rgba(17, 24, 39, 0.08)"
             />
             <div class="top-badge__content">
@@ -35,9 +44,9 @@
               <div class="top-badge__sub">{{ formatDuration(rankedGroups[0].durationMs) }}</div>
             </div>
           </div>
-          <div class="top-card-metrics">
+          <div v-if="topGroupNoteLines.length" class="top-card-metrics">
             <div class="metric">
-              <div v-if="topGroupNoteLines.length" class="metric-note-chart-wrap">
+              <div class="metric-note-chart-wrap">
                 <BarChart
                   class="metric-note-chart"
                   :values="topGroupNotePercents"
@@ -46,6 +55,7 @@
                   orientation="horizontal"
                   :show-labels="true"
                   :show-value-label="true"
+                  :animate-on-mount="chartAnimateOnMount"
                   :bar-width="12"
                   :gap="10"
                 />
@@ -54,49 +64,105 @@
           </div>
         </div>
 
-        <template v-if="rankedGroups.length > 1">
-          <div class="rest-title">{{ t('recordResult.nextStatuses') }}</div>
-          <div class="rest-grid">
-            <div v-for="g in rankedGroups.slice(1, 5)" :key="g.key" class="rest-card">
-              <div
-                class="rest-card-header"
-                role="button"
-                tabindex="0"
-                :aria-expanded="isRestExpanded(g.key)"
-                @click="toggleRestExpanded(g.key)"
-                @keydown.enter.prevent="toggleRestExpanded(g.key)"
-                @keydown.space.prevent="toggleRestExpanded(g.key)"
-              >
-                <div class="rest-card-start">
-                  <ProgressRing
-                    class="rest-card-ring"
-                    :value="getGroupPercent(g)"
-                    :size="40"
-                    :stroke="6"
-                    :show-percent-number="false"
-                  />
-                  <div class="rest-card-title">{{ g.label }}</div>
+        <template v-if="rankedGroups.length > 1 && showMoreStatusBlock">
+          <div v-if="isSharingLayout" class="more-status">
+            <h2 v-if="showMoreStatusTitleBlock" class="result-title">{{ t('recordResult.nextStatuses') }}</h2>
+            <div class="rest-grid">
+              <div v-for="g in rankedGroups.slice(1, 5)" :key="g.key" class="rest-card">
+                <span class="card-inner-frame" aria-hidden="true" />
+                <div
+                  class="rest-card-header"
+                  :class="{ 'rest-card-header--clickable': hasRestDetails(g) }"
+                  :role="hasRestDetails(g) ? 'button' : undefined"
+                  :tabindex="hasRestDetails(g) ? 0 : -1"
+                  :aria-expanded="hasRestDetails(g) ? isRestExpanded(g.key) : undefined"
+                  @click="hasRestDetails(g) && toggleRestExpanded(g.key)"
+                  @keydown.enter.prevent="hasRestDetails(g) && toggleRestExpanded(g.key)"
+                  @keydown.space.prevent="hasRestDetails(g) && toggleRestExpanded(g.key)"
+                >
+                  <div class="rest-card-start">
+                    <ProgressRing
+                      class="rest-card-ring"
+                      :value="getGroupPercent(g)"
+                      :size="40"
+                      :stroke="6"
+                      :show-percent-number="false"
+                      :animate-on-mount="chartAnimateOnMount"
+                    />
+                    <div class="rest-card-title">{{ g.label }}</div>
+                  </div>
+                  <div class="rest-card-sub">{{ formatDuration(g.durationMs) }}</div>
                 </div>
-                <div class="rest-card-sub">{{ formatDuration(g.durationMs) }}</div>
-              </div>
 
-              <div v-if="isRestExpanded(g.key)" class="rest-card-details" @click.stop>
-                <BarChart
-                  v-if="getGroupNoteLines(g).length"
-                  class="rest-card-details-chart"
-                  orientation="horizontal"
-                  :show-labels="true"
-                  :show-value-label="true"
-                  :values="getGroupNoteLines(g).map(l => l.percent)"
-                  :titles="getGroupNoteLines(g).map(l => l.note)"
-                  :value-labels="getGroupNoteLines(g).map(l => formatDuration(l.durationMs))"
-                  :bar-width="10"
-                  :gap="10"
-                />
+                <div v-if="hasRestDetails(g) && isRestExpanded(g.key)" class="rest-card-details" @click.stop>
+                  <BarChart
+                    v-if="getGroupNoteLines(g).length"
+                    class="rest-card-details-chart"
+                    orientation="horizontal"
+                    :show-labels="true"
+                    :show-value-label="true"
+                    :animate-on-mount="chartAnimateOnMount"
+                    :values="getGroupNoteLines(g).map(l => l.percent)"
+                    :titles="getGroupNoteLines(g).map(l => l.note)"
+                    :value-labels="getGroupNoteLines(g).map(l => formatDuration(l.durationMs))"
+                    :bar-width="10"
+                    :gap="10"
+                  />
+                </div>
               </div>
             </div>
           </div>
+
+          <template v-else>
+            <div class="rest-title">{{ t('recordResult.nextStatuses') }}</div>
+            <div class="rest-grid">
+              <div v-for="g in rankedGroups.slice(1, 5)" :key="g.key" class="rest-card">
+                <span class="card-inner-frame" aria-hidden="true" />
+                <div
+                  class="rest-card-header"
+                  :class="{ 'rest-card-header--clickable': hasRestDetails(g) }"
+                  :role="hasRestDetails(g) ? 'button' : undefined"
+                  :tabindex="hasRestDetails(g) ? 0 : -1"
+                  :aria-expanded="hasRestDetails(g) ? isRestExpanded(g.key) : undefined"
+                  @click="hasRestDetails(g) && toggleRestExpanded(g.key)"
+                  @keydown.enter.prevent="hasRestDetails(g) && toggleRestExpanded(g.key)"
+                  @keydown.space.prevent="hasRestDetails(g) && toggleRestExpanded(g.key)"
+                >
+                  <div class="rest-card-start">
+                    <ProgressRing
+                      class="rest-card-ring"
+                      :value="getGroupPercent(g)"
+                      :size="40"
+                      :stroke="6"
+                      :show-percent-number="false"
+                      :animate-on-mount="chartAnimateOnMount"
+                    />
+                    <div class="rest-card-title">{{ g.label }}</div>
+                  </div>
+                  <div class="rest-card-sub">{{ formatDuration(g.durationMs) }}</div>
+                </div>
+
+                <div v-if="hasRestDetails(g) && isRestExpanded(g.key)" class="rest-card-details" @click.stop>
+                  <BarChart
+                    v-if="getGroupNoteLines(g).length"
+                    class="rest-card-details-chart"
+                    orientation="horizontal"
+                    :show-labels="true"
+                    :show-value-label="true"
+                    :animate-on-mount="chartAnimateOnMount"
+                    :values="getGroupNoteLines(g).map(l => l.percent)"
+                    :titles="getGroupNoteLines(g).map(l => l.note)"
+                    :value-labels="getGroupNoteLines(g).map(l => formatDuration(l.durationMs))"
+                    :bar-width="10"
+                    :gap="10"
+                  />
+                </div>
+              </div>
+            </div>
+          </template>
         </template>
+
+        <slot v-if="isSharingLayout" name="extra-note" />
       </div>
     </div>
   </div>
@@ -106,15 +172,46 @@
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { originalStatuses } from '@/constants/status.js'
 import { useRecordContext } from '@/composables/recordContext'
+import { useUserRecordStatusCatalog } from '@/composables/useUserRecordStatusCatalog'
+import { resolveRecordStatusLabel } from '@/utils/recordStatusDisplay'
 import ProgressRing from '@/components/ui/ProgressRing.vue'
 import BarChart from '@/components/ui/BarChart.vue'
+import { shareOrDownloadElementAsImage, downloadTextFile } from '@/utils/downloadImage'
+import { normalizeSectionVisibility } from '@/constants/recordResultSharingSections'
 
 const props = defineProps({
   currentUser: { type: Object, default: null },
-  profile: { type: Object, default: null }
+  profile: { type: Object, default: null },
+  layout: {
+    type: String,
+    default: 'default',
+    validator: (v) => ['default', 'sharing'].includes(v)
+  },
+  sectionVisibility: {
+    type: Object,
+    default: undefined
+  },
+  disableAnimations: {
+    type: Boolean,
+    default: false
+  }
 })
+
+const isSharingLayout = computed(() => props.layout === 'sharing')
+
+const chartAnimateOnMount = computed(() => !props.disableAnimations)
+
+const sectionVisibilityNormalized = computed(() => normalizeSectionVisibility(props.sectionVisibility))
+
+function isSectionVisible(key) {
+  return sectionVisibilityNormalized.value[key] !== false
+}
+
+const statusCatalog = useUserRecordStatusCatalog(
+  () => props.profile,
+  () => props.currentUser?.uid
+)
 
 const route = useRoute()
 const { t } = useI18n({ useScope: 'global' })
@@ -176,15 +273,11 @@ const totalEffortMs = computed(() => {
 })
 
 const getStatusLabel = (statusId) => {
-  if (statusId == null) return '-'
-
-  const original = originalStatuses.find(s => Number(s?.id) === Number(statusId))
-  if (original?.nameKey) return t(original.nameKey)
-
-  const custom = (currentRecord.value?.self_defined_status || []).find(s => Number(s?.id) === Number(statusId))
-  if (custom?.name) return String(custom.name)
-
-  return String(statusId)
+  return resolveRecordStatusLabel(statusId, {
+    t,
+    userCatalog: statusCatalog.catalog.value,
+    recordLinked: currentRecord.value?.self_defined_status
+  })
 }
 
 const getSlotDurationMs = (slot) => {
@@ -357,6 +450,10 @@ const getGroupNoteLines = (group) => {
   return groupNoteLinesByKey.value.get(groupKey) || []
 }
 
+const hasRestDetails = (group) => {
+  return getGroupNoteLines(group).length > 0
+}
+
 const formatDuration = (ms) => {
   const totalSeconds = Math.floor(Math.max(0, ms) / 1000)
 
@@ -403,6 +500,32 @@ const effortLineParts = computed(() => splitI18nLine('recordResult.effortLine', 
 
 const showSummary = computed(() => !loading.value && timeSlots.value.length > 0 && recordSpanMs.value != null)
 
+const showSummaryBlock = computed(() => {
+  if (!showSummary.value) return false
+  if (!isSharingLayout.value) return true
+  return isSectionVisible('resultSummary')
+})
+
+const showResultHeaderBlock = computed(() => {
+  if (!isSharingLayout.value) return true
+  return isSectionVisible('resultHeader')
+})
+
+const showTopCardBlock = computed(() => {
+  if (!isSharingLayout.value) return true
+  return rankedGroups.value.length >= 1
+})
+
+const showMoreStatusBlock = computed(() => {
+  if (!isSharingLayout.value) return true
+  return isSectionVisible('moreStatus')
+})
+
+const showMoreStatusTitleBlock = computed(() => {
+  if (!isSharingLayout.value) return true
+  return isSectionVisible('resultHeader')
+})
+
 const buildShareText = () => {
   const lines = []
   lines.push(t('recordResult.title'))
@@ -420,45 +543,8 @@ const buildShareText = () => {
   return lines.filter(Boolean).join('\n')
 }
 
-const capturePageContentPngBlob = async () => {
-  const el = pageContentEl.value
-  if (!el) throw new Error('page-content element not found')
-
-  const { default: html2canvas } = await import('html2canvas')
-
-  const dpr = typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1
-  const scale = Math.max(1, Math.min(2, dpr))
-
-  const canvas = await html2canvas(el, {
-    backgroundColor: '#ffffff',
-    scale,
-    useCORS: true,
-    logging: false
-  })
-
-  const blob = await new Promise((resolve) => {
-    canvas.toBlob((b) => resolve(b), 'image/png')
-  })
-
-  if (!blob) throw new Error('Failed to create PNG blob')
-  return blob
-}
-
-const downloadText = (filename, text) => {
-  const blob = new Blob([String(text || '')], { type: 'text/plain;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
-}
-
 const shareOrDownload = async () => {
   if (isCapturing.value) return
-  const title = t('recordResult.title')
   const safeId = recordId.value ? String(recordId.value).replace(/[^a-zA-Z0-9_-]+/g, '-') : 'record'
   const filename = `record-result-${safeId}.png`
 
@@ -466,30 +552,16 @@ const shareOrDownload = async () => {
     isCapturing.value = true
     await nextTick()
 
-    const blob = await capturePageContentPngBlob()
-    const file = typeof File !== 'undefined' ? new File([blob], filename, { type: 'image/png' }) : null
+    const el = pageContentEl.value
+    if (!el) throw new Error('page-content element not found')
 
-    try {
-      if (file && navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
-        await navigator.share({ title, files: [file] })
-        return
-      }
-    } catch {
-      // ignore and fall back to download
-    }
-
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
+    await shareOrDownloadElementAsImage(el, {
+      filename,
+      shareTitle: t('recordResult.title')
+    })
   } catch {
-    // As a last resort, fall back to text download.
     const text = buildShareText()
-    downloadText(`record-result-${safeId}.txt`, text)
+    downloadTextFile(`record-result-${safeId}.txt`, text)
   } finally {
     isCapturing.value = false
   }
@@ -676,7 +748,6 @@ onUnmounted(() => {
 }
 
 .result-body {
-  margin-top: 1rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -684,7 +755,6 @@ onUnmounted(() => {
 
 /* Match the AchievementToast inner-card style (Japanese healing vibe) */
 .top-card,
-.metric,
 .rest-card {
   background: rgba(245, 235, 218, 0.96);
   border: 0.15625rem solid rgba(122, 90, 58, 0.85);
@@ -696,22 +766,27 @@ onUnmounted(() => {
   position: relative;
 }
 
-.top-card::before,
-.metric::before,
-.rest-card::before {
-  content: '';
+.card-inner-frame {
   position: absolute;
   inset: 0.4375rem;
   border-radius: 0.875rem;
   border: 0.09375rem dashed rgba(122, 90, 58, 0.38);
+  box-sizing: border-box;
   pointer-events: none;
+  z-index: 0;
+}
+
+.rest-card > :not(.card-inner-frame) {
+  position: relative;
+  z-index: 1;
 }
 
 .top-card {
   position: relative;
-  padding: 6.25rem 0.6rem 1rem;
+  padding: 6.25rem 1rem 1rem;
   border-radius: 1rem;
   margin-top: 4rem;
+  min-height: 12rem;
 }
 
 .top-badge {
@@ -777,7 +852,7 @@ onUnmounted(() => {
 
 .metric {
   border-radius: 14px;
-  padding: 1.5rem 1rem;
+  padding: 1.5rem 0.5rem;
 }
 
 .metric-value {
@@ -811,20 +886,35 @@ onUnmounted(() => {
   margin-top: 2rem;
 }
 
+.more-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.more-status .result-title {
+  margin-top: 1rem;
+}
+
 .rest-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 0.75rem;
 }
 
+.result-body--sharing .rest-grid {
+  grid-template-columns: 1fr;
+}
+
 .rest-card {
   border-radius: 14px;
-  padding: 0.85rem;
+  padding: 1rem 1.5rem;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0.6rem;
-  cursor: pointer;
+  overflow: hidden;
 }
 
 .rest-card-header {
@@ -834,6 +924,10 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 0.8rem;
   outline: none;
+}
+
+.rest-card-header--clickable {
+  cursor: pointer;
 }
 
 .rest-card-header:focus-visible {
@@ -883,5 +977,26 @@ onUnmounted(() => {
 .more-hint {
   color: #6b7280;
   font-weight: 800;
+}
+
+.record-result-view--static :deep(.bar-chart__fill),
+.record-result-view--static :deep(.bar-chart__row-fill) {
+  background: rgb(224 157 127);
+}
+
+.record-result-view--static :deep(.bar-chart__fill),
+.record-result-view--static :deep(.bar-chart__row-fill),
+.record-result-view--static :deep(.progress-ring__progress) {
+  transition: none !important;
+}
+
+/* html2canvas: opaque fill + no inset shadow (inset reads as dark interior in exports). */
+.record-result-view--static :deep(.top-card),
+.record-result-view--static :deep(.rest-card) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: #f5ebda !important;
+  background-color: #f5ebda !important;
+  box-shadow: 0 0.75rem 1.625rem rgba(0, 0, 0, 0.1) !important;
 }
 </style>

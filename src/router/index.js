@@ -48,7 +48,7 @@ const router = createRouter({
       path: '/project/:project_id/download-design',
       name: 'project-download-design',
       component: () => import('../views/DownloadDesignView.vue'),
-      meta: { requiresAuth: true, footer: 'bar' },
+      meta: { bannerTitleKey: 'designPrint.title', requiresAuth: true, footer: 'bar' },
     },
     {
       path: '/project/:project_id/edit',
@@ -89,6 +89,12 @@ const router = createRouter({
         query: { ...to.query, 'time-slots': '1' },
       }),
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/record/:record_id/print',
+      name: 'record-print',
+      component: () => import('../views/PrintRecordView.vue'),
+      meta: { bannerTitleKey: 'recordPrint.title', requiresAuth: true, footer: 'bar' },
     },
 
     {

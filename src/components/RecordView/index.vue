@@ -1,25 +1,7 @@
 <template>
   <Teleport to=".top-banner__side--right">
     <div class="record-top-actions" @click.stop>
-      <button
-        v-if="hasResultSharingQuery"
-        type="button"
-        class="record-top-actions__icon-btn"
-        :aria-label="$t('recordResult.shareOrDownload')"
-        :title="$t('recordResult.shareOrDownload')"
-        :disabled="!recordData || recordLoading"
-        @click="handleResultShareDownload"
-      >
-        <img
-          class="record-top-actions__icon-img"
-          :src="downloadIconUrl"
-          alt=""
-          aria-hidden="true"
-          draggable="false"
-        />
-      </button>
       <MoreMenu
-        v-else
         :label="$t('project.more')"
         :disabled="!recordData || recordLoading"
         :sections="moreMenuSections"
@@ -62,8 +44,7 @@ import MoreMenu from '@/components/buttons/MoreMenu.vue'
 import RecordOngoing from '@/components/records/RecordOngoing.vue'
 import RecordTimeSlotList from '@/components/records/RecordTimeSlotList.vue'
 import RecordSingleTimeSlot from '@/components/records/RecordSingleTimeSlot.vue'
-import RecordResult from '@/components/records/RecordResult.vue'
-import RecordCompletedResult from '@/components/records/RecordCompletedResult.vue'
+import RecordResultSharing from '@/components/records/RecordResultSharing.vue'
 
 import { provideRecordContext } from '@/composables/recordContext'
 import { provideSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
@@ -78,6 +59,7 @@ import { openConfirmation } from '@/services/ui/confirmation'
 import { openError, openNotice } from '@/services/ui/notice'
 import { useLatestRecordStore } from '@/stores/latestRecordStore'
 import { clearLastAccessedRecordId, writeLastAccessedRecordId } from '@/utils/lastAccessedRecord'
+import { useUserRecordStatusCatalog } from '@/composables/useUserRecordStatusCatalog'
 
 defineOptions({ name: 'RecordViewMain' })
 
@@ -88,6 +70,11 @@ const props = defineProps({
 
 const currentUser = computed(() => props.currentUser)
 const authPending = computed(() => currentUser.value === undefined)
+
+const statusCatalog = useUserRecordStatusCatalog(
+  () => props.profile,
+  () => currentUser.value?.uid
+)
 
 const emit = defineEmits(['api'])
 
@@ -206,35 +193,18 @@ const projectId = computed(() => {
 const hasTimeSlotsQuery = computed(() => Object.prototype.hasOwnProperty.call(route.query, 'time-slots'))
 const hasResultSharingQuery = computed(() => Object.prototype.hasOwnProperty.call(route.query, 'result-sharing'))
 const hasTimeSlotIdQuery = computed(() => Object.prototype.hasOwnProperty.call(route.query, 'time_slot_id'))
-const hasCompletedResultQuery = computed(() => Object.prototype.hasOwnProperty.call(route.query, 'completed-result'))
 const hasAddRecordFeedbackQuery = computed(() =>
   Object.prototype.hasOwnProperty.call(route.query, 'add-record-feedback')
 )
 
-const baseUrl = import.meta.env.BASE_URL || '/'
-const downloadIconUrl = `${baseUrl}assets/image/settings/027__download.svg`
+const isRecordCompleted = computed(() => Boolean(recordData.value?.is_completed))
 
 const activeViewRef = ref(null)
-
-async function handleResultShareDownload() {
-  const fn = activeViewRef.value?.shareOrDownload
-  if (typeof fn !== 'function') {
-    console.warn('RecordView: active view does not expose shareOrDownload')
-    await openNotice({
-      title: t('common.notice'),
-      message: t('common.loading'),
-      confirmText: t('common.ok')
-    })
-    return
-  }
-  await fn()
-}
 
 const activeView = computed(() => {
   if (hasTimeSlotIdQuery.value) return RecordSingleTimeSlot
   if (hasTimeSlotsQuery.value) return RecordTimeSlotList
-  if (hasCompletedResultQuery.value) return RecordCompletedResult
-  if (hasResultSharingQuery.value) return RecordResult
+  if (hasResultSharingQuery.value) return RecordResultSharing
   return RecordOngoing
 })
 
@@ -268,39 +238,52 @@ watch(
 )
 
 const moreMenuSections = computed(() => {
-  if (hasCompletedResultQuery.value) {
-    return [
+  if (hasResultSharingQuery.value) {
+    const items = [
       {
-        key: 'record-completed',
-        label: '',
-        items: [
-          {
-            action: 'addRecordFeedback',
-            label: t('record.addRecordFeedback'),
-            disabled: !recordData.value || recordLoading.value || savingResult.value,
-            onSelect: openRecordFeedbackModal
-          },
-          {
-            action: 'details',
-            label: t('record.recordDetails'),
-            disabled: !recordData.value,
-            onSelect: goTimeSlots
-          }
-        ]
+        action: 'shareCompletedResultImage',
+        label: t('record.shareCompletedResultImage'),
+        disabled: !recordData.value || recordLoading.value,
+        onSelect: goPrintRecord
       },
       {
-        key: 'record-completed-danger',
-        label: '',
-        items: [
-          {
-            action: 'restartRecord',
-            label: t('record.restartRecord'),
-            danger: true,
-            disabled: !recordData.value || savingResult.value,
-            onSelect: handleRestartRecord
-          }
-        ]
+        action: 'addRecordFeedback',
+        label: t('record.addRecordFeedback'),
+        disabled: !recordData.value || recordLoading.value || savingResult.value,
+        onSelect: openRecordFeedbackModal
+      },
+      {
+        action: 'details',
+        label: t('record.recordDetails'),
+        disabled: !recordData.value,
+        onSelect: goTimeSlots
       }
+    ]
+
+    const dangerItems = []
+
+    if (isRecordCompleted.value) {
+      dangerItems.push({
+        action: 'restartRecord',
+        label: t('record.restartRecord'),
+        danger: true,
+        disabled: !recordData.value || savingResult.value,
+        onSelect: handleRestartRecord
+      })
+    }
+
+    dangerItems.push({
+      action: 'deleteRecord',
+      label: t('record.deleteRecord'),
+      iconUrl: '/assets/image/settings/086__empty.svg',
+      danger: true,
+      disabled: !recordData.value || savingResult.value,
+      onSelect: handleDeleteRecord
+    })
+
+    return [
+      { key: 'record-result-sharing', label: '', items },
+      { key: 'record-result-sharing-danger', label: '', items: dangerItems }
     ]
   }
 
@@ -397,14 +380,14 @@ function openRecordFeedbackModal() {
   showRecordFeedbackModal.value = true
 }
 
-async function closeRecordFeedbackModal({ toCompletedResult = false } = {}) {
+async function closeRecordFeedbackModal({ toResultSharing = false } = {}) {
   showRecordFeedbackModal.value = false
 
-  if (toCompletedResult) {
+  if (toResultSharing) {
     await router.replace({
       name: 'record',
       params: { record_id: recordId.value },
-      query: { 'completed-result': '1' }
+      query: { 'result-sharing': '1' }
     })
     return
   }
@@ -481,7 +464,7 @@ async function handleSaveRecordFeedback(payload) {
       result: nextResult
     })
 
-    await closeRecordFeedbackModal({ toCompletedResult: hadExistingResult })
+    await closeRecordFeedbackModal({ toResultSharing: hadExistingResult })
   } catch (error) {
     console.error('RecordView: error saving result:', error)
     openError({
@@ -534,6 +517,51 @@ async function handleRestartRecord() {
   })
 }
 
+function buildRecordQueryForLoadedRecord(record) {
+  const query = { ...route.query }
+  delete query['completed-result']
+
+  const completed = Boolean(record?.is_completed)
+  const onResultSharing = Object.prototype.hasOwnProperty.call(query, 'result-sharing')
+  const onTimeSlots = Object.prototype.hasOwnProperty.call(query, 'time-slots')
+  const onTimeSlotId = Object.prototype.hasOwnProperty.call(query, 'time_slot_id')
+
+  if (completed && !onTimeSlots && !onTimeSlotId && !onResultSharing) {
+    query['result-sharing'] = '1'
+  }
+
+  return query
+}
+
+async function syncRouteForLoadedRecord(record) {
+  if (!record || typeof record !== 'object') return
+
+  const nextQuery = buildRecordQueryForLoadedRecord(record)
+  const currentQuery = route.query || {}
+
+  const keys = new Set([...Object.keys(currentQuery), ...Object.keys(nextQuery)])
+  let same = true
+  for (const key of keys) {
+    if (String(currentQuery[key] ?? '') !== String(nextQuery[key] ?? '')) {
+      same = false
+      break
+    }
+  }
+  if (same) return
+
+  // replace (not push) swaps the current history entry — e.g. /record/id without query
+  // becomes /record/id?result-sharing=1 so "back" does not return to bare /record/id
+  try {
+    await router.replace({
+      name: 'record',
+      params: { record_id: recordId.value },
+      query: nextQuery
+    })
+  } catch (e) {
+    console.warn('RecordView: failed to sync record route:', e)
+  }
+}
+
 let inFlightLoad = null
 let inFlightRecordId = ''
 
@@ -542,6 +570,7 @@ const loadRecord = async ({ force = false } = {}) => {
   if (!id) return
 
   if (!force && recordData.value && loadedRecordId.value === id) {
+    await syncRouteForLoadedRecord(recordData.value)
     return recordData.value
   }
 
@@ -660,9 +689,16 @@ const loadRecord = async ({ force = false } = {}) => {
     recordData.value = data
     loadedRecordId.value = id
 
+    try {
+      await statusCatalog.ensureProfileIncludesRecordStatusData(data)
+    } catch (e) {
+      console.warn('RecordView: failed to sync user status catalog:', e)
+    }
+
     // Latest record is defined as: the last record we accessed.
     latestRecordStore.setLatestRecordData(recordData.value)
     writeLastAccessedRecordId(id)
+    await syncRouteForLoadedRecord(data)
     return data
   })()
 
@@ -685,6 +721,13 @@ function goWatchResult() {
     name: 'record',
     params: { record_id: recordId.value },
     query: { 'result-sharing': '1' }
+  })
+}
+
+function goPrintRecord() {
+  router.push({
+    name: 'record-print',
+    params: { record_id: recordId.value }
   })
 }
 
@@ -924,6 +967,16 @@ watch(
   { immediate: true }
 )
 
+watch(
+  () => route.fullPath,
+  async () => {
+    if (recordLoading.value) return
+    const r = recordData.value
+    if (!r || typeof r !== 'object') return
+    await syncRouteForLoadedRecord(r)
+  }
+)
+
 onMounted(() => {
   appBanner?.setBanner({ visible: true, showBack: true, onBack: lastPage })
   setScrollbarHidden(true)
@@ -967,6 +1020,7 @@ watch(
   position: relative;
 }
 
+
 .page-content::before {
   content: '';
   position: absolute;
@@ -983,39 +1037,6 @@ watch(
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.record-top-actions__icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.05s, opacity 0.15s;
-}
-
-.record-top-actions__icon-btn:hover {
-  background: rgba(243, 244, 246, 0.98);
-}
-
-.record-top-actions__icon-btn:active {
-  transform: translateY(1px);
-}
-
-.record-top-actions__icon-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.record-top-actions__icon-img {
-  width: 20px;
-  height: 20px;
-  display: block;
-  transform: scale(2);
 }
 
 </style>

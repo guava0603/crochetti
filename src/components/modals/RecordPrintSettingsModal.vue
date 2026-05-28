@@ -1,0 +1,212 @@
+<template>
+  <ModalShell
+    :show="show"
+    :title="t('print.settingsTitle')"
+    max-width="400px"
+    show-save-footer
+    @update:show="emit('update:show', $event)"
+    @save="handleSave"
+  >
+    <p class="modal-hint">{{ t('print.settingsHint') }}</p>
+
+    <ul class="section-list">
+      <li v-for="item in sectionOptions" :key="item.key" class="section-item">
+        <div class="modal-section-row">
+          <span class="modal-section-row__label">{{ item.label }}</span>
+          <label class="modal-toggle">
+            <input
+              v-if="item.key !== 'textInfo'"
+              v-model="draft[item.key]"
+              type="checkbox"
+              class="modal-toggle__input"
+            />
+            <input
+              v-else
+              v-model="draftTextInfo"
+              type="checkbox"
+              class="modal-toggle__input"
+              @change="applyTextInfoToDraft(draftTextInfo)"
+            />
+            <span class="modal-toggle__track" aria-hidden="true" />
+          </label>
+        </div>
+
+        <section v-if="item.key === 'extraImages' && showExtraImagesSettings" class="extra-images-settings">
+          <PrintImageOptionsSection
+            v-model="draftExtraImages"
+            :enabled="draft.extraImages"
+            :source-images="sourceImages"
+          />
+        </section>
+      </li>
+    </ul>
+  </ModalShell>
+</template>
+
+<script setup>
+import { computed, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import ModalShell from '@/components/modals/ModalShell/ModalShell.vue'
+import PrintImageOptionsSection from '@/components/modals/PrintImageOptionsSection.vue'
+import {
+  RECORD_RESULT_SHARING_SECTION_KEYS,
+  normalizeSectionVisibility
+} from '@/constants/recordResultSharingSections'
+import {
+  normalizeExtraImagesSettings,
+  normalizeSourceImageUrls
+} from '@/constants/recordPrintExtraImages'
+
+const props = defineProps({
+  show: { type: Boolean, default: false },
+  modelValue: {
+    type: Object,
+    default: () => ({})
+  },
+  extraImagesSettings: {
+    type: Object,
+    default: () => ({})
+  },
+  sourceImages: {
+    type: Array,
+    default: () => []
+  },
+  availableKeys: {
+    type: Array,
+    default: () => [...RECORD_RESULT_SHARING_SECTION_KEYS]
+  }
+})
+
+const emit = defineEmits(['update:show', 'save'])
+
+const { t } = useI18n({ useScope: 'global' })
+
+const draft = reactive(normalizeSectionVisibility(props.modelValue))
+const draftTextInfo = ref(true)
+const draftExtraImages = reactive(normalizeExtraImagesSettings(props.extraImagesSettings, props.sourceImages))
+
+const sourceImages = computed(() => normalizeSourceImageUrls(props.sourceImages))
+
+const allowedKeys = computed(() => {
+  const list = Array.isArray(props.availableKeys) ? props.availableKeys : []
+  if (!list.length) return [...RECORD_RESULT_SHARING_SECTION_KEYS]
+  const allowed = new Set(list)
+  return RECORD_RESULT_SHARING_SECTION_KEYS.filter((key) => allowed.has(key))
+})
+
+const TEXT_INFO_CHILD_KEYS = Object.freeze(['resultSummary', 'resultHeader'])
+
+const META_HEADER_KEYS = Object.freeze(['projectTitle', 'completedTime'])
+
+const sectionOptions = computed(() =>
+  buildSectionOptions(allowedKeys.value)
+)
+
+function buildSectionOptions(keys) {
+  const removed = new Set(TEXT_INFO_CHILD_KEYS)
+  const hasTextInfo = keys.some((k) => removed.has(k))
+  const baseKeys = keys.filter((k) => !removed.has(k))
+
+  if (!hasTextInfo) {
+    return baseKeys.map((key) => ({ key, label: t(`recordPrint.sections.${key}`) }))
+  }
+
+  const baseSet = new Set(baseKeys)
+  const out = []
+
+  for (const key of META_HEADER_KEYS) {
+    if (!baseSet.has(key)) continue
+    out.push({ key, label: t(`recordPrint.sections.${key}`) })
+  }
+
+  if (baseSet.has('extraImages')) {
+    out.push({ key: 'extraImages', label: t('recordPrint.sections.extraImages') })
+  }
+
+  out.push({ key: 'textInfo', label: t('recordPrint.sections.textInfo') })
+
+  for (const key of baseKeys) {
+    if (key === 'extraImages' || META_HEADER_KEYS.includes(key)) continue
+    out.push({ key, label: t(`recordPrint.sections.${key}`) })
+  }
+
+  return out
+}
+
+function applyTextInfoToDraft(nextValue) {
+  const enabled = Boolean(nextValue)
+  for (const key of TEXT_INFO_CHILD_KEYS) {
+    if (!allowedKeys.value.includes(key)) continue
+    draft[key] = enabled
+  }
+}
+
+const showExtraImagesSettings = computed(() =>
+  allowedKeys.value.includes('extraImages') && draft.extraImages && sourceImages.value.length > 0
+)
+
+function syncDraftFromProps() {
+  const next = normalizeSectionVisibility(props.modelValue)
+  for (const key of RECORD_RESULT_SHARING_SECTION_KEYS) {
+    draft[key] = allowedKeys.value.includes(key) ? next[key] : false
+  }
+
+  const relevantTextKeys = TEXT_INFO_CHILD_KEYS.filter((key) => allowedKeys.value.includes(key))
+  draftTextInfo.value = relevantTextKeys.length
+    ? relevantTextKeys.every((key) => draft[key] !== false)
+    : false
+  applyTextInfoToDraft(draftTextInfo.value)
+
+  const nextExtraImages = normalizeExtraImagesSettings(props.extraImagesSettings, sourceImages.value)
+  draftExtraImages.size = nextExtraImages.size
+  draftExtraImages.displayOrder = nextExtraImages.displayOrder
+  draftExtraImages.gapPx = nextExtraImages.gapPx
+  draftExtraImages.roundedCorners = nextExtraImages.roundedCorners
+  draftExtraImages.selectedUrls = nextExtraImages.selectedUrls
+}
+
+watch(
+  () => props.show,
+  (visible) => {
+    if (!visible) return
+    syncDraftFromProps()
+  }
+)
+
+function handleSave() {
+  const out = normalizeSectionVisibility(draft)
+  for (const key of RECORD_RESULT_SHARING_SECTION_KEYS) {
+    if (!allowedKeys.value.includes(key)) out[key] = false
+  }
+
+  const normalizedExtraImages = normalizeExtraImagesSettings(draftExtraImages, sourceImages.value)
+
+  emit('save', {
+    sectionVisibility: out,
+    extraImages: normalizedExtraImages
+  })
+  emit('update:show', false)
+}
+</script>
+
+<style scoped>
+.section-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.section-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.extra-images-settings {
+  margin-top: 0.65rem;
+  margin-left: 0.5rem;
+}
+
+</style>

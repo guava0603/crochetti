@@ -562,8 +562,8 @@
       "confirmText": "Complete"
     },
     "addRecordFeedbackAfterFinishRecord": {
-      "title": "Add piece feedback?",
-      "message": "Share photos and thoughts about your finished piece."
+      "title": "Update result?",
+      "message": "Add or update photos and notes for your finished piece."
     },
     "restartRecord": {
       "title": "Restart this record?",
@@ -826,6 +826,7 @@
     "downloadDesignPage": {
       "sectionsLabel": "Sections to include",
       "sectionsPlaceholder": "Select sections…",
+      "sectionImages": "Images",
       "sectionDescription": "Description",
       "sectionNotes": "Notes",
       "sectionMaterials": "Materials",
@@ -867,7 +868,7 @@
     "startAt": "Start at:",
     "goToProject": "Go to project",
     "watchResult": "Watch result",
-    "addRecordFeedback": "Add feedback",
+    "addRecordFeedback": "Update result",
     "recordDetails": "Details",
     "restartRecord": "Restart record",
     "finishComponent": "Complete component",
@@ -916,6 +917,8 @@
     "singleTimeSlotTitle": "Time slot #{n}",
     "timeSlotNotFound": "Time slot not found.",
     "editStatus": "Edit status",
+    "shareCompletedResultImage": "Share image",
+    "openPrintPage": "Print / export image",
     "invalidTimeRange": "End time cannot be earlier than start time.",
     "inProgress": "In progress",
     "unknownTime": "Unknown",
@@ -923,9 +926,48 @@
     "notRecordableTitle": "This component can’t be recorded",
     "notRecordableDesc": "This component doesn’t have a row-by-row table, so progress tracking isn’t available here."
   },
+  "designPrint": {
+    "title": "Export design",
+    "exportOptionsTitle": "Export options",
+    "exportAsMultiplePhotos": "Export as multiple photos"
+  },
+  "print": {
+    "editSettings": "Edit display sections",
+    "settingsTitle": "Display sections",
+    "settingsHint": "Choose which parts appear on this page and in the exported image."
+  },
+  "recordPrint": {
+    "title": "Export image",
+    "openPrintPage": "Print / export image",
+    "sections": {
+      "projectTitle": "Project title",
+      "completedTime": "Completed time",
+      "extraImages": "Feedback photos",
+      "textInfo": "Text info",
+      "moreStatus": "Other statuses",
+      "extraNote": "Feedback note"
+    },
+    "extraImages": {
+      "title": "Photo layout",
+      "sizeLabel": "Box size",
+      "orderLabel": "Display order",
+      "spacingLabel": "Image spacing",
+      "roundedCornersLabel": "Rounded corners",
+      "orders": {
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      },
+      "sizes": {
+        "5_4": "5:4",
+        "3_2": "3:2",
+        "1_1": "1:1"
+      }
+    }
+  },
   "recordResult": {
     "shareOrDownload": "Share / Download",
-    "addRecordFeedbackTitle": "Add piece feedback",
+    "sharingCompletedAt": "Completed {time}",
+    "addRecordFeedbackTitle": "Update result",
     "imagesLabel": "Photos (max 3)",
     "thoughtLabel": "Thoughts",
     "thoughtPlaceholder": "Write something about your piece…",
@@ -1204,14 +1246,11 @@
     }
   },
   "status": {
-    "idle": "Idle",
     "music": "Listening to music",
     "video": "Watching videos",
     "chat": "Chatting",
     "commute": "Commuting",
-    "focus": "Focused",
-    "slack": "Slacking off",
-    "spareTime": "Spare time"
+    "focus": "Focused"
   },
   "statusModal": {
     "titleEdit": "Edit current status",
@@ -1219,8 +1258,11 @@
     "selectCategoryPlaceholder": "Select a category",
     "notePlaceholder": "Select or add a note",
     "newCategoryPlaceholder": "Enter a new category name",
+    "createNewCategoryOption": "Create new category…",
+    "pickExistingCategory": "Choose an existing category",
+    "orCreateNewCategory": "Or create a new category",
     "customGroupLabel": "Custom",
-    "addCustomOption": "Add"
+    "addCustomOption": "+ Add custom category"
   },
   "carousel": {
     "previous": "Previous",

@@ -1,5 +1,5 @@
 <template>
-  <DownloadDesignViewMain
+  <DesignPrintViewMain
     :current-user="currentUser"
     :profile="profile"
     :loading="loading"
@@ -12,7 +12,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import DownloadDesignViewMain from '@/components/DownloadDesignView/index.vue'
+import DesignPrintViewMain from '@/components/projects/DesignPrintView/index.vue'
 import { fetchProject } from '@/services/firestore/projects'
 import { useCurrentUserProfile } from '@/composables/useCurrentUserProfile'
 

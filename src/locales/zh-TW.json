@@ -31,7 +31,7 @@
     "saving": "儲存中…",
     "loading": "載入中...",
     "unknown": "未知",
-    "repeatDo": "此行重複做",
+    "repeatDo": "共重複做",
     "rowUnit": "行",
     "repeatRowGroupPrefix": "此{n}行重複做{m}",
     "repeatRowGroupSuffix": "組",
@@ -562,8 +562,8 @@
       "confirmText": "完成"
     },
     "addRecordFeedbackAfterFinishRecord": {
-      "title": "新增作品回饋？",
-      "message": "分享完成作品的照片與心得。"
+      "title": "更新成果？",
+      "message": "上傳完成作品的照片與心得。"
     },
     "restartRecord": {
       "title": "重啟這筆紀錄？",
@@ -825,6 +825,7 @@
     "downloadDesignPage": {
       "sectionsLabel": "顯示內容",
       "sectionsPlaceholder": "選擇要顯示的區塊…",
+      "sectionImages": "圖片",
       "sectionDescription": "說明",
       "sectionNotes": "備註",
       "sectionMaterials": "材料",
@@ -866,7 +867,7 @@
     "startAt": "開始於：",
     "goToProject": "前往原設計",
     "watchResult": "查看成果",
-    "addRecordFeedback": "新增回饋",
+    "addRecordFeedback": "更新成果",
     "recordDetails": "詳細資料",
     "restartRecord": "重啟此紀錄",
     "finishComponent": "完成部件",
@@ -914,6 +915,8 @@
     "singleTimeSlotTitle": "時間區段 #{n}",
     "timeSlotNotFound": "找不到這個時間區段",
     "editStatus": "編輯狀態",
+    "shareCompletedResultImage": "分享圖片",
+    "openPrintPage": "列印／匯出圖片",
     "invalidTimeRange": "結束時間不能早於開始時間",
     "inProgress": "進行中",
     "unknownTime": "未知",
@@ -921,9 +924,48 @@
     "notRecordableTitle": "此部件無法記錄",
     "notRecordableDesc": "此部件沒有逐行表格，因此此處無法追蹤進度。"
   },
+  "designPrint": {
+    "title": "輸出織圖",
+    "exportOptionsTitle": "輸出選項",
+    "exportAsMultiplePhotos": "輸出為多張照片"
+  },
+  "print": {
+    "editSettings": "編輯顯示區塊",
+    "settingsTitle": "顯示區塊",
+    "settingsHint": "選擇匯出圖片中應顯示的內容。"
+  },
+  "recordPrint": {
+    "title": "輸出圖片",
+    "openPrintPage": "列印／匯出圖片",
+    "sections": {
+      "projectTitle": "設計名稱",
+      "completedTime": "完成時間",
+      "extraImages": "照片",
+      "textInfo": "文字資訊",
+      "moreStatus": "其他狀態",
+      "extraNote": "回饋心得"
+    },
+    "extraImages": {
+      "title": "照片版面",
+      "sizeLabel": "方框比例",
+      "orderLabel": "排列方式",
+      "spacingLabel": "圖片間隔",
+      "roundedCornersLabel": "圓角",
+      "orders": {
+        "horizontal": "橫向",
+        "vertical": "直向"
+      },
+      "sizes": {
+        "5_4": "5:4",
+        "3_2": "3:2",
+        "1_1": "1:1"
+      }
+    }
+  },
   "recordResult": {
     "shareOrDownload": "分享／下載",
-    "addRecordFeedbackTitle": "新增作品回饋",
+    "sharingCompletedAt": "完成於 {time}",
+    "addRecordFeedbackTitle": "更新成果",
     "imagesLabel": "照片（最多 3 張）",
     "thoughtLabel": "心得",
     "thoughtPlaceholder": "寫下你對作品的想法…",
@@ -1204,14 +1246,11 @@
     }
   },
   "status": {
-    "idle": "沒做什麼",
     "music": "聽音樂",
     "video": "看影片",
     "chat": "聊天",
     "commute": "通勤",
-    "focus": "專注",
-    "slack": "摸魚",
-    "spareTime": "碎片時間"
+    "focus": "專注"
   },
   "statusModal": {
     "titleEdit": "編輯當前狀態",
@@ -1219,8 +1258,11 @@
     "selectCategoryPlaceholder": "選擇分類",
     "notePlaceholder": "選擇或新增備註",
     "newCategoryPlaceholder": "輸入新分類名稱",
+    "createNewCategoryOption": "建立新分類…",
+    "pickExistingCategory": "選擇既有分類",
+    "orCreateNewCategory": "或建立新分類",
     "customGroupLabel": "自定義",
-    "addCustomOption": "新增"
+    "addCustomOption": "＋ 新增自定義分類"
   },
   "carousel": {
     "previous": "上一個",
