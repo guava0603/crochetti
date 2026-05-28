@@ -886,7 +886,7 @@ const handleStartCta = async () => {
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  margin: 1.5rem 0;
+  margin: 1rem 0;
   padding: 0 1rem;
 }
 
@@ -906,7 +906,7 @@ const handleStartCta = async () => {
 
 .project-materials__row {
   display: grid;
-  grid-template-columns: 0.7fr 1.3fr;
+  grid-template-columns: 0.3fr 1.3fr;
   gap: 0.75rem;
   align-items: start;
   padding: 0.35rem 0;
@@ -975,6 +975,7 @@ const handleStartCta = async () => {
 .project-start-cta {
   width: min(680px, 70%);
   margin-top: 1.5rem;
+  text-align: center;
 }
 
 .project-description-text {

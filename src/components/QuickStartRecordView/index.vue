@@ -291,7 +291,7 @@ const onSubmit = async () => {
       componentList: component_list
     })
 
-    await router.push(`/record/${recordId}`)
+    await router.replace({ name: 'record', params: { record_id: recordId } })
   } catch (error) {
     console.error('Quick start failed:', error)
     await openError({

@@ -367,8 +367,8 @@ const handleSubmit = async (data) => {
       }
     }
 
-    // Navigate to project page
-    router.push(`/project/${projectId}`)
+    // Replace so back does not return to add-project
+    router.replace({ name: 'project', params: { project_id: projectId } })
   } catch (err) {
     console.error('Error creating project:', err)
     await openError({

@@ -53,8 +53,6 @@ const emit = defineEmits(['open', 'copy', 'share', 'delete'])
   flex-direction: column;
   flex: 1;
   border-radius: 0;
-  padding: 2rem;
-  padding-bottom: var(--padding-bottom-record-options);
   margin: 0;
   box-shadow: none;
 }
@@ -63,7 +61,6 @@ const emit = defineEmits(['open', 'copy', 'share', 'delete'])
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
-  margin-bottom: 2rem;
   width: 100%;
 }
 

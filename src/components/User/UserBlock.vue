@@ -56,7 +56,7 @@ const displayName = computed(() => {
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 0.125rem solid var(--color-warm-brown-transparent);
   border-radius: 0.75rem;
   cursor: pointer;
   text-align: left;

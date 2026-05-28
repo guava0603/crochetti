@@ -97,7 +97,7 @@ function goNext() {
   if (!id) return
 
   // Pass selected project id via query for AddProjectView to prefill.
-  router.push({
+  router.replace({
     name: 'add-project',
     query: { copyFrom: id }
   })

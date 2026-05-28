@@ -192,6 +192,7 @@ const showPrivacyNotice = computed(() => Boolean(props.userIsPrivacy) && !isMyPa
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  border-bottom: 3px solid var(--color-surface-sheet);
 }
 
 .user-tabs::-webkit-scrollbar {
@@ -270,6 +271,7 @@ const showPrivacyNotice = computed(() => Boolean(props.userIsPrivacy) && !isMyPa
 
 .user-tab-content {
   min-width: 0;
+  padding: 1.5rem 1rem;
   display: flex;
   flex: 1;
 }
@@ -294,7 +296,6 @@ const showPrivacyNotice = computed(() => Boolean(props.userIsPrivacy) && !isMyPa
 .following-tab {
   flex: 1;
   width: 100%;
-  padding: 1rem;
 }
 
 .user-tab-sheet :deep(.no-projects),

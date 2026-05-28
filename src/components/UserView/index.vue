@@ -214,7 +214,7 @@ const navigateToRecord = (record) => {
   router.push({
     name: 'record',
     params: { record_id: id },
-    query: isCompleted ? { 'completed-result': '1' } : {}
+    query: isCompleted ? { 'result-sharing': '1' } : {}
   })
 }
 

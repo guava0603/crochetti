@@ -124,7 +124,8 @@ Private to owner (`firestore.rules`).
 | `project_id`, `project_name`, `project_image` | Link + display | Firestore |
 | `component_list[]` | Per-instance progress (`end_at`, `is_completed`, `count`, `_instance`) | Firestore |
 | `time_slots[]` | `start`, `end`, `status_id`, `status_note`, `end_at_list` | Firestore |
-| `self_defined_status[]`, `self_defined_status_notes[]` | Custom statuses | Firestore |
+| `self_defined_status[]` | Custom status ids **linked on this record** (subset of user catalog) | Firestore |
+| `self_defined_status_notes[]` | Legacy per-record notes (migrated to profile on load) | Firestore |
 | `pending_status_id`, `pending_status_note` | Status before first slot | Firestore |
 | `percentage` | 0–100 (computed on save) | Firestore |
 | `is_completed`, `completed_at` | Finished record | Firestore |
@@ -157,8 +158,10 @@ Private to owner (`firestore.rules`).
 | `save_project_list[]` | Bookmarked project ids | Firestore |
 | `following_list[]`, `fan_list[]` | Social graph | Firestore |
 | `avatar_used_ids[]` | Avatar achievement tracking | Firestore |
+| `record_status_catalog[]` | User-defined status categories `{ id, name }` (ids ≥ 100), shared across projects/records | Firestore |
+| `record_status_notes[]` | Saved status notes `{ status_id, description }` keyed by category, shared across projects/records | Firestore |
 
-**Service:** `src/services/firestore/user.js`, `ProfileSettingsModal`, `HomeView`.
+**Service:** `src/services/firestore/user.js`, `ProfileSettingsModal`, `HomeView`, `useUserRecordStatusCatalog`.
 
 ---
 
@@ -181,6 +184,7 @@ Sanitized for public user pages. Rules allow only:
 | Field | Storage |
 |-------|---------|
 | `project_id`, `project_name` | Firestore |
+| `percentage` | Firestore (optional, 0–100) |
 | `result.images`, `result.thought` | Firestore |
 
 Do **not** mirror full `time_slots` or `component_list` here. **Service:** `upsertPublicUserRecordSummary` in `records.js`.
