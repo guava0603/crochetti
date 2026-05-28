@@ -40,6 +40,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import ToolbarButton from '@/components/layout/ToolbarButton.vue'
 import { useAppBanner } from '@/composables/appBanner'
+import { useCanGoBack } from '@/composables/useCanGoBack'
 
 defineOptions({ name: 'TopBanner' })
 
@@ -48,6 +49,7 @@ const router = useRouter()
 const { t } = useI18n({ useScope: 'global' })
 
 const appBanner = useAppBanner()
+const canGoBack = useCanGoBack()
 
 if (!appBanner) {
   throw new Error('TopBanner: missing appBanner provider (provideAppBanner must be called in App.vue)')
@@ -63,17 +65,12 @@ function applyRouteBannerDefaults(r) {
     title = t(meta.bannerTitleKey)
   }
 
-  const showBack =
-    typeof meta.bannerShowBack === 'boolean'
-      ? meta.bannerShowBack
-      : String(r?.name || '') !== 'home'
-
   const overlay = typeof meta.bannerOverlay === 'boolean' ? meta.bannerOverlay : false
   const transparent = typeof meta.bannerTransparent === 'boolean' ? meta.bannerTransparent : false
   const variant = typeof meta.bannerVariant === 'string' ? meta.bannerVariant : 'default'
 
-  // Banner is always visible; routes only define its *type* (title/back/overlay/transparent).
-  appBanner.setBanner({ visible: true, variant, title, showBack, overlay, transparent })
+  // Banner is always visible; routes only define its *type* (title/overlay/transparent).
+  appBanner.setBanner({ visible: true, variant, title, overlay, transparent })
   // Never carry back handlers across routes.
   appBanner.resetHandlers()
 }
@@ -87,7 +84,7 @@ watch(
 )
 
 const bannerTitle = computed(() => appBanner.state.title)
-const bannerShowBack = computed(() => appBanner.state.showBack)
+const bannerShowBack = computed(() => canGoBack.value)
 const bannerOverlay = computed(() => Boolean(appBanner.state.overlay))
 const bannerTransparent = computed(() => Boolean(appBanner.state.transparent))
 const bannerVariant = computed(() => String(appBanner.state.variant || 'default'))

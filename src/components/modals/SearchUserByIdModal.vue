@@ -1,41 +1,48 @@
 <template>
-  <div v-if="show" class="modal-overlay" @click="$emit('cancel')">
-    <div class="modal-content" @click.stop>
-      <h3 class="title">{{ t('user.searchUser.title') }}</h3>
-      <p class="message">{{ t('user.searchUser.message') }}</p>
+  <ModalPromptShell
+    :show="show"
+    :title="t('user.searchUser.title')"
+    :message="t('user.searchUser.message')"
+    z-level="high"
+    @close="$emit('cancel')"
+  >
+    <form id="search-user-form" class="search-form" @submit.prevent="submit">
+      <div class="search-form__group">
+        <label class="modal-label" for="search-user-id">{{ t('user.searchUser.userIdLabel') }}</label>
+        <input
+          id="search-user-id"
+          ref="inputEl"
+          v-model="userId"
+          class="search-form__input"
+          type="text"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          :placeholder="t('user.searchUser.userIdPlaceholder')"
+        />
+      </div>
+    </form>
 
-      <form class="form" @submit.prevent="submit">
-        <div class="form-group">
-          <label class="label" for="search-user-id">{{ t('user.searchUser.userIdLabel') }}</label>
-          <input
-            id="search-user-id"
-            ref="inputEl"
-            v-model="userId"
-            class="input"
-            type="text"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            :placeholder="t('user.searchUser.userIdPlaceholder')"
-          />
-        </div>
-
-        <div class="modal-actions">
-          <button class="btn-cancel" type="button" @click="$emit('cancel')">
-            {{ t('common.cancel') }}
-          </button>
-          <button class="btn-confirm" type="submit" :disabled="!canSubmit">
-            {{ t('common.search') }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+    <template #footer>
+      <button class="search-form__btn search-form__btn--cancel" type="button" @click="$emit('cancel')">
+        {{ t('common.cancel') }}
+      </button>
+      <button
+        class="search-form__btn search-form__btn--submit"
+        type="submit"
+        form="search-user-form"
+        :disabled="!canSubmit"
+      >
+        {{ t('common.search') }}
+      </button>
+    </template>
+  </ModalPromptShell>
 </template>
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ModalPromptShell from '@/components/modals/ModalShell/ModalPromptShell.vue'
 import { openError } from '@/services/ui/error'
 import { friendCodeUtils, searchUserByFriendCode } from '@/services/firestore/friendCode'
 
@@ -73,7 +80,6 @@ const submit = async () => {
     return
   }
 
-  // If the input looks like a friend code, resolve it to a uid.
   if (friendCodeUtils.isLikelyFriendCode(raw)) {
     try {
       const result = await searchUserByFriendCode(raw)
@@ -91,62 +97,22 @@ const submit = async () => {
     }
   }
 
-  // Fallback: treat as uid.
   emit('confirm', raw)
 }
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal-high);
-}
-
-.modal-content {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  max-width: 520px;
-  width: 92%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.title {
-  margin: 0 0 0.75rem 0;
-  color: #111827;
-  font-size: 1.25rem;
-}
-
-.message {
-  margin: 0 0 1rem 0;
-  color: #6b7280;
-  line-height: 1.5;
-}
-
-.form {
+.search-form {
   display: grid;
   gap: 0.75rem;
 }
 
-.form-group {
+.search-form__group {
   display: grid;
   gap: 0.35rem;
 }
 
-.label {
-  font-weight: 700;
-  color: #111827;
-}
-
-.input {
+.search-form__input {
   width: 100%;
   border: 1px solid #d1d5db;
   border-radius: 10px;
@@ -154,15 +120,7 @@ const submit = async () => {
   font-size: 1rem;
 }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 0.25rem;
-}
-
-.btn-cancel,
-.btn-confirm {
+.search-form__btn {
   border: none;
   border-radius: 999px;
   padding: 0.6rem 1.1rem;
@@ -170,17 +128,17 @@ const submit = async () => {
   cursor: pointer;
 }
 
-.btn-cancel {
+.search-form__btn--cancel {
   background: #e5e7eb;
   color: #111827;
 }
 
-.btn-confirm {
+.search-form__btn--submit {
   background: #111827;
-  color: white;
+  color: #fff;
 }
 
-.btn-confirm:disabled {
+.search-form__btn--submit:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

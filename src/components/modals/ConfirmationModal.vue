@@ -1,45 +1,52 @@
 <template>
-  <div v-if="show" class="modal-overlay" @click="$emit('cancel')">
-    <div class="modal-content" @click.stop>
-      <h3>{{ title }}</h3>
-      <p>{{ message }}</p>
-      <div class="modal-actions">
-        <button
-          v-if="cancelText"
-          @click="$emit('cancel')"
-          class="btn-cancel"
-          type="button"
-        >
-          {{ cancelText }}
-        </button>
+  <ModalPromptShell
+    :show="show"
+    :title="title"
+    :message="message"
+    max-width="500px"
+    padding="lg"
+    title-size="lg"
+    z-level="top"
+    @close="$emit('cancel')"
+  >
+    <template #footer>
+      <button
+        v-if="cancelText"
+        type="button"
+        class="modal-btn-cancel"
+        @click="$emit('cancel')"
+      >
+        {{ cancelText }}
+      </button>
 
-        <template v-if="Array.isArray(choices) && choices.length">
-          <button
-            v-for="choice in choices"
-            :key="choice?.id"
-            @click="$emit('choose', choice?.id)"
-            :class="choice?.class || 'btn-confirm'"
-            type="button"
-            :disabled="loading"
-          >
-            {{ choice?.label }}
-          </button>
-        </template>
+      <template v-if="Array.isArray(choices) && choices.length">
         <button
-          v-else
-          @click="$emit('confirm')"
-          :class="confirmClass"
+          v-for="choice in choices"
+          :key="choice?.id"
           type="button"
+          :class="choice?.class || 'modal-btn-confirm'"
           :disabled="loading"
+          @click="$emit('choose', choice?.id)"
         >
-          {{ loading ? loadingText : confirmText }}
+          {{ choice?.label }}
         </button>
-      </div>
-    </div>
-  </div>
+      </template>
+      <button
+        v-else
+        type="button"
+        :class="confirmClass"
+        :disabled="loading"
+        @click="$emit('confirm')"
+      >
+        {{ loading ? loadingText : confirmText }}
+      </button>
+    </template>
+  </ModalPromptShell>
 </template>
 
 <script setup>
+import ModalPromptShell from '@/components/modals/ModalShell/ModalPromptShell.vue'
+
 defineProps({
   show: {
     type: Boolean,
@@ -63,7 +70,7 @@ defineProps({
   },
   confirmClass: {
     type: String,
-    default: 'btn-confirm'
+    default: 'modal-btn-confirm'
   },
   loading: {
     type: Boolean,
@@ -81,100 +88,3 @@ defineProps({
 
 defineEmits(['confirm', 'cancel', 'choose'])
 </script>
-
-<style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Keep above other modals (e.g. login). */
-  z-index: var(--z-modal-top);
-}
-
-.modal-content {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  max-width: 500px;
-  width: 90%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.modal-content h3 {
-  margin: 0 0 1rem 0;
-  color: #111827;
-  font-size: 1.5rem;
-}
-
-.modal-content p {
-  margin: 0 0 1.5rem 0;
-  color: #6b7280;
-  line-height: 1.5;
-  white-space: pre-line;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-}
-
-.btn-cancel {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  padding: 0.625rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-cancel:hover {
-  background: #f3f4f6;
-}
-
-.btn-confirm-delete {
-  background: var(--color-warning);
-  color: white;
-  border: none;
-  padding: 0.625rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-confirm-delete:hover {
-  background: #b91c1c;
-}
-
-.btn-confirm-delete:disabled {
-  background: #fca5a5;
-  cursor: not-allowed;
-}
-
-.btn-confirm {
-  background: var(--color-icon-add);
-  color: white;
-  border: none;
-  padding: 0.625rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-confirm:hover {
-  background: #3aa876;
-}
-</style>

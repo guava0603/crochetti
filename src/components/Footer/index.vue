@@ -38,15 +38,7 @@ const footerType = computed(() => {
   return raw
 })
 
-const isRecordResultSharing = computed(() => {
-  if (route.name !== 'record') return false
-  return Object.prototype.hasOwnProperty.call(route.query || {}, 'result-sharing')
-})
-
-const showFooter = computed(() => {
-  if (isRecordResultSharing.value) return false
-  return footerType.value !== 'none'
-})
+const showFooter = computed(() => footerType.value !== 'none')
 
 watch(
   () => route.fullPath,

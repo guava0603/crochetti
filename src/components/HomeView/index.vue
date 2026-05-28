@@ -216,16 +216,16 @@ watch(
   () => [route.fullPath, loading.value, Boolean(currentUser.value), Boolean(profile.value), bannerTitle.value],
   () => {
     if (loading.value) {
-      appBanner?.setBanner({ visible: true, title: t('common.loading'), showBack: false, onBack: null })
+      appBanner?.setBanner({ visible: true, title: t('common.loading'), onBack: null })
       return
     }
 
     if (!currentUser.value) {
-      appBanner?.setBanner({ visible: true, title: '', showBack: false, onBack: null })
+      appBanner?.setBanner({ visible: true, title: '', onBack: null })
       return
     }
 
-    appBanner?.setBanner({ visible: true, title: bannerTitle.value, showBack: false, onBack: null })
+    appBanner?.setBanner({ visible: true, title: bannerTitle.value, onBack: null })
   },
   { immediate: true }
 )
@@ -385,7 +385,7 @@ const navigateToRecord = (record) => {
   router.push({
     name: 'record',
     params: { record_id: id },
-    query: isCompleted ? { 'completed-result': '1' } : {}
+    query: isCompleted ? { 'result-sharing': '1' } : {}
   })
 }
 

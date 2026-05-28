@@ -1,16 +1,16 @@
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div v-if="show" class="modal-overlay" @click="handleCancel">
-        <div class="modal-container" @click.stop>
-          <div class="modal-header">
-            <h2>{{ computedTitle }}</h2>
-            <button class="close-button" type="button" @click="handleCancel">×</button>
-          </div>
-
-          <div class="modal-body">
-            <div class="field">
-              <label class="label">{{ t('recordResult.imagesLabel') }}</label>
+  <ModalShell
+    :show="show"
+    :title="computedTitle"
+    max-width="520px"
+    z-level="high"
+    show-save-footer
+    :saving="saving"
+    @close="handleCancel"
+    @save="handleSave"
+  >
+    <div class="modal-field">
+      <label class="modal-label">{{ t('recordResult.imagesLabel') }}</label>
 
               <div class="existing-images">
                 <div class="existing-images__grid">
@@ -52,8 +52,8 @@
               </div>
             </div>
 
-            <div class="field">
-              <label class="label" for="record-thought">{{ t('recordResult.thoughtLabel') }}</label>
+    <div class="modal-field">
+      <label class="modal-label" for="record-thought">{{ t('recordResult.thoughtLabel') }}</label>
               <LimitedTextArea
                 id="record-thought"
                 v-model="draftThought"
@@ -62,22 +62,8 @@
                 :placeholder="t('recordResult.thoughtPlaceholder')"
                 :rows="4"
               />
-            </div>
-
-          </div>
-
-          <div class="actions">
-            <button class="btn-secondary" type="button" :disabled="saving" @click="handleCancel">
-              {{ t('common.cancel') }}
-            </button>
-            <button class="btn-primary" type="button" :disabled="saving" @click="handleSave">
-              {{ saving ? t('common.saving') : t('common.save') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
+    </div>
+  </ModalShell>
 </template>
 
 <script setup>
@@ -86,6 +72,7 @@ import { useI18n } from 'vue-i18n'
 import ImageUploader from '@/components/Input/ImageUploader.vue'
 import ImageBox from '@/components/Image/ImageBox.vue'
 import LimitedTextArea from '@/components/Input/LimitedTextArea.vue'
+import ModalShell from '@/components/modals/ModalShell/ModalShell.vue'
 
 defineOptions({ name: 'AddRecordFeedbackModal' })
 
@@ -145,83 +132,6 @@ function handleSave() {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal-high);
-}
-
-.modal-container {
-  background: white;
-  border-radius: 12px;
-  max-width: 520px;
-  width: 92%;
-  max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  color: #111827;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 2rem;
-  cursor: pointer;
-  color: #6b7280;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-}
-
-.close-button:hover {
-  background-color: #f3f4f6;
-}
-
-.modal-body {
-  padding: 1.25rem;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 0.9rem;
-}
-
-.label {
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: #111827;
-}
-
 .textarea {
   border: 1px solid rgba(0, 0, 0, 0.14);
   background: #fff;
@@ -257,14 +167,5 @@ function handleSave() {
   color: #6b7280;
   font-size: 0.9rem;
   font-weight: 600;
-}
-
-.actions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  padding: 1rem 1.25rem 1.25rem;
-  border-top: 1px solid #e5e7eb;
-  background: white;
 }
 </style>

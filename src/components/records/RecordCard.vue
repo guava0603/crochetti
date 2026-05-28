@@ -20,7 +20,6 @@
         v-else
         class="record-card__mark-icon"
         :src="completeIconUrl"
-        style="transform: scale(2);"
         alt=""
         loading="lazy"
         decoding="async"
@@ -140,27 +139,22 @@ const timeText = computed(() => {
   --rc-text: #5a524b;
   --rc-sub: #9c948a;
   --rc-accent-pink: rgba(232, 168, 156, 0.45);
-  --rc-border: rgba(90, 82, 75, 0.75);
+  --rc-border: var(--color-warm-brown-transparent);
   --rc-mark-green: var(--color-completed-green);
 
   --rc-mark-size: 44px;
-  --rc-mark-top: clamp(0.3rem, 1.2vw, 0.4rem);
+  --rc-mark-top: clamp(0.2rem, 1vw, 0.5rem);
   --rc-mark-pad: clamp(0.3rem, 1.2vw, 0.4rem);
 
   position: relative;
   width: 100%;
   text-align: left;
-  padding-top: calc(var(--rc-mark-size) * 0.56);
-  padding-bottom: 0;
+  padding-top: 0.25rem;
+  padding-bottom: calc(var(--rc-mark-size) * 0.28);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 
   transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.record-card[data-completed='1'] {
-  padding-top: 0;
-  padding-bottom: calc(var(--rc-mark-size) * 0.56);
 }
 
 .record-card:active {
@@ -175,8 +169,11 @@ const timeText = computed(() => {
 
 .record-card__mark {
   position: absolute;
-  top: var(--rc-mark-top);
+  top: auto;
+  bottom: var(--rc-mark-top);
   left: 50%;
+  width: calc(var(--rc-mark-size) + 4px);
+  height: calc(var(--rc-mark-size) + 4px);
   transform: translateX(-50%);
   border-radius: 999px;
   border: 2px solid white;
@@ -184,13 +181,6 @@ const timeText = computed(() => {
   z-index: 2;
   display: grid;
   place-items: center;
-}
-
-.record-card[data-completed='1'] .record-card__mark {
-  top: auto;
-  width: var(--rc-mark-size);
-  height: var(--rc-mark-size);
-  bottom: var(--rc-mark-top);
 }
 
 .record-card[data-completed='1'] .record-card__mark {
@@ -206,6 +196,7 @@ const timeText = computed(() => {
   width: 100%;
   height: 100%;
   display: block;
+  transform: scale(1.2);
 }
 
 .record-card__inner {
@@ -215,7 +206,7 @@ const timeText = computed(() => {
   border: 0.125rem solid var(--rc-border);
   border-radius: 0.9375rem 1.5625rem 1.25rem 1.875rem / 1.5625rem 0.9375rem 1.875rem 1.25rem;
   box-shadow: 0.25rem 0.375rem 1rem rgba(149, 133, 119, 0.12);
-  padding: 0.75rem 0.85rem;
+  padding: 0.75rem 0.85rem 1.5rem;
   display: grid;
   grid-template-rows: auto auto;
   gap: 0.6rem;
@@ -257,6 +248,7 @@ const timeText = computed(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding: 0 0.2rem;
 }
 
 .record-card__time {

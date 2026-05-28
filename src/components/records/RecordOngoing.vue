@@ -68,14 +68,13 @@
       <!-- Status select modal -->
       <UpdateStatus
         v-if="modalState.isStatusSelect && modalState.show"
-        :title="modalState.title"
         :modalStatusId="modalStatusId"
         :modalStatusNote="modalStatusNote"
         :originalStatuses="originalStatuses"
-        :selfDefinedStatuses="selfDefinedStatuses"
-        :statusNotes="statusNotes"
+        :recordLinkedStatuses="recordLinkedStatuses"
+        :userStatusCatalog="userStatusCatalog"
+        :userStatusNotes="userStatusNotes"
         :addStatusNote="addStatusNote"
-        :customStatusInput="customStatusInput"
         :onCancel="modalState.onCancel"
         :onConfirm="modalState.onConfirm"
         :handleModalStatusChange="handleModalStatusChange"
@@ -111,13 +110,20 @@ import {
 import CrochetRecordingTable from '@/components/CrochetTable/RecordingTable.vue'
 import CarouselWithDot from '@/components/Carousel/CarouselWithDot.vue'
 import ComponentCardStitch from '@/components/cards/ComponentCard.vue/Stitch.vue'
-import { originalStatuses } from '@/constants/status.js'
+import { DEFAULT_STATUS_ID, originalStatuses } from '@/constants/status.js'
+import { MIN_CUSTOM_STATUS_ID } from '@/constants/recordStatusCatalog'
+import { useUserRecordStatusCatalog } from '@/composables/useUserRecordStatusCatalog'
 import { yarnDisplayLines } from '@/utils/yarnMeta'
 
 const props = defineProps({
   currentUser: { type: Object, default: null },
   profile: { type: Object, default: null }
 })
+
+const statusCatalog = useUserRecordStatusCatalog(
+  () => props.profile,
+  () => props.currentUser?.uid
+)
 
 const route = useRoute()
 const router = useRouter()
@@ -450,7 +456,6 @@ function handleModalStatusChange(event) {
   const value = event.target.value
   if (value === '__add_custom__') {
     modalStatusId.value = value
-    customStatusInput.value = ''
   } else {
     modalStatusId.value = Number(value)
   }
@@ -463,74 +468,61 @@ watch(() => modalState.value.isStatusSelect && modalState.value.show, (showing) 
   }
 })
 
-const selfDefinedStatuses = computed(() => {
-  return currentRecord.value?.self_defined_status || []
+const userStatusCatalog = computed(() => statusCatalog.catalog.value)
+const userStatusNotes = computed(() => statusCatalog.notes.value)
+
+const recordLinkedStatuses = computed(() => {
+  return statusCatalog.normalizeRecordLinked(currentRecord.value?.self_defined_status)
 })
 
-const statusNotes = computed(() => {
-  return currentRecord.value?.self_defined_status_notes || []
-})
+watch(
+  () => currentRecord.value,
+  (record) => {
+    if (!record) return
+    statusCatalog.ensureProfileIncludesRecordStatusData(record).catch((e) => {
+      console.warn('RecordOngoing: failed to sync status catalog from record:', e)
+    })
+  },
+  { immediate: true }
+)
 
 const addStatusNote = ({ status_id, description }) => {
-  if (!currentRecord.value) return
-  const safeStatusId = Number(status_id)
-  const safeDescription = String(description || '').trim()
-  if (!safeDescription) return
-
-  if (!Array.isArray(currentRecord.value.self_defined_status_notes)) {
-    currentRecord.value.self_defined_status_notes = []
-  }
-
-  const exists = currentRecord.value.self_defined_status_notes.some(
-    n => Number(n?.status_id) === safeStatusId && String(n?.description || '').trim() === safeDescription
-  )
-  if (exists) return
-
-  currentRecord.value.self_defined_status_notes.push({
-    status_id: safeStatusId,
-    description: safeDescription
+  statusCatalog.addCustomNote({ statusId: status_id, description }).catch((e) => {
+    console.warn('RecordOngoing: failed to save status note:', e)
   })
-
-  saveRecord()
 }
-
-const customStatusInput = ref('')
 
 function cancelAddCustomStatus() {
   modalStatusId.value = currentStatusId.value
-  customStatusInput.value = ''
 }
 
-const confirmAddCustomStatus = async (nameArg) => {
-  const name = String(nameArg ?? customStatusInput.value).trim()
-  if (!name) return null
+const confirmAddCustomStatus = async (payload) => {
+  if (!currentRecord.value) return null
 
-  const existing = (selfDefinedStatuses.value || [])
-    .map(s => String(s?.name || '').trim())
-    .filter(Boolean)
-  if (existing.includes(name)) {
-    const found = (selfDefinedStatuses.value || []).find(s => String(s?.name || '').trim() === name)
-    if (found?.id != null) {
-      modalStatusId.value = found.id
-      customStatusInput.value = ''
-      return found.id
+  const arg = payload && typeof payload === 'object' ? payload : { name: String(payload || '').trim() }
+  const pickId = Number(arg.statusId)
+  if (Number.isFinite(pickId)) {
+    if (pickId >= MIN_CUSTOM_STATUS_ID) {
+      const entry = statusCatalog.findCatalogStatusById(pickId)
+      if (entry) {
+        statusCatalog.linkStatusOnRecord(currentRecord.value, entry)
+        await saveRecord()
+      }
     }
+    modalStatusId.value = pickId
+    return { id: pickId }
   }
 
-  const ids = (selfDefinedStatuses.value || [])
-    .map(s => Number(s?.id))
-    .filter(n => Number.isFinite(n))
-  const maxId = ids.length > 0 ? Math.max(...ids) : 99
-  const newStatus = { id: maxId + 1, name }
+  const name = String(arg.name || '').trim()
+  if (!name) return null
 
-  if (!currentRecord.value) return null
-  if (!Array.isArray(currentRecord.value.self_defined_status)) currentRecord.value.self_defined_status = []
-  currentRecord.value.self_defined_status.push(newStatus)
+  const entry = await statusCatalog.addCustomStatus(name)
+  if (!entry) return null
 
-  modalStatusId.value = newStatus.id
-  customStatusInput.value = ''
+  statusCatalog.linkStatusOnRecord(currentRecord.value, entry)
+  modalStatusId.value = entry.id
   await saveRecord()
-  return newStatus.id
+  return { id: entry.id }
 }
 
 // Set selection for each RecordingTable at mount
@@ -626,8 +618,8 @@ watch(
       return
     }
 
-    const nextId = Number(slot?.status_id ?? 0)
-    currentStatusId.value = Number.isFinite(nextId) ? nextId : 0
+    const nextId = Number(slot?.status_id ?? DEFAULT_STATUS_ID)
+    currentStatusId.value = Number.isFinite(nextId) ? nextId : DEFAULT_STATUS_ID
     currentStatusNote.value = String(slot?.status_note || '').trim()
   },
   { immediate: true }
@@ -715,7 +707,7 @@ const finishRecordAndNavigate = async () => {
     name: 'record',
     params: { record_id: recordId.value },
     query: {
-      'completed-result': '1',
+      'result-sharing': '1',
       'add-record-feedback': '1'
     }
   })

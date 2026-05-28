@@ -42,14 +42,20 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { originalStatuses } from '@/constants/status.js'
 import { useRecordContext } from '@/composables/recordContext'
+import { useUserRecordStatusCatalog } from '@/composables/useUserRecordStatusCatalog'
+import { resolveRecordStatusLabel } from '@/utils/recordStatusDisplay'
 import { formatStartHourLabel, getStartHourKey } from '@/utils/dateTime'
 
 const props = defineProps({
   currentUser: { type: Object, default: null },
   profile: { type: Object, default: null }
 })
+
+const statusCatalog = useUserRecordStatusCatalog(
+  () => props.profile,
+  () => props.currentUser?.uid
+)
 
 const route = useRoute()
 const router = useRouter()
@@ -129,17 +135,13 @@ const formatSlotStatusNote = (slot) => {
   const statusId = slot?.status_id
   const note = String(slot?.status_note || '').trim()
 
-  let statusLabel = '-'
-  if (statusId != null) {
-    const original = originalStatuses.find(s => Number(s?.id) === Number(statusId))
-    if (original?.nameKey) {
-      statusLabel = t(original.nameKey)
-    } else {
-      const custom = (currentRecord.value?.self_defined_status || []).find(s => Number(s?.id) === Number(statusId))
-      if (custom?.name) statusLabel = String(custom.name)
-      else statusLabel = String(statusId)
-    }
-  }
+  const statusLabel = statusId != null
+    ? resolveRecordStatusLabel(statusId, {
+      t,
+      userCatalog: statusCatalog.catalog.value,
+      recordLinked: currentRecord.value?.self_defined_status
+    })
+    : '-'
 
   const parts = [statusLabel]
   if (note) parts.push(note)

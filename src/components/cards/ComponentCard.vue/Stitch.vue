@@ -1,6 +1,6 @@
 <template>
   <FormSubsection
-    v-if="isEditing"
+    v-if="visibilityResolved.relatedComponents !== false && isEditing"
     wrapper-class="subsection"
     kind="multi-select"
     :title="t('addProject.design.relatedComponentsLabel')"
@@ -11,7 +11,7 @@
   />
 
   <FormSubsection
-    v-else-if="relatedComponentNames.length"
+    v-else-if="visibilityResolved.relatedComponents !== false && relatedComponentNames.length"
     wrapper-class="view-section view-section--related"
     kind="slot"
     :show-header="false"
@@ -23,7 +23,7 @@
   </FormSubsection>
 
   <FormSubsection
-    v-if="isEditing"
+    v-if="visibilityResolved.notes !== false && isEditing"
     wrapper-class="subsection"
     kind="notes"
     :title="t('common.notes')"
@@ -34,10 +34,10 @@
   />
 
   <FormSubsection
-    v-else-if="displayNotes.length > 0"
+    v-else-if="visibilityResolved.notes !== false && displayNotes.length > 0"
     wrapper-class="view-section"
     kind="slot"
-    :title="t('common.notes')"
+    :show-header="false"
   >
     <ul class="view-list">
       <li v-for="(note, nIndex) in displayNotes" :key="nIndex">
@@ -75,11 +75,25 @@ const props = defineProps({
   isEditing: {
     type: Boolean,
     default: false
+  },
+  visibility: {
+    type: Object,
+    default: null
   }
 })
 
 const component = computed(() => props.component)
 const isEditing = computed(() => props.isEditing)
+const visibilityResolved = computed(() => {
+  const raw = props.visibility
+  if (!raw || typeof raw !== 'object') {
+    return { notes: true, relatedComponents: true }
+  }
+  return {
+    notes: raw.notes !== false,
+    relatedComponents: raw.relatedComponents !== false
+  }
+})
 
 const displayNotes = computed(() => {
   const notes = Array.isArray(component.value?.notes) ? component.value.notes : []

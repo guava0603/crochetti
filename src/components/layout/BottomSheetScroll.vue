@@ -567,6 +567,7 @@ onBeforeUnmount(() => {
   /* Fill the safe-area with the sheet background (no visible gap),
      while keeping content out of the home indicator. */
   padding-bottom: var(--padding-bottom-record-options);
+  border-top: 3px solid var(--color-surface-sheet);
 
   scrollbar-width: none;
   -ms-overflow-style: none;

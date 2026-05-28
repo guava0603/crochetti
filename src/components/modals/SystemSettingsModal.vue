@@ -1,50 +1,37 @@
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div v-if="show" class="modal-overlay" @click="handleCancel">
-        <div class="modal-container" @click.stop>
-          <div class="modal-header">
-            <h2>{{ t('user.systemSettings.title') }}</h2>
-            <button class="close-button" type="button" @click="handleCancel">×</button>
-          </div>
-
-          <div class="modal-body">
-            <div class="field">
-              <div class="label">{{ t('user.systemSettings.languageLabel') }}</div>
-              <div class="control">
-                <SelectionButtonGroup
-                  v-model="draftLocale"
-                  :options="uiLocaleItems"
-                  :aria-label="t('user.systemSettings.languageLabel')"
-                  :disabled="saving"
-                />
-              </div>
-            </div>
-
-            <div class="field">
-              <div class="label">{{ t('user.systemSettings.crochetDisplayLabel') }}</div>
-              <div class="control">
-                <ButtonTranslate
-                  v-model="draftCrochetKey"
-                  :aria-label="t('user.systemSettings.crochetDisplayLabel')"
-                  :disabled="saving"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="actions">
-            <button class="btn-secondary" type="button" :disabled="saving" @click="handleCancel">
-              {{ t('common.cancel') }}
-            </button>
-            <button class="btn-primary" type="button" :disabled="saving || !isDirty" @click="handleConfirm">
-              {{ t('common.save') }}
-            </button>
-          </div>
-        </div>
+  <ModalShell
+    :show="show"
+    :title="t('user.systemSettings.title')"
+    max-width="560px"
+    show-save-footer
+    :saving="saving"
+    :save-disabled="!isDirty"
+    @close="handleCancel"
+    @save="handleConfirm"
+  >
+    <div class="modal-field">
+      <div class="modal-label">{{ t('user.systemSettings.languageLabel') }}</div>
+      <div class="control">
+        <SelectionButtonGroup
+          v-model="draftLocale"
+          :options="uiLocaleItems"
+          :aria-label="t('user.systemSettings.languageLabel')"
+          :disabled="saving"
+        />
       </div>
-    </Transition>
-  </Teleport>
+    </div>
+
+    <div class="modal-field">
+      <div class="modal-label">{{ t('user.systemSettings.crochetDisplayLabel') }}</div>
+      <div class="control">
+        <ButtonTranslate
+          v-model="draftCrochetKey"
+          :aria-label="t('user.systemSettings.crochetDisplayLabel')"
+          :disabled="saving"
+        />
+      </div>
+    </div>
+  </ModalShell>
 </template>
 
 <script setup>
@@ -56,6 +43,7 @@ import { setI18nLocale } from '@/i18n'
 import { CROCHET_LANG } from '@/constants/crochetData'
 import { useCrochetLang } from '@/composables/useCrochetLang'
 import { openConfirmation } from '@/services/ui/confirmation'
+import ModalShell from '@/components/modals/ModalShell/ModalShell.vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true }
@@ -146,80 +134,7 @@ const uiLocaleItems = computed(() => [
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal);
-}
-
-.modal-container {
-  background: white;
-  border-radius: 12px;
-  max-width: 560px;
-  width: 92%;
-  max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid rgba(229, 231, 235, 0.9);
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  color: #111827;
-}
-
-.close-button {
-  background: transparent;
-  border: none;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-  color: #6b7280;
-}
-
-.modal-body {
-  padding: 1rem 1.25rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.label {
-  font-weight: 700;
-  color: #111827;
-}
-
 .control {
   display: flex;
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  padding: 1rem 1.25rem 1.25rem;
-  border-top: 1px solid rgba(229, 231, 235, 0.9);
-  background: white;
 }
 </style>

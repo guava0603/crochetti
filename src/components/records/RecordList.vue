@@ -117,8 +117,6 @@ const visibleRecords = computed(() => {
 <style scoped>
 .records-section {
   border-radius: 0;
-  padding: 1rem;
-  padding-bottom: var(--padding-bottom-record-options);
   margin: 0;
   box-shadow: none;
   flex: 1;

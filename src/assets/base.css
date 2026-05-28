@@ -63,6 +63,7 @@
   --color-warm-highlight-green-light: #C5D89D;
   --color-font-invisible: rgba(17, 24, 39, 0.58);
   --color-highlight-yellow: #FFD150;
+  --color-warm-brown-transparent: rgba(90, 82, 75, 0.75);
 
   /* Warning / destructive */
   --color-warning-rgb: 255 70 70;
@@ -126,7 +127,7 @@
   --z-toast: 2000;
   --z-toast-high: 2100;
 
-  --padding-bottom-record-options: 12rem;
+  --padding-bottom-record-options: 5rem;
   --radius-card: 0.75rem;
 }
 

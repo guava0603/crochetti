@@ -10,7 +10,7 @@
       </div>
     </div>
 
-    <div class="component-card-subsection component-card-subsection--first">
+    <div v-if="visibilityResolved.header !== false" class="component-card-subsection component-card-subsection--first">
       <div class="component-name-row">
         <input
           v-if="isEditing"
@@ -21,7 +21,7 @@
         <div v-else class="component-name-display component-title-row__name">{{ component.name }}</div>
 
         <div
-          v-if="isPartComponent(component)"
+          v-if="visibilityResolved.castOn !== false && isPartComponent(component)"
           class="component-title-row__cast-on"
         >
           <SelectionInput
@@ -46,6 +46,7 @@
       :component="component"
       :is-editing="isEditing"
       :materials="materials"
+      :visibility="visibilityResolved"
     />
     <ComponentCardStitch
       v-else
@@ -53,6 +54,7 @@
       :is-editing="isEditing"
       :component-list="componentList"
       :component-index="componentIndex"
+      :visibility="visibilityResolved"
     />
 
     <div v-if="isEditing" class="component-card__bottom-actions">
@@ -106,6 +108,10 @@ const props = defineProps({
   materials: {
     type: Object,
     default: null
+  },
+  visibility: {
+    type: Object,
+    default: null
   }
 })
 
@@ -113,6 +119,28 @@ const component = computed(() => props.component)
 const componentList = computed(() => props.componentList)
 const componentIndex = computed(() => props.componentIndex)
 const isEditing = computed(() => props.isEditing)
+const visibilityResolved = computed(() => {
+  const raw = props.visibility
+  if (!raw || typeof raw !== 'object') {
+    return {
+      header: true,
+      castOn: true,
+      table: true,
+      notes: true,
+      materials: true,
+      relatedComponents: true
+    }
+  }
+
+  return {
+    header: raw.header !== false,
+    castOn: raw.castOn !== false,
+    table: raw.table !== false,
+    notes: raw.notes !== false,
+    materials: raw.materials !== false,
+    relatedComponents: raw.relatedComponents !== false
+  }
+})
 
 function isPartComponent(c) {
   return isComponentType(c?.type)
@@ -187,7 +215,7 @@ async function handleRemove() {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .card-actions {

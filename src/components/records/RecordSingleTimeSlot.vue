@@ -8,13 +8,6 @@
 
       <div v-else class="body">
         <div class="card">
-          <div v-if="slotStartAtText" class="row">
-            <div class="label">{{ t('record.slotStartAtLabel') }}</div>
-            <div class="value">
-              <span class="value-main">{{ slotStartAtText }}</span>
-            </div>
-          </div>
-
           <div class="row">
             <div class="label">{{ t('record.slotStatus') }}</div>
             <div class="value">
@@ -56,14 +49,13 @@
 
         <UpdateStatus
           v-if="modalState.show"
-          :title="modalState.title"
           :modalStatusId="modalStatusId"
           :modalStatusNote="modalStatusNote"
           :originalStatuses="originalStatuses"
-          :selfDefinedStatuses="selfDefinedStatuses"
-          :statusNotes="statusNotes"
+          :recordLinkedStatuses="recordLinkedStatuses"
+          :userStatusCatalog="userStatusCatalog"
+          :userStatusNotes="userStatusNotes"
           :addStatusNote="addStatusNote"
-          :customStatusInput="customStatusInput"
           :onCancel="modalState.onCancel"
           :onConfirm="modalState.onConfirm"
           :handleModalStatusChange="handleModalStatusChange"
@@ -83,8 +75,11 @@ import { setUserRecord } from '@/services/firestore/records'
 import { openConfirmation } from '@/services/ui/confirmation'
 import { openError } from '@/services/ui/notice'
 import { originalStatuses } from '@/constants/status.js'
+import { MIN_CUSTOM_STATUS_ID } from '@/constants/recordStatusCatalog'
 import { useRecordContext } from '@/composables/recordContext'
+import { useUserRecordStatusCatalog } from '@/composables/useUserRecordStatusCatalog'
 import { datetimeLocalToIso, isoToDatetimeLocal } from '@/utils/dateTime'
+import { resolveRecordStatusLabel } from '@/utils/recordStatusDisplay'
 
 import UpdateStatus from '@/components/modals/UpdateStatus.vue'
 import ButtonDelete from '@/components/buttons/ButtonDelete.vue'
@@ -93,6 +88,11 @@ const props = defineProps({
   currentUser: { type: Object, default: null },
   profile: { type: Object, default: null }
 })
+
+const statusCatalog = useUserRecordStatusCatalog(
+  () => props.profile,
+  () => props.currentUser?.uid
+)
 
 const route = useRoute()
 const router = useRouter()
@@ -150,34 +150,34 @@ const slotStartAtText = computed(() => {
   return t('record.slotStartAt', { n: slotStartComponentCount.value, total: totalComponentCount.value })
 })
 
-const selfDefinedStatuses = computed(() => currentRecord.value?.self_defined_status || [])
-const statusNotes = computed(() => currentRecord.value?.self_defined_status_notes || [])
+const userStatusCatalog = computed(() => statusCatalog.catalog.value)
+const userStatusNotes = computed(() => statusCatalog.notes.value)
+
+const recordLinkedStatuses = computed(() => {
+  return statusCatalog.normalizeRecordLinked(currentRecord.value?.self_defined_status)
+})
+
+watch(
+  () => currentRecord.value,
+  (record) => {
+    if (!record) return
+    statusCatalog.ensureProfileIncludesRecordStatusData(record).catch((e) => {
+      console.warn('RecordSingleTimeSlot: failed to sync status catalog from record:', e)
+    })
+  },
+  { immediate: true }
+)
 
 const addStatusNote = ({ status_id, description }) => {
-  if (!currentRecord.value) return
-  const safeStatusId = Number(status_id)
-  const safeDescription = String(description || '').trim()
-  if (!safeDescription) return
-
-  if (!Array.isArray(currentRecord.value.self_defined_status_notes)) {
-    currentRecord.value.self_defined_status_notes = []
-  }
-
-  const exists = currentRecord.value.self_defined_status_notes.some(
-    n => Number(n?.status_id) === safeStatusId && String(n?.description || '').trim() === safeDescription
-  )
-  if (exists) return
-
-  currentRecord.value.self_defined_status_notes.push({ status_id: safeStatusId, description: safeDescription })
+  statusCatalog.addCustomNote({ statusId: status_id, description }).catch((e) => {
+    console.warn('RecordSingleTimeSlot: failed to save status note:', e)
+  })
 }
-
-const customStatusInput = ref('')
 
 function handleModalStatusChange(event) {
   const value = event.target.value
   if (value === '__add_custom__') {
     modalStatusId.value = value
-    customStatusInput.value = ''
   } else {
     modalStatusId.value = Number(value)
   }
@@ -185,38 +185,33 @@ function handleModalStatusChange(event) {
 
 function cancelAddCustomStatus() {
   modalStatusId.value = draftStatusId.value
-  customStatusInput.value = ''
 }
 
-const confirmAddCustomStatus = async (nameArg) => {
-  const name = String(nameArg ?? customStatusInput.value).trim()
-  if (!name) return null
+const confirmAddCustomStatus = async (payload) => {
+  if (!currentRecord.value) return null
 
-  const existing = (selfDefinedStatuses.value || [])
-    .map(s => String(s?.name || '').trim())
-    .filter(Boolean)
-  if (existing.includes(name)) {
-    const found = (selfDefinedStatuses.value || []).find(s => String(s?.name || '').trim() === name)
-    if (found?.id != null) {
-      modalStatusId.value = found.id
-      customStatusInput.value = ''
-      return found.id
+  const arg = payload && typeof payload === 'object' ? payload : { name: String(payload || '').trim() }
+  const pickId = Number(arg.statusId)
+  if (Number.isFinite(pickId)) {
+    if (pickId >= MIN_CUSTOM_STATUS_ID) {
+      const entry = statusCatalog.findCatalogStatusById(pickId)
+      if (entry) {
+        statusCatalog.linkStatusOnRecord(currentRecord.value, entry)
+      }
     }
+    modalStatusId.value = pickId
+    return { id: pickId }
   }
 
-  const ids = (selfDefinedStatuses.value || [])
-    .map(s => Number(s?.id))
-    .filter(n => Number.isFinite(n))
-  const maxId = ids.length > 0 ? Math.max(...ids) : 99
-  const newStatus = { id: maxId + 1, name }
+  const name = String(arg.name || '').trim()
+  if (!name) return null
 
-  if (!currentRecord.value) return null
-  if (!Array.isArray(currentRecord.value.self_defined_status)) currentRecord.value.self_defined_status = []
-  currentRecord.value.self_defined_status.push(newStatus)
+  const entry = await statusCatalog.addCustomStatus(name)
+  if (!entry) return null
 
-  modalStatusId.value = newStatus.id
-  customStatusInput.value = ''
-  return newStatus.id
+  statusCatalog.linkStatusOnRecord(currentRecord.value, entry)
+  modalStatusId.value = entry.id
+  return { id: entry.id }
 }
 
 const modalStatusId = ref(0)
@@ -230,15 +225,11 @@ const modalState = reactive({
 })
 
 const getStatusLabel = (statusId) => {
-  if (statusId == null) return '-'
-
-  const original = originalStatuses.find(s => Number(s?.id) === Number(statusId))
-  if (original?.nameKey) return t(original.nameKey)
-
-  const custom = (selfDefinedStatuses.value || []).find(s => Number(s?.id) === Number(statusId))
-  if (custom?.name) return String(custom.name)
-
-  return String(statusId)
+  return resolveRecordStatusLabel(statusId, {
+    t,
+    userCatalog: userStatusCatalog.value,
+    recordLinked: currentRecord.value?.self_defined_status
+  })
 }
 
 const statusLabel = computed(() => {

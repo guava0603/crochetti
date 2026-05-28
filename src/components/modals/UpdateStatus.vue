@@ -1,13 +1,35 @@
 <template>
-  <div class="modal-overlay">
-    <div class="modal-content">
-      <h3>{{ displayTitle }}</h3>
-
-      <div v-if="!isAdding" class="status-select-wrap">
+  <ModalPromptShell
+    :show="true"
+    :title="displayTitle"
+    max-width="400px"
+    :close-on-overlay="false"
+    show-save-footer
+    :saving="isAddStatusSaving"
+    :save-disabled="isAddStatusSaving || (isAdding && !canSaveAddMode)"
+    @close="handleCancel"
+    @save="handleSave"
+  >
+    <div v-if="!isAdding" class="status-select-wrap">
         <SelectionInput
           v-model="statusIdProxy"
-          :options="statusOptions"
+          :options="editStatusOptions"
           :placeholder="t('statusModal.selectCategoryPlaceholder')"
+        />
+      </div>
+
+      <div v-else class="add-custom-status-section">
+        <SelectionInput
+          id="custom-status-input"
+          v-model="addModePickProxy"
+          :options="addCustomStatusOptions"
+          :placeholder="t('statusModal.selectCategoryPlaceholder')"
+        />
+        <input
+          v-if="isCreatingNewCategory"
+          v-model="customStatusDraft"
+          class="status-input status-input--new"
+          :placeholder="t('statusModal.newCategoryPlaceholder')"
         />
       </div>
 
@@ -22,47 +44,41 @@
         </div>
       </div>
 
-      <div v-if="isAdding" class="add-custom-status-section">
-        <input
-          id="custom-status-input"
-          ref="customStatusInputRef"
-          v-model="customStatusDraft"
-          class="status-input"
-          :placeholder="t('statusModal.newCategoryPlaceholder')"
-        />
-      </div>
-      <div class="modal-actions">
-        <button class="btn-cancel" @click="handleCancel">{{ t('common.cancel') }}</button>
-        <button
-          class="btn-confirm"
-          type="button"
-          :disabled="isAddStatusSaving || (isAdding && !customStatusDraft.trim())"
-          @click="handleSave"
-        >
-          {{ isAddStatusSaving ? t('common.saving') : t('common.save') }}
-        </button>
-      </div>
-    </div>
-  </div>
+  </ModalPromptShell>
 </template>
 
 <script setup>
-import { computed, nextTick, ref, toRefs, watch } from 'vue'
+import { computed, ref, toRefs, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SelectionInput from '@/components/Selection/SelectionInput.vue'
 import SelectionInputCombineList from '@/components/Input/SelectionInputCombineList.vue'
+import ModalPromptShell from '@/components/modals/ModalShell/ModalPromptShell.vue'
+import { getNoteSuggestionsForStatus } from '@/utils/recordStatusCatalog'
+
+const CREATE_NEW_STATUS_VALUE = '__new__'
+
 const { t } = useI18n({ useScope: 'global' })
+
 const props = defineProps({
   modalStatusId: [String, Number],
   originalStatuses: Array,
-  selfDefinedStatuses: Array,
+  /** Statuses linked on the current record (edit-current-status picker). */
+  recordLinkedStatuses: {
+    type: Array,
+    default: () => []
+  },
+  /** Full user catalog (add-custom picker + note suggestions). */
+  userStatusCatalog: {
+    type: Array,
+    default: () => []
+  },
+  userStatusNotes: {
+    type: Array,
+    default: () => []
+  },
   modalStatusNote: {
     type: String,
     default: ''
-  },
-  statusNotes: {
-    type: Array,
-    default: () => []
   },
   addStatusNote: {
     type: Function,
@@ -75,12 +91,14 @@ const props = defineProps({
   cancelAddCustomStatus: Function,
   confirmAddCustomStatus: Function
 })
+
 const {
   modalStatusId,
   originalStatuses,
-  selfDefinedStatuses,
+  recordLinkedStatuses,
+  userStatusCatalog,
+  userStatusNotes,
   modalStatusNote,
-  statusNotes,
   addStatusNote,
   onCancel,
   onConfirm,
@@ -98,7 +116,14 @@ const statusIdProxy = computed({
   }
 })
 
-const statusOptions = computed(() => {
+const addModePickProxy = computed({
+  get: () => addModePickId.value,
+  set: (value) => {
+    addModePickId.value = value
+  }
+})
+
+const editStatusOptions = computed(() => {
   const out = []
 
   for (const s of originalStatuses.value || []) {
@@ -106,9 +131,10 @@ const statusOptions = computed(() => {
     out.push({ value: s.id, label })
   }
 
-  if ((selfDefinedStatuses.value || []).length > 0) {
+  const linked = Array.isArray(recordLinkedStatuses.value) ? recordLinkedStatuses.value : []
+  if (linked.length > 0) {
     out.push({ kind: 'group', label: t('statusModal.customGroupLabel') })
-    for (const s of selfDefinedStatuses.value || []) {
+    for (const s of linked) {
       out.push({ value: s.id, label: s.name })
     }
   }
@@ -117,41 +143,84 @@ const statusOptions = computed(() => {
   return out
 })
 
-const customStatusInputRef = ref(null)
+const addCustomStatusOptions = computed(() => {
+  const out = []
+
+  for (const s of originalStatuses.value || []) {
+    const label = s?.nameKey ? t(s.nameKey) : (s?.name ?? '')
+    out.push({ value: s.id, label })
+  }
+
+  const catalog = Array.isArray(userStatusCatalog.value) ? userStatusCatalog.value : []
+  if (catalog.length > 0) {
+    out.push({ kind: 'group', label: t('statusModal.customGroupLabel') })
+    for (const s of catalog) {
+      out.push({ value: s.id, label: s.name })
+    }
+  }
+
+  out.push({ value: CREATE_NEW_STATUS_VALUE, label: t('statusModal.createNewCategoryOption') })
+  return out
+})
+
 const customStatusDraft = ref('')
+const addModePickId = ref('')
 const isAddStatusSaving = ref(false)
 
 const isAdding = computed(() => String(modalStatusId.value) === '__add_custom__')
+
+const isCreatingNewCategory = computed(() => String(addModePickId.value) === CREATE_NEW_STATUS_VALUE)
 
 const displayTitle = computed(() => {
   return isAdding.value ? t('statusModal.titleAddCustom') : t('statusModal.titleEdit')
 })
 
-const addCustomStatus = async () => {
-  const name = customStatusDraft.value.trim()
-  if (!name) return
+const canSaveAddMode = computed(() => {
+  if (!isAdding.value) return true
+  const pick = String(addModePickId.value || '')
+  if (pick === CREATE_NEW_STATUS_VALUE) return Boolean(customStatusDraft.value.trim())
+  return pick !== '' && Number.isFinite(Number(pick))
+})
 
-  if (typeof confirmAddCustomStatus.value !== 'function') {
-    return
-  }
+const addCustomStatus = async () => {
+  if (typeof confirmAddCustomStatus.value !== 'function') return
 
   isAddStatusSaving.value = true
   try {
-    const result = await confirmAddCustomStatus.value(name)
-    const newId = (result && typeof result === 'object' && 'id' in result) ? result.id : result
-    customStatusDraft.value = ''
+    const pickRaw = addModePickId.value
 
-    if (newId != null && typeof handleModalStatusChange.value === 'function') {
-      handleModalStatusChange.value({ target: { value: newId } })
+    if (String(pickRaw) === CREATE_NEW_STATUS_VALUE) {
+      const name = customStatusDraft.value.trim()
+      if (!name) return
+      const result = await confirmAddCustomStatus.value({ name })
+      applyConfirmResult(result)
+      return
+    }
+
+    const pickId = Number(pickRaw)
+    if (Number.isFinite(pickId)) {
+      const result = await confirmAddCustomStatus.value({ statusId: pickId })
+      applyConfirmResult(result)
     }
   } finally {
     isAddStatusSaving.value = false
   }
 }
 
+function applyConfirmResult(result) {
+  const newId = (result && typeof result === 'object' && 'id' in result) ? result.id : result
+  customStatusDraft.value = ''
+  addModePickId.value = ''
+
+  if (newId != null && typeof handleModalStatusChange.value === 'function') {
+    handleModalStatusChange.value({ target: { value: newId } })
+  }
+}
+
 const handleCancel = () => {
   if (isAdding.value) {
     customStatusDraft.value = ''
+    addModePickId.value = ''
     if (typeof cancelAddCustomStatus.value === 'function') {
       cancelAddCustomStatus.value()
       return
@@ -160,7 +229,6 @@ const handleCancel = () => {
   onCancel.value()
 }
 
-// SelectionInput handles click-outside + escape.
 const noteDraft = ref(String(modalStatusNote.value))
 
 const isNumericStatusId = computed(() => {
@@ -169,30 +237,29 @@ const isNumericStatusId = computed(() => {
 
 const noteSuggestions = computed(() => {
   const statusId = Number(modalStatusId.value)
-  return (statusNotes.value || [])
-    .filter(n => Number(n?.status_id) === statusId)
-    .map(n => String(n?.description || '').trim())
-    .filter(Boolean)
+  return getNoteSuggestionsForStatus(userStatusNotes.value, statusId)
 })
 
 watch(modalStatusId, (next, prev) => {
-  // When switching status, reset note draft.
-  // Don't clear on initial mount, so the default value can come from modalStatusNote.
   if (prev !== undefined && String(next) !== String(prev)) {
     noteDraft.value = ''
   }
 
   if (isAdding.value) {
-    nextTick(() => {
-      customStatusInputRef.value?.focus?.()
-    })
+    addModePickId.value = ''
+    customStatusDraft.value = ''
+  }
+})
+
+watch(addModePickId, (pick) => {
+  if (String(pick) !== CREATE_NEW_STATUS_VALUE) {
+    customStatusDraft.value = ''
   }
 })
 
 watch(
   modalStatusNote,
   (val) => {
-    // Keep modal note in sync when opening/reopening modal.
     noteDraft.value = String(val || '')
   },
   { immediate: true }
@@ -212,7 +279,6 @@ const handleSaveNote = () => {
   const description = noteDraft.value.trim()
   if (!description) return
 
-  // If user picked an existing suggestion, don't create a duplicate.
   if (noteSuggestions.value.includes(description)) {
     return
   }
@@ -227,35 +293,24 @@ const handleSaveNote = () => {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal);
-}
-.modal-content {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  max-width: 400px;
-  width: 90%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-.modal-content h3 {
-  margin: 0 0 1rem 0;
-  color: #111827;
-}
 .status-select-wrap {
   position: relative;
   margin-bottom: 1rem;
 }
 .add-custom-status-section {
+  margin-top: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.status-section-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 0.35rem;
+}
+
+.status-section-label--spaced {
   margin-top: 1rem;
 }
 
@@ -286,44 +341,14 @@ const handleSaveNote = () => {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 1rem;
-  margin-bottom: 1.5rem;
 }
 .status-input:focus {
   outline: none;
   border-color: var(--color-icon-add);
   box-shadow: 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.1);
 }
-.modal-actions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-}
-.btn-cancel {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  padding: 0.625rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-cancel:hover {
-  background: #f3f4f6;
-}
-.btn-confirm {
-  background: var(--color-icon-add);
-  color: white;
-  border: none;
-  padding: 0.625rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.btn-confirm:hover {
-  background: #3aa876;
+
+.status-input--new {
+  margin-top: 0.75rem;
 }
 </style>

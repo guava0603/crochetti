@@ -1,37 +1,7 @@
 <template>
-  <ComponentCardComponentCrochet
-    v-model="rowListModel"
-    v-model:row-groups="rowGroupsModel"
-    :is-editing="isEditing"
-  />
-
-  <!-- Notes Section -->
-  <FormSubsection
-    v-if="isEditing"
-    wrapper-class="subsection"
-    kind="notes"
-    :title="t('common.notes')"
-    v-model="component.notes"
-    :placeholder="t('common.noteDescriptionPlaceholder')"
-    :notes-rows="2"
-    notes-input-class="list-item-input"
-  />
-  <FormSubsection
-    v-else-if="displayNotes.length > 0"
-    wrapper-class="view-section"
-    kind="slot"
-    :title="t('common.notes')"
-  >
-    <ul class="view-list">
-      <li v-for="(note, nIndex) in displayNotes" :key="nIndex">
-        {{ note }}
-      </li>
-    </ul>
-  </FormSubsection>
-
   <!-- Materials (edit mode) -->
   <FormSubsectionList
-    v-if="isEditing && hasMaterialOptions"
+    v-if="visibilityResolved.materials !== false && isEditing && hasMaterialOptions"
     wrapper-class="subsection component-metadata-subsection"
     kind="component-material-options"
     :title="t('project.componentMetadata.title')"
@@ -47,7 +17,11 @@
 
   <!-- Yarn / Hook (optional, view mode) -->
   <FormSubsection
-    v-if="!isEditing && (resolvedYarnList.length > 0 || resolvedHookList.length > 0)"
+    v-if="
+      visibilityResolved.materials !== false &&
+      !isEditing &&
+      (resolvedYarnList.length > 0 || resolvedHookList.length > 0)
+    "
     wrapper-class="view-section"
     kind="slot"
     :show-header="false"
@@ -62,6 +36,37 @@
         <span class="component-metadata-value">{{ resolvedYarnList.join('\n') }}</span>
       </div>
     </div>
+  </FormSubsection>
+
+  <ComponentCardComponentCrochet
+    v-if="visibilityResolved.table !== false"
+    v-model="rowListModel"
+    v-model:row-groups="rowGroupsModel"
+    :is-editing="isEditing"
+  />
+
+  <!-- Notes Section -->
+  <FormSubsection
+    v-if="visibilityResolved.notes !== false && isEditing"
+    wrapper-class="subsection"
+    kind="notes"
+    :title="t('common.notes')"
+    v-model="component.notes"
+    :placeholder="t('common.noteDescriptionPlaceholder')"
+    :notes-rows="2"
+    notes-input-class="list-item-input"
+  />
+  <FormSubsection
+    v-else-if="visibilityResolved.notes !== false && displayNotes.length > 0"
+    wrapper-class="view-section"
+    kind="slot"
+    :show-header="false"
+  >
+    <ul class="view-list">
+      <li v-for="(note, nIndex) in displayNotes" :key="nIndex">
+        {{ note }}
+      </li>
+    </ul>
   </FormSubsection>
 
   <!-- Repeat count (edit mode, bottom of card) -->
@@ -117,12 +122,31 @@ const props = defineProps({
   isEditing: {
     type: Boolean,
     default: false
+  },
+  visibility: {
+    type: Object,
+    default: null
   }
 })
 
 const component = computed(() => props.component)
 const materials = computed(() => props.materials)
 const isEditing = computed(() => props.isEditing)
+const visibilityResolved = computed(() => {
+  const raw = props.visibility
+  if (!raw || typeof raw !== 'object') {
+    return {
+      table: true,
+      notes: true,
+      materials: true
+    }
+  }
+  return {
+    table: raw.table !== false,
+    notes: raw.notes !== false,
+    materials: raw.materials !== false
+  }
+})
 
 function ensureRowTableFields() {
   if (!component.value || typeof component.value !== 'object') return
@@ -412,7 +436,7 @@ ensureRowTableFields()
 }
 
 .view-list {
-  margin: 0;
+  margin: 1rem 0 0;
   padding-left: 1.5rem;
   list-style: disc;
 }

@@ -1,16 +1,20 @@
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div v-if="show" class="modal-overlay" @click="handleCancel">
-        <div class="modal-container" @click.stop>
-          <div class="modal-header">
-            <h2>{{ computedTitle }}</h2>
-            <button class="close-button" type="button" @click="handleCancel">×</button>
-          </div>
-
-          <div class="modal-body">
-            <div class="field">
-              <label class="label" for="profile-name">{{ computedNameLabel }}</label>
+  <ModalShell
+    :show="show"
+    :title="computedTitle"
+    max-width="480px"
+    z-level="high"
+    show-save-footer
+    :cancel-label="computedCancelText"
+    :save-label="computedSaveText"
+    :saving-label="computedSavingText"
+    :saving="saving"
+    :save-disabled="linking || !isDirty"
+    @close="handleCancel"
+    @save="handleSave"
+  >
+    <div class="modal-field">
+      <label class="modal-label" for="profile-name">{{ computedNameLabel }}</label>
               <input
                 id="profile-name"
                 v-model="draftName"
@@ -20,8 +24,8 @@
               />
             </div>
 
-            <div class="field">
-              <label class="label">{{ computedAvatarLabel }}</label>
+            <div class="modal-field">
+              <label class="modal-label">{{ computedAvatarLabel }}</label>
               <div class="avatar-row">
                 <AvatarCircle
                   class="avatar-row__avatar"
@@ -56,8 +60,8 @@
               </div>
             </div>
 
-            <div class="field">
-              <label class="label">{{ t('user.profileSettingsModal.privacyLabel') }}</label>
+            <div class="modal-field">
+              <label class="modal-label">{{ t('user.profileSettingsModal.privacyLabel') }}</label>
               <SelectionButtonGroup
                 v-model="draftPrivacy"
                 :options="privacyOptions"
@@ -66,8 +70,8 @@
               />
             </div>
 
-            <div class="field">
-              <label class="label">{{ t('user.profileSettingsModal.friendCodeLabel') }}</label>
+            <div class="modal-field">
+              <label class="modal-label">{{ t('user.profileSettingsModal.friendCodeLabel') }}</label>
               <div class="friend-code-row">
                 <div
                   class="friend-code-row__value"
@@ -136,20 +140,8 @@
                 </button>
               </div>
             </div>
-          </div>
 
-          <div class="actions">
-            <button class="btn-secondary" type="button" :disabled="saving" @click="handleCancel">
-              {{ computedCancelText }}
-            </button>
-            <button class="btn-primary" type="button" :disabled="saving || linking || !isDirty" @click="handleSave">
-              {{ saving ? computedSavingText : computedSaveText }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
+  </ModalShell>
 
   <AvatarPickerModal
     :show="showAvatarPicker"
@@ -171,6 +163,7 @@ import {
 import SelectionButtonGroup from '@/components/Selection/ButtonGroup.vue'
 import AvatarCircle from '@/components/Image/AvatarCircle.vue'
 import AvatarPickerModal from '@/components/modals/AvatarPickerModal.vue'
+import ModalShell from '@/components/modals/ModalShell/ModalShell.vue'
 import { openConfirmation } from '@/services/ui/confirmation'
 import { openError } from '@/services/ui/error'
 import { openToast } from '@/services/ui/toast'
@@ -584,83 +577,6 @@ function handleSave() {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal-high);
-}
-
-.modal-container {
-  background: white;
-  border-radius: 12px;
-  max-width: 480px;
-  width: 92%;
-  max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  color: #111827;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 2rem;
-  cursor: pointer;
-  color: #6b7280;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-}
-
-.close-button:hover {
-  background-color: #f3f4f6;
-}
-
-.modal-body {
-  padding: 1.25rem;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 0.9rem;
-}
-
-.label {
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: #111827;
-}
-
 .input {
   border: 1px solid rgba(0, 0, 0, 0.14);
   background: #fff;
@@ -706,15 +622,6 @@ function handleSave() {
 .avatar-row__edit:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-}
-
-.actions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  padding: 1rem 1.25rem 1.25rem;
-  border-top: 1px solid #e5e7eb;
-  background: white;
 }
 
 .friend-code-row {

@@ -7,12 +7,11 @@ const APP_BANNER_KEY = Symbol('APP_BANNER')
  *
  * Pages/layouts can update:
  * - title
- * - showBack
  * - visible
  * - onBack (handler for back button)
  *
- * App.vue should reset `onBack` (and optionally title/showBack) on route changes
- * to avoid stale handlers.
+ * Back button visibility is driven by browser history (see useCanGoBack).
+ * `showBack` in setBanner is kept for compatibility but not used by TopBanner.
  */
 export function provideAppBanner() {
   const state = reactive({

@@ -13,7 +13,8 @@
             'is-idle': !isRecording,
             'is-docked': true,
             'is-recording': isRecording,
-            'is-compact': compact
+            'is-compact': compact,
+            'is-completed-record': isLatestRecordCompleted
           }
         ]"
         @click="handleOverlayClick"
@@ -22,7 +23,11 @@
         @keydown.enter.prevent="handleOverlayKeydown"
         @keydown.space.prevent="handleOverlayKeydown"
       >
-        <div class="top-overlay-content">
+        <div v-if="isLatestRecordCompleted" class="completed-record-logo" aria-label="Logo">
+          <img class="completed-record-logo__img" src="@/assets/logo.svg" alt="" />
+        </div>
+
+        <div v-else class="top-overlay-content">
           <RecordPauseButton
             v-if="isRecording"
             class="record-toggle-btn"
@@ -131,13 +136,19 @@ import RecordPauseButton from '@/components/buttons/RecordPauseButton.vue'
 import { useLatestRecordStore } from '@/stores/latestRecordStore'
 import { mergeUserRecord } from '@/services/firestore/records'
 import { openToast } from '@/services/ui/toast'
-import { originalStatuses } from '@/constants/status'
+import { DEFAULT_STATUS_ID, originalStatuses } from '@/constants/status'
 import { getRecordPreferredStatus } from '@/utils/recordStatus'
+import { useCurrentUserProfile } from '@/composables/useCurrentUserProfile'
+import { useUserRecordStatusCatalog } from '@/composables/useUserRecordStatusCatalog'
+import { resolveRecordStatusLabel } from '@/utils/recordStatusDisplay'
 
 defineOptions({ name: 'FooterRecordOptions' })
 
 const router = useRouter()
 const route = useRoute()
+
+const { profile } = useCurrentUserProfile()
+const statusCatalog = useUserRecordStatusCatalog(profile, () => auth.currentUser?.uid)
 const { t } = useI18n({ useScope: 'global' })
 
 const isRecordPage = computed(() => route.name === 'record')
@@ -152,6 +163,8 @@ const record = computed(() => {
 const recordId = computed(() => String(record.value?.id || '').trim() || null)
 
 const shouldRender = computed(() => Boolean(recordId.value))
+
+const isLatestRecordCompleted = computed(() => Boolean(record.value?.is_completed))
 
 function openLatestRecord() {
   const id = recordId.value
@@ -332,19 +345,15 @@ const formattedConsumingTimeParts = computed(() => {
 
 const currentStatus = computed(() => {
   const id = statusId.value
+  const label = resolveRecordStatusLabel(id, {
+    t,
+    userCatalog: statusCatalog.catalog.value,
+    recordLinked: selfDefinedStatuses.value
+  })
+  if (label && label !== '-' && label !== String(id)) return label
 
-  const original = (originalStatusesList.value || []).find((s) => Number(s?.id) === id)
-  if (original) {
-    return original?.nameKey ? t(original.nameKey) : (original?.name ?? '')
-  }
-
-  const custom = (selfDefinedStatuses.value || []).find((s) => Number(s?.id) === id)
-  if (custom) {
-    return custom?.name ?? ''
-  }
-
-  const idle = (originalStatusesList.value || []).find((s) => Number(s?.id) === 0)
-  if (idle) return idle?.nameKey ? t(idle.nameKey) : (idle?.name ?? '')
+  const fallback = (originalStatusesList.value || []).find((s) => Number(s?.id) === DEFAULT_STATUS_ID)
+  if (fallback) return fallback?.nameKey ? t(fallback.nameKey) : (fallback?.name ?? '')
 
   return ''
 })
@@ -483,6 +492,25 @@ const actions = {
   max-width: none;
   border-radius: 40% 40% 0 0;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.top-overlay-box.is-completed-record {
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.completed-record-logo {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.completed-record-logo__img {
+  width: 64px;
+  height: 64px;
+  opacity: 0.92;
 }
 
 /* While paused/not recording: keep it half width and aligned right (non-docked only). */

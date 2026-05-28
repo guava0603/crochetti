@@ -280,7 +280,7 @@ watch(
 
 .bar-chart--horizontal {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  grid-template-columns: fit-content(30%) minmax(0, 1fr) fit-content(30%);
   column-gap: 0.75rem;
   row-gap: var(--bar-gap);
   align-items: center;
@@ -317,9 +317,9 @@ watch(
   color: rgba(17, 24, 39, 0.82);
   justify-self: start;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .bar-chart__row-track {
@@ -347,8 +347,11 @@ watch(
   color: var(--color-font-invisible);
   font-size: 0.7rem;
   justify-self: end;
+  min-width: 0;
   text-align: right;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 @media (prefers-reduced-motion: reduce) {

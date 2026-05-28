@@ -13,24 +13,29 @@
     :aria-label="ariaLabel"
   >
     <svg class="progress-ring__svg" :width="sizePx" :height="sizePx" viewBox="0 0 100 100">
-      <circle
-        class="progress-ring__track"
-        cx="50"
-        cy="50"
-        :r="r"
-        fill="transparent"
-        :stroke-width="strokeVb"
-      />
-      <circle
-        class="progress-ring__progress"
-        cx="50"
-        cy="50"
-        :r="r"
-        fill="transparent"
-        :stroke-width="strokeVb"
-        :stroke-dasharray="dashArray"
-        :stroke-dashoffset="dashOffset"
-      />
+      <!-- SVG transform (not CSS) so html2canvas keeps 12-o'clock arc start. -->
+      <g transform="rotate(-90 50 50)">
+        <circle
+          class="progress-ring__track"
+          cx="50"
+          cy="50"
+          :r="r"
+          fill="transparent"
+          :stroke="trackColor"
+          :stroke-width="strokeVb"
+        />
+        <circle
+          class="progress-ring__progress"
+          cx="50"
+          cy="50"
+          :r="r"
+          fill="transparent"
+          :stroke="computedProgressColor"
+          :stroke-width="strokeVb"
+          :stroke-dasharray="dashArray"
+          :stroke-dashoffset="dashOffset"
+        />
+      </g>
     </svg>
 
     <div class="progress-ring__center" aria-hidden="true">
@@ -224,7 +229,10 @@ onMounted(() => {
 watch(
   () => props.value,
   (next) => {
-    // After mount, updates tween as well.
+    if (!props.animateOnMount || reducedMotion) {
+      syncAnimatedValue(next)
+      return
+    }
     tweenTo(next)
   }
 )
@@ -242,15 +250,9 @@ watch(
 .progress-ring__svg {
   width: 100%;
   height: 100%;
-  transform: rotate(-90deg);
-}
-
-.progress-ring__track {
-  stroke: var(--pr-track);
 }
 
 .progress-ring__progress {
-  stroke: var(--pr-progress);
   stroke-linecap: round;
   transition: stroke-dashoffset var(--pr-transition-ms, 220ms) cubic-bezier(0.2, 0.8, 0.2, 1);
 }
