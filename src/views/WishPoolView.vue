@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import WishPoolViewMain from '@/components/WishPoolView/index.vue'
+import WishPoolViewMain from '@/components/features/wish/WishPoolPage.vue'
 import { useCurrentUserProfile } from '@/composables/useCurrentUserProfile'
 import { createWish } from '@/services/firestore/wishes'
 

@@ -11,7 +11,7 @@
 import { useI18n } from 'vue-i18n'
 import { useCurrentUserProfile } from '@/composables/useCurrentUserProfile'
 
-import HomeViewMain from '@/components/HomeView/index.vue'
+import HomeViewMain from '@/components/features/home/HomePage.vue'
 
 import {
   createProject,

@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import ProjectViewMain from '@/components/ProjectView/index.vue'
+import ProjectViewMain from '@/components/features/project/ProjectPage.vue'
 import { useCurrentUserProfile } from '@/composables/useCurrentUserProfile'
 
 import { deleteProject as deleteProjectDoc, fetchProject, updateProject } from '@/services/firestore/projects'

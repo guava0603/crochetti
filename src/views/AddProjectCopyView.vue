@@ -51,8 +51,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import ProjectWizardLayout from '@/components/projects/ProjectWizardLayout.vue'
-import SelectionInput from '@/components/Selection/SelectionInput.vue'
+import ProjectWizardLayout from '@/components/features/project/ProjectWizardLayout.vue'
+import SelectionInput from '@/components/shared/selection/SelectionInput.vue'
 
 import { auth } from '@/firebaseConfig'
 import { fetchUserProjectSummaries } from '@/services/firestore/user'

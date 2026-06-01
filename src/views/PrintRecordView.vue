@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import RecordPrintViewMain from '@/components/records/RecordPrintView/index.vue'
+import RecordPrintViewMain from '@/components/features/record/record-print/RecordPrintPage.vue'
 import { useCurrentUserProfile } from '@/composables/useCurrentUserProfile'
 import { fetchUserRecord } from '@/services/firestore/records'
 

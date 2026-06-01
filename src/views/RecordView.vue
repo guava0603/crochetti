@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import RecordViewMain from '@/components/RecordView/index.vue'
+import RecordViewMain from '@/components/features/record/RecordPage.vue'
 import { useCurrentUserProfile } from '@/composables/useCurrentUserProfile'
 
 import {

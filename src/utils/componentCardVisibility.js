@@ -5,7 +5,7 @@ export function resolveComponentCardVisibility(raw, defaults) {
   }
 
   const out = {}
-  for (const [key, defaultVisible] of Object.entries(defaults)) {
+  for (const [key] of Object.entries(defaults)) {
     out[key] = raw[key] !== false
   }
   return out

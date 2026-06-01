@@ -23,16 +23,16 @@
 
 <script setup>
 import { computed } from 'vue'
-import GlobalConfirmationModal from '@/components/modals/GlobalConfirmationModal.vue'
-import GlobalHelpModal from '@/components/modals/GlobalHelpModal.vue'
-import AchievementToastHost from '@/components/ui/AchievementToastHost.vue'
-import ToastHost from '@/components/ui/ToastHost.vue'
-import ErrorHost from '@/components/ui/ErrorHost.vue'
-import TopBanner from '@/components/layout/TopBanner.vue'
+import GlobalConfirmationModal from '@/components/modals/global/GlobalConfirmationModal.vue'
+import GlobalHelpModal from '@/components/modals/global/GlobalHelpModal.vue'
+import AchievementToastHost from '@/components/shared/ui/AchievementToastHost.vue'
+import ToastHost from '@/components/shared/ui/ToastHost.vue'
+import ErrorHost from '@/components/shared/ui/ErrorHost.vue'
+import TopBanner from '@/components/shell/layout/TopBanner.vue'
 import { RouterView, useRoute } from 'vue-router'
 import { provideAppBanner } from '@/composables/appBanner'
 import { provideFooterContext } from '@/composables/footerContext'
-import Footer from '@/components/Footer/index.vue'
+import Footer from '@/components/shell/Footer/index.vue'
 
 const route = useRoute()
 provideAppBanner()

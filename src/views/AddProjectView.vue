@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-import AddProjectView from '@/components/AddProjectView/index.vue'
+import AddProjectView from '@/components/features/add-project/AddProjectPage.vue'
 import { createProject, updateProject } from '@/services/firestore/projects'
 
 const apiHandlers = {

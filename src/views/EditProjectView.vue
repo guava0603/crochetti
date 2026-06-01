@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-import EditProjectView from '@/components/EditProjectView/index.vue'
+import EditProjectView from '@/components/features/project/edit-project/EditProjectPage.vue'
 import { fetchProject, updateProject } from '@/services/firestore/projects'
 import { isCurrentUser } from '@/services/firestore/user'
 

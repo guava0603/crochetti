@@ -3,5 +3,5 @@
 </template>
 
 <script setup>
-import AboutView from '@/components/AboutView/index.vue'
+import AboutView from '@/components/features/about/AboutPage.vue'
 </script>
