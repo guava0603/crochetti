@@ -1,3 +1,6 @@
+import { normalizeExtraImagesSettings, normalizeSourceImageUrls } from '@/constants/recordPrintExtraImages'
+import { normalizeCompletedTimeSettings } from '@/constants/recordPrintCompletedTime'
+
 export const RECORD_RESULT_SHARING_SECTION_KEYS = [
   'projectTitle',
   'completedTime',
@@ -29,25 +32,17 @@ export function normalizeSectionVisibility(raw) {
   return out
 }
 
-import {
-  DEFAULT_EXTRA_IMAGES_SETTINGS,
-  normalizeExtraImagesSettings,
-  normalizeSourceImageUrls
-} from '@/constants/recordPrintExtraImages'
-
-export function loadStoredSectionVisibility(recordId, availableKeys) {
-  return loadStoredPrintSettings(recordId, availableKeys).sectionVisibility
-}
-
 export function loadStoredPrintSettings(recordId, availableKeys, sourceImageUrls = []) {
   const id = String(recordId || '').trim()
   const baseVisibility = { ...DEFAULT_RECORD_RESULT_SHARING_VISIBILITY }
   const baseExtraImages = normalizeExtraImagesSettings(null, sourceImageUrls)
+  const baseCompletedTime = normalizeCompletedTimeSettings(null)
 
   if (!id || typeof localStorage === 'undefined') {
     return {
       sectionVisibility: filterVisibilityByAvailable(baseVisibility, availableKeys),
-      extraImages: baseExtraImages
+      extraImages: baseExtraImages,
+      completedTime: baseCompletedTime
     }
   }
 
@@ -56,35 +51,28 @@ export function loadStoredPrintSettings(recordId, availableKeys, sourceImageUrls
     if (!raw) {
       return {
         sectionVisibility: filterVisibilityByAvailable(baseVisibility, availableKeys),
-        extraImages: baseExtraImages
+        extraImages: baseExtraImages,
+        completedTime: baseCompletedTime
       }
     }
 
     const parsed = JSON.parse(raw)
     const sections = parsed?.sections ?? parsed
     const extraImages = normalizeExtraImagesSettings(parsed?.extraImages, sourceImageUrls)
+    const completedTime = normalizeCompletedTimeSettings(parsed?.completedTime)
 
     return {
       sectionVisibility: filterVisibilityByAvailable(normalizeSectionVisibility(sections), availableKeys),
-      extraImages
+      extraImages,
+      completedTime
     }
   } catch {
     return {
       sectionVisibility: filterVisibilityByAvailable(baseVisibility, availableKeys),
-      extraImages: baseExtraImages
+      extraImages: baseExtraImages,
+      completedTime: baseCompletedTime
     }
   }
-}
-
-export function saveStoredSectionVisibility(recordId, visibility, availableKeys) {
-  saveStoredPrintSettings(
-    recordId,
-    {
-      sectionVisibility: visibility,
-      extraImages: { ...DEFAULT_EXTRA_IMAGES_SETTINGS }
-    },
-    availableKeys
-  )
 }
 
 export function saveStoredPrintSettings(recordId, settings, availableKeys, sourceImageUrls = []) {
@@ -97,7 +85,8 @@ export function saveStoredPrintSettings(recordId, settings, availableKeys, sourc
         normalizeSectionVisibility(settings?.sectionVisibility),
         availableKeys
       ),
-      extraImages: normalizeExtraImagesSettings(settings?.extraImages, sourceImageUrls)
+      extraImages: normalizeExtraImagesSettings(settings?.extraImages, sourceImageUrls),
+      completedTime: normalizeCompletedTimeSettings(settings?.completedTime)
     }
     localStorage.setItem(`corchetti.recordPrint.${id}`, JSON.stringify(payload))
   } catch {

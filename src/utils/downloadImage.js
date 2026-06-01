@@ -1,9 +1,14 @@
 /**
  * Capture a DOM node as PNG and share (iOS sheet) or download.
  * Used by download-design, record result-sharing, and related export flows.
+ *
+ * On Capacitor native (iOS/Android), PNGs are written to a real cache .png file and
+ * shared via @capacitor/share so iOS shows "Save Image" in the share sheet.
  */
 
+import { Capacitor } from '@capacitor/core'
 import { getRemPx } from '@/constants/recordResultSharingLayout'
+import { sharePngBlobsViaNative } from '@/utils/nativeImageShare'
 
 const EXPORT_CARD_BG = '#f5ebda'
 const EXPORT_CAPTURE_STYLE_ID = 'corchetti-export-capture-fix'
@@ -18,7 +23,7 @@ function normalizeCardInnerFrames(root, doc) {
   const insetPx = CARD_INNER_FRAME_INSET_REM * remPx
   const radiusPx = CARD_INNER_FRAME_RADIUS_REM * remPx
 
-  for (const card of root.querySelectorAll('.top-card, .rest-card')) {
+  for (const card of root.querySelectorAll('.export-healing-card')) {
     const frame = card.querySelector(':scope > .card-inner-frame')
     if (!frame) continue
 
@@ -54,13 +59,12 @@ function injectExportCaptureStyles(doc) {
   const style = doc.createElement('style')
   style.id = EXPORT_CAPTURE_STYLE_ID
   style.textContent = `
-    .rest-card {
-      overflow: hidden !important;
-    }
-    .top-card::before,
-    .rest-card::before,
-    .metric::before {
+    .export-healing-card::before,
+    .export-healing-card::after,
+    .export-healing-card *::before,
+    .export-healing-card *::after {
       display: none !important;
+      content: none !important;
     }
   `
   doc.head.appendChild(style)
@@ -78,7 +82,7 @@ export function applyExportFlatStyles(root, doc = null, { layoutWidthPx } = {}) 
     root.style.setProperty('box-sizing', 'border-box', 'important')
   }
 
-  const cardSelector = '.top-card, .rest-card, .extra-note-card'
+  const cardSelector = '.export-healing-card'
   const nodes = root.querySelectorAll(cardSelector)
   for (const el of nodes) {
     el.style.setProperty('background', EXPORT_CARD_BG, 'important')
@@ -88,7 +92,7 @@ export function applyExportFlatStyles(root, doc = null, { layoutWidthPx } = {}) 
     el.style.setProperty('box-shadow', '0 12px 26px rgba(0, 0, 0, 0.1)', 'important')
   }
 
-  for (const el of root.querySelectorAll('.rest-card')) {
+  for (const el of root.querySelectorAll('.export-healing-card.rest-card, .export-healing-card.extra-note-card')) {
     el.style.setProperty('overflow', 'hidden', 'important')
   }
 
@@ -148,6 +152,14 @@ export async function shareOrDownloadImageBlob({ blob, filename, shareTitle } = 
   if (!blob) throw new Error('shareOrDownloadImageBlob: missing blob')
 
   const safeName = String(filename || 'image.png').trim() || 'image.png'
+
+  if (Capacitor.isNativePlatform()) {
+    return sharePngBlobsViaNative({
+      items: [{ blob, filename: safeName }],
+      shareTitle: shareTitle ?? safeName
+    })
+  }
+
   const file = typeof File !== 'undefined' ? new File([blob], safeName, { type: 'image/png' }) : null
 
   try {
@@ -191,6 +203,13 @@ export async function shareOrDownloadImageBlobs(items = []) {
     .filter((it) => it.blob)
 
   if (!normalized.length) throw new Error('shareOrDownloadImageBlobs: missing blobs')
+
+  if (Capacitor.isNativePlatform()) {
+    return sharePngBlobsViaNative({
+      items: normalized,
+      shareTitle: normalized[0]?.filename
+    })
+  }
 
   const files =
     typeof File !== 'undefined'

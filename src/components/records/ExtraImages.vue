@@ -27,17 +27,16 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ImageBox from '@/components/Image/ImageBox.vue'
-import { EXTRA_IMAGE_ASPECT_RATIOS, EXTRA_IMAGE_DISPLAY_ORDERS } from '@/constants/recordPrintExtraImages'
+import { EXTRA_IMAGE_DISPLAY_ORDERS } from '@/constants/recordPrintExtraImages'
 
 const props = defineProps({
   images: {
     type: Array,
     default: () => []
   },
-  size: {
+  aspectRatioCss: {
     type: String,
-    default: '5:4',
-    validator: (value) => EXTRA_IMAGE_ASPECT_RATIOS.includes(value)
+    default: '1.25 / 1'
   },
   displayOrder: {
     type: String,
@@ -56,12 +55,6 @@ const props = defineProps({
 
 const { t } = useI18n({ useScope: 'global' })
 
-const aspectRatio = computed(() => {
-  const [width, height] = String(props.size || '5:4').split(':').map(Number)
-  if (!width || !height) return '5 / 4'
-  return `${width} / ${height}`
-})
-
 const effectiveGapPx = computed(() => (props.images.length > 1 ? props.gapPx : 0))
 
 const containerRadius = computed(() => (props.roundedCorners ? '10px' : '0'))
@@ -69,7 +62,7 @@ const containerRadius = computed(() => (props.roundedCorners ? '10px' : '0'))
 const itemRounded = computed(() => props.roundedCorners && effectiveGapPx.value > 0)
 
 const rootStyle = computed(() => ({
-  '--extra-images-aspect-ratio': aspectRatio.value,
+  '--extra-images-aspect-ratio': props.aspectRatioCss || '1.25 / 1',
   '--extra-images-gap': `${effectiveGapPx.value}px`,
   '--extra-images-radius': containerRadius.value
 }))
@@ -82,6 +75,7 @@ const rootStyle = computed(() => ({
   aspect-ratio: var(--extra-images-aspect-ratio);
   border-radius: var(--extra-images-radius, 0);
   overflow: hidden;
+  margin-bottom: 1rem;
 }
 
 .extra-images--horizontal {

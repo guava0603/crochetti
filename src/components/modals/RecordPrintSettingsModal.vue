@@ -38,6 +38,13 @@
             :source-images="sourceImages"
           />
         </section>
+
+        <PrintCompletedTimePrecisionSection
+          v-if="item.key === 'completedTime' && showCompletedTimeSettings"
+          v-model="draftCompletedTime"
+          :enabled="draft.completedTime"
+          :completed-at-ms="completedAtMs"
+        />
       </li>
     </ul>
   </ModalShell>
@@ -48,6 +55,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ModalShell from '@/components/modals/ModalShell/ModalShell.vue'
 import PrintImageOptionsSection from '@/components/modals/PrintImageOptionsSection.vue'
+import PrintCompletedTimePrecisionSection from '@/components/modals/PrintCompletedTimePrecisionSection.vue'
 import {
   RECORD_RESULT_SHARING_SECTION_KEYS,
   normalizeSectionVisibility
@@ -56,6 +64,7 @@ import {
   normalizeExtraImagesSettings,
   normalizeSourceImageUrls
 } from '@/constants/recordPrintExtraImages'
+import { normalizeCompletedTimeSettings } from '@/constants/recordPrintCompletedTime'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -74,6 +83,14 @@ const props = defineProps({
   availableKeys: {
     type: Array,
     default: () => [...RECORD_RESULT_SHARING_SECTION_KEYS]
+  },
+  completedTimeSettings: {
+    type: Object,
+    default: () => ({})
+  },
+  completedAtMs: {
+    type: Number,
+    default: null
   }
 })
 
@@ -84,6 +101,7 @@ const { t } = useI18n({ useScope: 'global' })
 const draft = reactive(normalizeSectionVisibility(props.modelValue))
 const draftTextInfo = ref(true)
 const draftExtraImages = reactive(normalizeExtraImagesSettings(props.extraImagesSettings, props.sourceImages))
+const draftCompletedTime = reactive(normalizeCompletedTimeSettings(props.completedTimeSettings))
 
 const sourceImages = computed(() => normalizeSourceImageUrls(props.sourceImages))
 
@@ -96,7 +114,14 @@ const allowedKeys = computed(() => {
 
 const TEXT_INFO_CHILD_KEYS = Object.freeze(['resultSummary', 'resultHeader'])
 
-const META_HEADER_KEYS = Object.freeze(['projectTitle', 'completedTime'])
+const PRINT_SECTION_OPTION_ORDER = Object.freeze([
+  'extraImages',
+  'projectTitle',
+  'moreStatus',
+  'extraNote',
+  'completedTime',
+  'textInfo'
+])
 
 const sectionOptions = computed(() =>
   buildSectionOptions(allowedKeys.value)
@@ -106,27 +131,15 @@ function buildSectionOptions(keys) {
   const removed = new Set(TEXT_INFO_CHILD_KEYS)
   const hasTextInfo = keys.some((k) => removed.has(k))
   const baseKeys = keys.filter((k) => !removed.has(k))
-
-  if (!hasTextInfo) {
-    return baseKeys.map((key) => ({ key, label: t(`recordPrint.sections.${key}`) }))
-  }
-
   const baseSet = new Set(baseKeys)
   const out = []
 
-  for (const key of META_HEADER_KEYS) {
+  for (const key of PRINT_SECTION_OPTION_ORDER) {
+    if (key === 'textInfo') {
+      if (hasTextInfo) out.push({ key: 'textInfo', label: t('recordPrint.sections.textInfo') })
+      continue
+    }
     if (!baseSet.has(key)) continue
-    out.push({ key, label: t(`recordPrint.sections.${key}`) })
-  }
-
-  if (baseSet.has('extraImages')) {
-    out.push({ key: 'extraImages', label: t('recordPrint.sections.extraImages') })
-  }
-
-  out.push({ key: 'textInfo', label: t('recordPrint.sections.textInfo') })
-
-  for (const key of baseKeys) {
-    if (key === 'extraImages' || META_HEADER_KEYS.includes(key)) continue
     out.push({ key, label: t(`recordPrint.sections.${key}`) })
   }
 
@@ -145,6 +158,14 @@ const showExtraImagesSettings = computed(() =>
   allowedKeys.value.includes('extraImages') && draft.extraImages && sourceImages.value.length > 0
 )
 
+const showCompletedTimeSettings = computed(
+  () =>
+    allowedKeys.value.includes('completedTime') &&
+    draft.completedTime &&
+    props.completedAtMs != null &&
+    Number.isFinite(props.completedAtMs)
+)
+
 function syncDraftFromProps() {
   const next = normalizeSectionVisibility(props.modelValue)
   for (const key of RECORD_RESULT_SHARING_SECTION_KEYS) {
@@ -158,11 +179,15 @@ function syncDraftFromProps() {
   applyTextInfoToDraft(draftTextInfo.value)
 
   const nextExtraImages = normalizeExtraImagesSettings(props.extraImagesSettings, sourceImages.value)
-  draftExtraImages.size = nextExtraImages.size
+  draftExtraImages.aspectRatio = nextExtraImages.aspectRatio
+  draftExtraImages.aspectLandscape = nextExtraImages.aspectLandscape
   draftExtraImages.displayOrder = nextExtraImages.displayOrder
   draftExtraImages.gapPx = nextExtraImages.gapPx
   draftExtraImages.roundedCorners = nextExtraImages.roundedCorners
   draftExtraImages.selectedUrls = nextExtraImages.selectedUrls
+
+  const nextCompletedTime = normalizeCompletedTimeSettings(props.completedTimeSettings)
+  draftCompletedTime.precision = nextCompletedTime.precision
 }
 
 watch(
@@ -180,10 +205,12 @@ function handleSave() {
   }
 
   const normalizedExtraImages = normalizeExtraImagesSettings(draftExtraImages, sourceImages.value)
+  const normalizedCompletedTime = normalizeCompletedTimeSettings(draftCompletedTime)
 
   emit('save', {
     sectionVisibility: out,
-    extraImages: normalizedExtraImages
+    extraImages: normalizedExtraImages,
+    completedTime: normalizedCompletedTime
   })
   emit('update:show', false)
 }

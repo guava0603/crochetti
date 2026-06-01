@@ -1,46 +1,50 @@
 <template>
   <section v-if="enabled && sourceImages.length" class="extra-images-settings">
-    <h3 class="settings-group-title">{{ t(titleKey) }}</h3>
 
     <ul class="image-toggle-list">
-      <li v-for="(url, idx) in sourceImages" :key="url" class="image-toggle-row">
-        <img
-          class="image-toggle-row__thumb"
-          :src="url"
-          :alt="t('recordResult.imageAlt', { n: idx + 1 })"
-        />
-        <span class="image-toggle-row__label">
-          {{ t('recordResult.imageAlt', { n: idx + 1 }) }}
-        </span>
-        <label class="modal-toggle">
-          <input
-            :checked="isImageSelected(url)"
-            type="checkbox"
-            class="modal-toggle__input"
-            @change="setImageSelected(url, $event.target.checked)"
-          />
-          <span class="modal-toggle__track" aria-hidden="true" />
-        </label>
+      <li v-for="(url, idx) in sourceImages" :key="url" class="image-toggle-item">
+        <button
+          type="button"
+          class="image-toggle-thumb"
+          :class="{ 'image-toggle-thumb--selected': isImageSelected(url) }"
+          :aria-label="t('recordResult.imageAlt', { n: idx + 1 })"
+          :aria-pressed="isImageSelected(url)"
+          @click="toggleImageSelected(url)"
+        >
+          <img class="image-toggle-thumb__img" :src="url" alt="" />
+        </button>
       </li>
     </ul>
 
-    <div class="size-picker">
+    <div v-if="selectedCount > 1" class="aspect-picker">
       <p class="settings-group-subtitle">{{ t('recordPrint.extraImages.sizeLabel') }}</p>
-      <div class="size-options">
+
+      <div
+        class="aspect-preview"
+        :style="aspectPreviewStyle"
+        :aria-label="t('recordPrint.extraImages.aspectPreviewLabel', { ratio: aspectRatioLabel })"
+      >
+        <span class="aspect-preview__label">{{ aspectRatioLabel }}</span>
+      </div>
+
+      <div class="aspect-controls">
+        <input
+          v-model.number="aspectRatioSlider"
+          class="aspect-controls__range"
+          type="range"
+          :min="EXTRA_IMAGE_ASPECT_RATIO_MIN"
+          :max="EXTRA_IMAGE_ASPECT_RATIO_MAX"
+          :step="EXTRA_IMAGE_ASPECT_RATIO_STEP"
+          :aria-label="t('recordPrint.extraImages.aspectSliderLabel')"
+        />
         <button
-          v-for="option in sizeOptions"
-          :key="option.value"
           type="button"
-          class="size-option"
-          :class="{ 'size-option--active': settings.size === option.value }"
-          @click="settings.size = option.value"
+          class="aspect-controls__rotate"
+          :aria-label="t('recordPrint.extraImages.rotateAspectLabel')"
+          :title="t('recordPrint.extraImages.rotateAspectLabel')"
+          @click="toggleAspectLandscape"
         >
-          <span class="size-option__label">{{ option.label }}</span>
-          <span
-            class="size-option__preview"
-            :style="{ aspectRatio: option.previewRatio }"
-            aria-hidden="true"
-          />
+          <span class="aspect-controls__rotate-icon" aria-hidden="true">↻</span>
         </button>
       </div>
     </div>
@@ -83,8 +87,13 @@
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  EXTRA_IMAGE_ASPECT_RATIOS,
+  EXTRA_IMAGE_ASPECT_RATIO_MAX,
+  EXTRA_IMAGE_ASPECT_RATIO_MIN,
+  EXTRA_IMAGE_ASPECT_RATIO_STEP,
   EXTRA_IMAGE_DISPLAY_ORDERS,
+  clampAspectRatio,
+  formatExtraImagesAspectRatioCss,
+  formatExtraImagesAspectRatioLabel,
   normalizeExtraImagesSettings,
   normalizeSourceImageUrls
 } from '@/constants/recordPrintExtraImages'
@@ -125,13 +134,39 @@ function setImageSelected(url, selected) {
   settings.value.selectedUrls = sourceImages.value.filter((entry) => selectedSet.has(entry))
 }
 
-const sizeOptions = computed(() =>
-  EXTRA_IMAGE_ASPECT_RATIOS.map((value) => ({
-    value,
-    label: t(`recordPrint.extraImages.sizes.${value.replace(':', '_')}`),
-    previewRatio: value.replace(':', ' / ')
-  }))
+function toggleImageSelected(url) {
+  setImageSelected(url, !isImageSelected(url))
+}
+
+const aspectRatioCss = computed(() =>
+  formatExtraImagesAspectRatioCss(settings.value?.aspectRatio, settings.value?.aspectLandscape)
 )
+
+const aspectRatioLabel = computed(() =>
+  formatExtraImagesAspectRatioLabel(settings.value?.aspectRatio, settings.value?.aspectLandscape)
+)
+
+const ASPECT_PREVIEW_SHORT_SIDE = '3.5rem'
+
+const aspectPreviewStyle = computed(() => {
+  const landscape = settings.value?.aspectLandscape !== false
+  return {
+    aspectRatio: aspectRatioCss.value,
+    width: landscape ? 'auto' : ASPECT_PREVIEW_SHORT_SIDE,
+    height: landscape ? ASPECT_PREVIEW_SHORT_SIDE : 'auto'
+  }
+})
+
+const aspectRatioSlider = computed({
+  get: () => clampAspectRatio(settings.value?.aspectRatio),
+  set: (value) => {
+    settings.value.aspectRatio = clampAspectRatio(value)
+  }
+})
+
+function toggleAspectLandscape() {
+  settings.value.aspectLandscape = !settings.value?.aspectLandscape
+}
 
 const orderOptions = computed(() =>
   EXTRA_IMAGE_DISPLAY_ORDERS.map((value) => ({
@@ -182,36 +217,105 @@ const spacingEnabled = computed({
   margin: 0;
   padding: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 0.55rem;
 }
 
-.image-toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-}
-
-.image-toggle-row__thumb {
-  width: 44px;
-  height: 44px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+.image-toggle-item {
   flex: none;
 }
 
-.image-toggle-row__label {
-  flex: 1;
-  min-width: 0;
-  font-weight: 700;
-  color: #374151;
-  font-size: 0.9rem;
+.image-toggle-thumb {
+  display: block;
+  padding: 0;
+  border: 0.2rem solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+  transition: border-color 0.15s;
 }
 
-.size-options {
+.image-toggle-thumb--selected {
+  border-color: var(--color-icon-add);
+}
+
+.image-toggle-thumb:focus-visible {
+  outline: 2px solid rgb(var(--color-icon-add-rgb) / 0.45);
+  outline-offset: 2px;
+}
+
+.image-toggle-thumb__img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+
+.aspect-picker {
   display: flex;
+  flex-direction: column;
   gap: 0.65rem;
+}
+
+.aspect-preview {
+  margin-inline: auto;
+  flex: none;
+  border-radius: 10px;
+  background: rgba(243, 244, 246, 0.98);
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aspect-preview__label {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+}
+
+.aspect-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.aspect-controls__range {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--color-icon-add);
+}
+
+.aspect-controls__rotate {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.05s;
+}
+
+.aspect-controls__rotate:hover {
+  background: rgba(243, 244, 246, 0.98);
+}
+
+.aspect-controls__rotate:active {
+  transform: translateY(1px);
+}
+
+.aspect-controls__rotate-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  color: #374151;
 }
 
 .order-options {
@@ -247,40 +351,6 @@ const spacingEnabled = computed({
 .order-option--active {
   border-color: var(--color-icon-add);
   background: rgb(var(--color-icon-add-rgb) / 0.08);
-}
-
-.size-option {
-  flex: 1;
-  min-width: 0;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  background: #fff;
-  padding: 0.55rem 0.45rem 0.65rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.45rem;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-}
-
-.size-option--active {
-  border-color: var(--color-icon-add);
-  background: rgb(var(--color-icon-add-rgb) / 0.08);
-}
-
-.size-option__label {
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: #374151;
-}
-
-.size-option__preview {
-  width: 100%;
-  max-width: 56px;
-  border-radius: 6px;
-  border: 2px solid rgba(17, 24, 39, 0.12);
-  background: rgba(243, 244, 246, 0.95);
 }
 
 .extra-images-option-row {

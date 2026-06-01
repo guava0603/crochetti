@@ -943,9 +943,23 @@
       "projectTitle": "Project title",
       "completedTime": "Completed time",
       "extraImages": "Feedback photos",
-      "textInfo": "Text info",
+      "textInfo": "Text-only info",
       "moreStatus": "Other statuses",
       "extraNote": "Feedback note"
+    },
+    "completedTime": {
+      "precisionLabel": "Time precision",
+      "precisionSliderLabel": "Completed time precision",
+      "previewLabel": "Preview: {time}",
+      "previewEmpty": "No completed time",
+      "units": {
+        "year": "Year",
+        "month": "Month",
+        "day": "Day",
+        "hour": "Hour",
+        "minute": "Min",
+        "second": "Sec"
+      }
     },
     "extraImages": {
       "title": "Photo layout",
@@ -953,14 +967,12 @@
       "orderLabel": "Display order",
       "spacingLabel": "Image spacing",
       "roundedCornersLabel": "Rounded corners",
+      "aspectPreviewLabel": "Current ratio {ratio}",
+      "aspectSliderLabel": "Box aspect ratio",
+      "rotateAspectLabel": "Rotate ratio (1:x ↔ x:1)",
       "orders": {
         "horizontal": "Horizontal",
         "vertical": "Vertical"
-      },
-      "sizes": {
-        "5_4": "5:4",
-        "3_2": "3:2",
-        "1_1": "1:1"
       }
     }
   },
@@ -1233,7 +1245,6 @@
       "hookSelectPlaceholder": "Select hook…",
       "needleSelectPlaceholder": "Select needles…",
       "yarnSelectPlaceholder": "Select yarn…",
-      "yarnAmountPlaceholder": "Amount (optional)…",
       "stitchNotesPlaceholder": "Enter notes",
       "creating": "Creating...",
       "createProject": "Create Project",

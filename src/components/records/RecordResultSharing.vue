@@ -25,7 +25,7 @@
       <template v-if="extraImagesDisplay?.images?.length && isSectionVisible('extraImages')" #extra-images>
         <ExtraImages
           :images="extraImagesDisplay.images"
-          :size="extraImagesDisplay.size"
+          :aspect-ratio-css="extraImagesDisplay.aspectRatioCss"
           :display-order="extraImagesDisplay.displayOrder"
           :gap-px="extraImagesDisplay.gapPx"
           :rounded-corners="extraImagesDisplay.roundedCorners"
@@ -33,11 +33,16 @@
       </template>
 
       <template v-if="thought && isSectionVisible('extraNote')" #extra-note>
-        <section class="extra-note-card" :aria-label="t('recordPrint.sections.extraNote')">
+        <section
+          class="extra-note-card export-healing-card"
+          :aria-label="t('recordPrint.sections.extraNote')"
+        >
+          <span class="card-inner-frame" aria-hidden="true" />
           <p class="extra-note-card__body">{{ thought }}</p>
         </section>
       </template>
     </RecordResult>
+
     <p
       v-if="completedTimeLabel && isSectionVisible('completedTime')"
       class="sharing-meta__completed"
@@ -54,12 +59,11 @@ import { useRoute } from 'vue-router'
 import { useRecordContext } from '@/composables/recordContext'
 import { normalizeSectionVisibility } from '@/constants/recordResultSharingSections'
 import { resolveExtraImagesForDisplay, normalizeSourceImageUrls } from '@/constants/recordPrintExtraImages'
+import { getRecordCompletedAtMs, getRecordProjectTitle } from '@/utils/recordResultSectionAvailability'
 import {
-  getAvailableSharingSections,
-  getRecordCompletedAtMs,
-  getRecordProjectTitle
-} from '@/utils/recordResultSectionAvailability'
-import { formatDateTimeNoSeconds } from '@/utils/dateTime'
+  formatCompletedTimeForPrint,
+  normalizeCompletedTimeSettings
+} from '@/constants/recordPrintCompletedTime'
 import RecordResult from '@/components/records/RecordResult.vue'
 import ExtraImages from '@/components/records/ExtraImages.vue'
 import { captureElementAsPngBlob, shareOrDownloadElementAsImage, shareOrDownloadImageBlob } from '@/utils/downloadImage'
@@ -84,13 +88,17 @@ const props = defineProps({
     type: Object,
     default: undefined
   },
+  completedTimeSettings: {
+    type: Object,
+    default: undefined
+  },
   disableAnimations: {
     type: Boolean,
     default: false
   }
 })
 
-const { t } = useI18n({ useScope: 'global' })
+const { t, locale } = useI18n({ useScope: 'global' })
 const route = useRoute()
 
 const recordCtx = useRecordContext()
@@ -120,12 +128,11 @@ const projectTitle = computed(() => getRecordProjectTitle(currentRecord.value))
 const completedTimeLabel = computed(() => {
   const ms = getRecordCompletedAtMs(currentRecord.value)
   if (ms == null) return ''
-  return formatDateTimeNoSeconds(ms, { hour12: false })
+  const precision = normalizeCompletedTimeSettings(props.completedTimeSettings).precision
+  const time = formatCompletedTimeForPrint(ms, precision, { locale: locale.value })
+  if (!time) return ''
+  return t('recordResult.sharingCompletedAt', { time })
 })
-
-const availableSectionKeys = computed(() =>
-  getAvailableSharingSections(currentRecord.value, { layout: 'sharing' })
-)
 
 function withLayoutCaptureOptions(el, captureOptions = {}) {
   const layoutWidthPx = measurePrintedDomainWidthPx(el)
@@ -184,7 +191,6 @@ const shareOrDownload = async (captureOptions = {}) => {
 
 defineExpose({
   shareOrDownload,
-  availableSectionKeys,
   layoutWidthPx
 })
 </script>
@@ -240,46 +246,7 @@ defineExpose({
   border-color: transparent;
 }
 
-.extra-note-card {
-  position: relative;
-  margin-top: 1.5rem;
-  padding: 0.85rem 1rem;
-  border-radius: 10px;
-  background: rgba(245, 235, 218, 0.96);
-  backdrop-filter: blur(0.5rem);
-  -webkit-backdrop-filter: blur(0.5rem);
-}
-
-.record-result-sharing--static {
-  background: #fff !important;
-}
-
-.record-result-sharing--static.printed-domain {
-  background: #fff !important;
-}
-
-.record-result-sharing--static .extra-note-card {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  background: #f5ebda !important;
-  background-color: #f5ebda !important;
-  box-shadow: 0 0.75rem 1.625rem rgba(0, 0, 0, 0.1) !important;
-}
-
-.extra-note-card__title {
-  position: relative;
-  z-index: 1;
-  margin: 0 0 0.5rem;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: rgba(122, 90, 58, 0.92);
-  text-transform: none;
-}
-
 .extra-note-card__body {
-  position: relative;
-  z-index: 1;
   margin: 0;
   white-space: pre-line;
   color: #111827;
@@ -288,3 +255,5 @@ defineExpose({
   font-size: 0.95rem;
 }
 </style>
+
+<style src="@/assets/export-card.css"></style>

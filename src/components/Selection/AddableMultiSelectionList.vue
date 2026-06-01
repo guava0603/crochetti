@@ -2,63 +2,28 @@
   <div
     ref="rootRef"
     class="addable-multi-selection"
-    :class="{
-      'addable-multi-selection--yarn': isYarn,
-      'addable-multi-selection--open': showMenu
-    }"
+    :class="{ 'addable-multi-selection--open': showMenu }"
     @keydown.esc.prevent="closeMenu"
   >
     <div
       class="addable-multi-selection__control"
       :class="{ 'addable-multi-selection__control--disabled': disabled }"
     >
-      <div v-if="isYarn && selected.length" class="addable-multi-selection__items">
-        <div
-          v-for="(v, idx) in selected"
-          :key="`${v}-${idx}`"
-          class="addable-multi-selection__item"
+      <span
+        v-for="(v, idx) in selected"
+        :key="`${v}-${idx}`"
+        class="addable-multi-selection__chip"
+      >
+        <span class="addable-multi-selection__chip-text">{{ labelForValue(v) }}</span>
+        <button
+          type="button"
+          class="addable-multi-selection__chip-remove"
+          :disabled="disabled"
+          @click.stop="removeValue(v)"
         >
-          <div class="addable-multi-selection__chip">
-            <span class="addable-multi-selection__chip-text">{{ labelForValue(v) }}</span>
-            <button
-              type="button"
-              class="addable-multi-selection__chip-remove"
-              :disabled="disabled"
-              @click.stop="removeValue(v)"
-            >
-              ×
-            </button>
-          </div>
-
-          <div class="addable-multi-selection__amount">
-            <SelectionInputCombineList
-              :model-value="String(yarnAmountMap[v] || '')"
-              :placeholder="amountPlaceholder"
-              :suggestions="amountSuggestions"
-              :disabled="disabled"
-              @update:modelValue="(next) => setAmount(v, next)"
-            />
-          </div>
-        </div>
-      </div>
-
-      <template v-else>
-        <span
-          v-for="(v, idx) in selected"
-          :key="`${v}-${idx}`"
-          class="addable-multi-selection__chip"
-        >
-          <span class="addable-multi-selection__chip-text">{{ labelForValue(v) }}</span>
-          <button
-            type="button"
-            class="addable-multi-selection__chip-remove"
-            :disabled="disabled"
-            @click.stop="removeValue(v)"
-          >
-            ×
-          </button>
-        </span>
-      </template>
+          ×
+        </button>
+      </span>
 
       <button
         type="button"
@@ -104,28 +69,8 @@ import { useSearchableOptionsMenu } from '@/composables/useSearchableOptionsMenu
 import { toTrimmedText as toText } from '@/utils/text'
 import { buildValueLabelMap, getAvailableSelectionOptions } from '@/utils/selectionOptions'
 
-import SelectionInputCombineList from '@/components/Input/SelectionInputCombineList.vue'
-
 const props = defineProps({
-  variant: {
-    type: String,
-    default: 'multi',
-    validator: (v) => ['multi', 'yarn'].includes(String(v))
-  },
   modelValue: {
-    type: Array,
-    default: () => []
-  },
-  // Yarn variant: track per-selected-id amount
-  yarnAmountById: {
-    type: Object,
-    default: () => ({})
-  },
-  amountPlaceholder: {
-    type: String,
-    default: ''
-  },
-  amountSuggestions: {
     type: Array,
     default: () => []
   },
@@ -155,12 +100,10 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'update:yarnAmountById'])
+const emit = defineEmits(['update:modelValue'])
 
 const rootRef = ref(null)
 const searchRef = ref(null)
-
-const isYarn = computed(() => String(props.variant) === 'yarn')
 
 const selected = computed(() => {
   const seen = new Set()
@@ -177,12 +120,6 @@ const selected = computed(() => {
 
 const availableOptions = computed(() => {
   return getAvailableSelectionOptions({ options: props.options, suggestions: props.suggestions })
-})
-
-const yarnAmountMap = computed(() => {
-  if (!isYarn.value) return {}
-  const raw = props.yarnAmountById
-  return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
 })
 
 const { query, filteredOptions, showMenu, closeMenu, toggleMenu, handleInput } = useSearchableOptionsMenu({
@@ -215,7 +152,6 @@ function toggleValue(v) {
   else next = [...current, value]
 
   emit('update:modelValue', next)
-  if (isYarn.value) cleanupAmountMapForSelection(next)
 
   query.value = ''
   nextTick(() => searchRef.value?.focus?.())
@@ -226,46 +162,6 @@ function removeValue(v) {
   const current = selected.value
   const next = current.filter((x) => x !== value)
   emit('update:modelValue', next)
-  if (isYarn.value) cleanupAmountMapForSelection(next)
-}
-
-function cleanupAmountMapForSelection(nextSelected) {
-  if (!isYarn.value) return
-
-  const keep = new Set(Array.isArray(nextSelected) ? nextSelected.map((x) => toText(x)).filter(Boolean) : [])
-  const prev = yarnAmountMap.value
-  const next = {}
-  for (const key of Object.keys(prev)) {
-    const k = toText(key)
-    if (!k || !keep.has(k)) continue
-    const v = toText(prev[k])
-    if (!v) continue
-    next[k] = v
-  }
-
-  const prevKeys = Object.keys(prev)
-  const nextKeys = Object.keys(next)
-  const same = prevKeys.length === nextKeys.length && prevKeys.every((k) => next[k] === prev[k])
-  if (!same) emit('update:yarnAmountById', next)
-}
-
-function setAmount(id, nextValue) {
-  if (!isYarn.value) return
-  const key = toText(id)
-  if (!key) return
-  const value = toText(nextValue)
-
-  const prev = yarnAmountMap.value
-  if (!value) {
-    if (prev[key] == null) return
-    const next = { ...prev }
-    delete next[key]
-    emit('update:yarnAmountById', next)
-    return
-  }
-
-  if (prev[key] === value) return
-  emit('update:yarnAmountById', { ...prev, [key]: value })
 }
 </script>
 
@@ -285,40 +181,6 @@ function setAmount(id, nextValue) {
   gap: 0.35rem;
   flex-wrap: wrap;
   width: 100%;
-}
-
-.addable-multi-selection--yarn .addable-multi-selection__control {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.45rem;
-  flex-wrap: nowrap;
-}
-
-.addable-multi-selection__items {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.addable-multi-selection__item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  min-width: 0;
-}
-
-.addable-multi-selection--yarn .addable-multi-selection__chip {
-  width: fit-content;
-  max-width: 50%;
-  flex: 0 1 auto;
-  min-width: 0;
-}
-
-.addable-multi-selection__amount {
-  flex: 1;
-  min-width: 0;
 }
 
 .addable-multi-selection__control--disabled {

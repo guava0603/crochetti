@@ -114,18 +114,24 @@ const SECTION_LABEL_KEYS = {
 
 const PROJECT_ONLY_KEYS = Object.freeze(['images', 'description', 'selfDefinedStitches'])
 
-const sectionOptions = computed(() =>
-  allowedKeys.value
-    .filter((key) => {
-      // Project-level options only make sense when exporting a single combined image.
-      if (!draftExportMultiple.value) return true
-      return !PROJECT_ONLY_KEYS.includes(key)
-    })
-    .map((key) => ({
-      key,
-      label: t(SECTION_LABEL_KEYS[key] || key)
-    }))
-)
+const sectionOptions = computed(() => {
+  const keys = allowedKeys.value.filter((key) => {
+    // Project-level options only make sense when exporting a single combined image.
+    if (!draftExportMultiple.value) return true
+    return !PROJECT_ONLY_KEYS.includes(key)
+  })
+
+  const ordered = []
+  if (keys.includes('images')) ordered.push('images')
+  for (const key of keys) {
+    if (key !== 'images') ordered.push(key)
+  }
+
+  return ordered.map((key) => ({
+    key,
+    label: t(SECTION_LABEL_KEYS[key] || key)
+  }))
+})
 
 const showExtraImagesSettings = computed(() => {
   if (!allowedKeys.value.includes('images')) return false
@@ -143,7 +149,8 @@ function syncDraftFromProps() {
   draftExportMultiple.value = draftComponentMode.value === DESIGN_PRINT_COMPONENT_MODES.separate
 
   const nextExtraImages = normalizeExtraImagesSettings(props.extraImagesSettings, sourceImages.value)
-  draftExtraImages.size = nextExtraImages.size
+  draftExtraImages.aspectRatio = nextExtraImages.aspectRatio
+  draftExtraImages.aspectLandscape = nextExtraImages.aspectLandscape
   draftExtraImages.displayOrder = nextExtraImages.displayOrder
   draftExtraImages.gapPx = nextExtraImages.gapPx
   draftExtraImages.roundedCorners = nextExtraImages.roundedCorners

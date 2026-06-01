@@ -1,26 +1,26 @@
 <template>
   <div class="design-print-shell">
-    <div class="design-print-toolbar">
-      <ToolbarButton
-        icon-src="assets/image/settings/083__setting_edit.svg"
-        :aria-label="t('print.editSettings')"
-        :title="t('print.editSettings')"
-        :disabled="!projectData || loading"
-        @click="openSettings"
-      />
-      <button
-        type="button"
-        class="btn-share-image"
-        :disabled="!projectData || loading || sharing"
-        :aria-label="t('project.downloadDesignPage.shareOrDownload')"
-        :title="t('project.downloadDesignPage.shareOrDownload')"
-        @click="shareImage"
-      >
-        <ButtonPrinter />
-      </button>
-    </div>
-
     <div class="print-page-content">
+      <div class="print-page-toolbar">
+        <ToolbarButton
+          icon-src="assets/image/settings/083__setting_edit.svg"
+          :aria-label="t('print.editSettings')"
+          :title="t('print.editSettings')"
+          :disabled="!projectData || loading"
+          @click="openSettings"
+        />
+        <button
+          type="button"
+          class="btn-share-image"
+          :disabled="!projectData || loading || sharing"
+          :aria-label="t('project.downloadDesignPage.shareOrDownload')"
+          :title="t('project.downloadDesignPage.shareOrDownload')"
+          @click="shareImage"
+        >
+          <ButtonPrinter />
+        </button>
+      </div>
+
       <div v-if="loading" class="print-loading">{{ t('common.loading') }}</div>
 
       <div v-else-if="permissionDenied" class="print-no-permission">
@@ -133,9 +133,11 @@ const printLayoutWidth = computed(() => {
 
 const availableSectionKeys = computed(() => getAvailableDesignPrintSections(props.projectData))
 
-const printSettings = ref(loadStoredDesignPrintSettings(projectId.value, availableSectionKeys.value))
-
 const sourceImageUrls = computed(() => normalizeSourceImageUrls(props.projectData?.images))
+
+const printSettings = ref(
+  loadStoredDesignPrintSettings(projectId.value, availableSectionKeys.value, sourceImageUrls.value)
+)
 
 const sectionVisibility = computed({
   get: () => printSettings.value.sectionVisibility,
@@ -159,14 +161,18 @@ const componentMode = computed({
 })
 
 function reloadPrintSettings() {
-  printSettings.value = loadStoredDesignPrintSettings(projectId.value, availableSectionKeys.value)
+  printSettings.value = loadStoredDesignPrintSettings(
+    projectId.value,
+    availableSectionKeys.value,
+    sourceImageUrls.value
+  )
 }
 
 watch(projectId, () => {
   reloadPrintSettings()
 })
 
-watch(availableSectionKeys, () => {
+watch([availableSectionKeys, sourceImageUrls], () => {
   if (!availableSectionKeys.value.length) return
   reloadPrintSettings()
 })
@@ -199,7 +205,12 @@ function applySettings(payload) {
     extraImages: nextExtraImages
   }
 
-  saveStoredDesignPrintSettings(projectId.value, printSettings.value, availableSectionKeys.value)
+  saveStoredDesignPrintSettings(
+    projectId.value,
+    printSettings.value,
+    availableSectionKeys.value,
+    sourceImageUrls.value
+  )
 }
 
 async function shareImage() {
@@ -257,9 +268,21 @@ onUnmounted(() => {
 .print-page-content {
   position: relative;
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 1rem 0 5rem;
+  padding: 3.25rem 0 5rem;
+}
+
+.print-page-toolbar {
+  position: absolute;
+  top: 0.5rem;
+  right: 1rem;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
 }
 
 .print-live-html {
@@ -291,19 +314,6 @@ onUnmounted(() => {
 .print-no-permission {
   font-size: 1.05rem;
   color: #374151;
-}
-
-.design-print-toolbar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.35rem;
-  padding: 0.5rem 1rem 0;
-  z-index: var(--z-sticky);
 }
 
 .btn-share-image {

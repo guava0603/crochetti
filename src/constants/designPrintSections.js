@@ -1,3 +1,5 @@
+import { normalizeExtraImagesSettings } from '@/constants/recordPrintExtraImages'
+
 export const DESIGN_PRINT_SECTION_KEYS = Object.freeze([
   'images',
   'description',
@@ -53,32 +55,50 @@ function filterVisibilityByAvailable(visibility, availableKeys) {
   return out
 }
 
-export function loadStoredDesignPrintSettings(projectId, availableKeys = []) {
+export function loadStoredDesignPrintSettings(projectId, availableKeys = [], sourceImageUrls = []) {
   const id = String(projectId || '').trim()
   const base = filterVisibilityByAvailable(DEFAULT_DESIGN_PRINT_VISIBILITY, availableKeys)
+  const baseExtraImages = normalizeExtraImagesSettings(null, sourceImageUrls)
 
   if (!id || typeof localStorage === 'undefined') {
-    return { sectionVisibility: base, componentMode: DEFAULT_DESIGN_PRINT_COMPONENT_MODE, extraImages: {} }
+    return {
+      sectionVisibility: base,
+      componentMode: DEFAULT_DESIGN_PRINT_COMPONENT_MODE,
+      extraImages: baseExtraImages
+    }
   }
 
   try {
     const raw = localStorage.getItem(`corchetti.designPrint.${id}`)
     if (!raw) {
-      return { sectionVisibility: base, componentMode: DEFAULT_DESIGN_PRINT_COMPONENT_MODE }
+      return {
+        sectionVisibility: base,
+        componentMode: DEFAULT_DESIGN_PRINT_COMPONENT_MODE,
+        extraImages: baseExtraImages
+      }
     }
     const parsed = JSON.parse(raw)
     const sections = parsed?.sections ?? parsed
     return {
       sectionVisibility: filterVisibilityByAvailable(normalizeDesignSectionVisibility(sections), availableKeys),
       componentMode: normalizeDesignComponentMode(parsed?.componentMode),
-      extraImages: parsed?.extraImages ?? {}
+      extraImages: normalizeExtraImagesSettings(parsed?.extraImages, sourceImageUrls)
     }
   } catch {
-    return { sectionVisibility: base, componentMode: DEFAULT_DESIGN_PRINT_COMPONENT_MODE, extraImages: {} }
+    return {
+      sectionVisibility: base,
+      componentMode: DEFAULT_DESIGN_PRINT_COMPONENT_MODE,
+      extraImages: baseExtraImages
+    }
   }
 }
 
-export function saveStoredDesignPrintSettings(projectId, settings, availableKeys = []) {
+export function saveStoredDesignPrintSettings(
+  projectId,
+  settings,
+  availableKeys = [],
+  sourceImageUrls = []
+) {
   const id = String(projectId || '').trim()
   if (!id || typeof localStorage === 'undefined') return
 
@@ -89,7 +109,7 @@ export function saveStoredDesignPrintSettings(projectId, settings, availableKeys
         availableKeys
       ),
       componentMode: normalizeDesignComponentMode(settings?.componentMode),
-      extraImages: settings?.extraImages ?? {}
+      extraImages: normalizeExtraImagesSettings(settings?.extraImages, sourceImageUrls)
     }
     localStorage.setItem(`corchetti.designPrint.${id}`, JSON.stringify(payload))
   } catch {

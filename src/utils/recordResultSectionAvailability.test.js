@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { getAvailableSharingSections } from '@/utils/recordResultSectionAvailability'
+import {
+  getAvailableSharingSections,
+  getRecordCompletedAtMs
+} from '@/utils/recordResultSectionAvailability'
 
 describe('getAvailableSharingSections', () => {
   const baseRecord = {
@@ -61,6 +64,18 @@ describe('getAvailableSharingSections', () => {
     )
     expect(keys).not.toContain('moreStatus')
     expect(keys).toContain('resultHeader')
+  })
+
+  it('reads Firestore Timestamp completed_at', () => {
+    const completedAt = {
+      toMillis: () => new Date('2026-05-20T13:30:00.000Z').getTime()
+    }
+    const ms = getRecordCompletedAtMs({
+      is_completed: true,
+      completed_at: completedAt,
+      time_slots: []
+    })
+    expect(ms).toBe(completedAt.toMillis())
   })
 
   it('omits projectTitle when project name is missing', () => {

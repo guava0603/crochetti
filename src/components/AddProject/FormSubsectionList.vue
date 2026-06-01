@@ -155,16 +155,11 @@
       <div v-if="componentYarnOptionsResolved.length" class="component-material-field component-material-field--inline">
         <div class="component-material-field__label">{{ t('project.componentMetadata.yarn') }}</div>
         <AddableMultiSelectionList
-          variant="yarn"
           :model-value="yarnModel"
           :options="componentYarnOptionsResolved"
           :placeholder="t('addProject.design.yarnSelectPlaceholder')"
-          :amount-placeholder="t('addProject.design.yarnAmountPlaceholder')"
-          :amount-suggestions="designYarnAmountSuggestions"
-          :yarn-amount-by-id="yarnAmountMap"
           :disabled="disabled"
           @update:modelValue="(v) => emit('update:yarn', Array.isArray(v) ? v : [])"
-          @update:yarnAmountById="(v) => emit('update:yarnAmountById', v)"
         />
       </div>
     </div>
@@ -181,7 +176,11 @@ import SelectionInputCombineList from '@/components/Input/SelectionInputCombineL
 
 import { openConfirmation } from '@/services/ui/confirmation'
 import { v4 as uuidv4 } from '@lukeed/uuid'
-import { yarnMetaUsageCount, removeYarnMetaFromComponents } from '@/utils/yarnMeta'
+import {
+  removeYarnMetaFromComponents,
+  stripComponentYarnAmountMetadata,
+  yarnMetaUsageCount
+} from '@/utils/yarnMeta'
 import { toTrimmedText as toText, uniqueTrimmedStrings as uniqueList } from '@/utils/text'
 
 defineOptions({ name: 'FormSubsectionList' })
@@ -216,13 +215,10 @@ const props = defineProps({
   yarn: { type: Array, default: () => [] },
   componentHookSuggestions: { type: Array, default: () => [] },
   componentNeedleSuggestions: { type: Array, default: () => [] },
-  componentYarnOptions: { type: Array, default: () => [] },
-
-  // Design-only: per-component yarn amount map (keyed by yarn meta id)
-  yarnAmountById: { type: Object, default: null }
+  componentYarnOptions: { type: Array, default: () => [] }
 })
 
-const emit = defineEmits(['update:modelValue', 'update:component-list', 'update:hook', 'update:needle', 'update:yarn', 'update:yarnAmountById'])
+const emit = defineEmits(['update:modelValue', 'update:component-list', 'update:hook', 'update:needle', 'update:yarn'])
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -489,22 +485,9 @@ function remapComponentYarnIds(componentList, idMap) {
       nextYarn.push(v)
     }
 
-    const nextMeta = c.metadata && typeof c.metadata === 'object' ? { ...c.metadata, yarn: nextYarn } : { yarn: nextYarn }
-    const prevAmountMap = (c.metadata && typeof c.metadata === 'object') ? c.metadata.yarn_amount_by_id : null
-    if (prevAmountMap && typeof prevAmountMap === 'object' && !Array.isArray(prevAmountMap)) {
-      const nextAmountMap = {}
-      for (const [rawKey, rawValue] of Object.entries(prevAmountMap)) {
-        const key = toText(rawKey)
-        if (!key) continue
-        const mappedKey = idMap.get(key) || key
-        const value = toText(rawValue)
-
-        if (!value) continue
-        if (nextAmountMap[mappedKey]) continue
-        nextAmountMap[mappedKey] = value
-      }
-      nextMeta.yarn_amount_by_id = nextAmountMap
-    }
+    const nextMeta = stripComponentYarnAmountMetadata(
+      c.metadata && typeof c.metadata === 'object' ? { ...c.metadata, yarn: nextYarn } : { yarn: nextYarn }
+    )
     return { ...c, yarn: nextYarn, metadata: nextMeta }
   })
 }
@@ -605,18 +588,6 @@ const componentHookSuggestionsResolved = computed(() => (Array.isArray(props.com
 const componentNeedleSuggestionsResolved = computed(() => (Array.isArray(props.componentNeedleSuggestions) ? props.componentNeedleSuggestions : []))
 const componentYarnOptionsResolved = computed(() => (Array.isArray(props.componentYarnOptions) ? props.componentYarnOptions : []))
 
-const yarnSelectedIds = computed(() => uniqueList(normalizeStringListNonEmpty(yarnModel.value)))
-
-const yarnAmountMap = computed(() => {
-  const raw = props.yarnAmountById
-  return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
-})
-
-const designYarnAmountSuggestions = computed(() => {
-  const values = Object.values(yarnAmountMap.value).map((v) => toText(v)).filter(Boolean)
-  return uniqueList(values)
-})
-
 const didInitHookDefaultAll = ref(false)
 const didInitNeedleDefaultAll = ref(false)
 const didInitYarnDefaultAll = ref(false)
@@ -695,31 +666,6 @@ watch(
     didInitYarnDefaultAll.value = true
     emit('update:yarn', all)
   },
-  { immediate: true }
-)
-
-function cleanupYarnAmountMapForSelection(selectionIds) {
-  const keep = new Set(Array.isArray(selectionIds) ? selectionIds.map((x) => toText(x)).filter(Boolean) : [])
-  const prev = yarnAmountMap.value
-  const next = {}
-
-  for (const [rawKey, rawValue] of Object.entries(prev)) {
-    const key = toText(rawKey)
-    if (!key || !keep.has(key)) continue
-    const value = toText(rawValue)
-    if (!value) continue
-    next[key] = value
-  }
-
-  const prevKeys = Object.keys(prev)
-  const nextKeys = Object.keys(next)
-  const same = prevKeys.length === nextKeys.length && prevKeys.every((k) => next[k] === prev[k])
-  if (!same) emit('update:yarnAmountById', next)
-}
-
-watch(
-  () => yarnSelectedIds.value,
-  (ids) => cleanupYarnAmountMapForSelection(ids),
   { immediate: true }
 )
 

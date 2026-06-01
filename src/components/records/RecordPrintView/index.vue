@@ -1,26 +1,26 @@
 <template>
   <div class="record-print-shell">
-    <div class="record-print-toolbar">
-      <ToolbarButton
-        icon-src="assets/image/settings/083__setting_edit.svg"
-        :aria-label="t('print.editSettings')"
-        :title="t('print.editSettings')"
-        :disabled="!recordData || recordLoading"
-        @click="openSettings"
-      />
-      <button
-        type="button"
-        class="btn-share-image"
-        :disabled="!recordData || recordLoading || sharing"
-        :aria-label="t('record.shareCompletedResultImage')"
-        :title="t('record.shareCompletedResultImage')"
-        @click="shareImage"
-      >
-        <ButtonPrinter />
-      </button>
-    </div>
-
     <div class="print-page-content">
+      <div class="print-page-toolbar">
+        <ToolbarButton
+          icon-src="assets/image/settings/083__setting_edit.svg"
+          :aria-label="t('print.editSettings')"
+          :title="t('print.editSettings')"
+          :disabled="!recordData || recordLoading"
+          @click="openSettings"
+        />
+        <button
+          type="button"
+          class="btn-share-image"
+          :disabled="!recordData || recordLoading || sharing"
+          :aria-label="t('record.shareCompletedResultImage')"
+          :title="t('record.shareCompletedResultImage')"
+          @click="shareImage"
+        >
+          <ButtonPrinter />
+        </button>
+      </div>
+
       <div v-if="recordLoading" class="print-loading">{{ t('common.loading') }}</div>
 
       <div v-else-if="recordData" class="print-live-html">
@@ -32,6 +32,7 @@
           :profile="profile"
           :section-visibility="sectionVisibility"
           :extra-images-settings="extraImagesSettings"
+          :completed-time-settings="completedTimeSettings"
         />
       </div>
     </div>
@@ -40,6 +41,8 @@
       v-model:show="showSettingsModal"
       :model-value="sectionVisibility"
       :extra-images-settings="extraImagesSettings"
+      :completed-time-settings="completedTimeSettings"
+      :completed-at-ms="completedAtMs"
       :source-images="sourceImageUrls"
       :available-keys="availableSectionKeys"
       @save="applySettings"
@@ -65,6 +68,8 @@ import {
 } from '@/constants/recordResultSharingSections'
 import { getAvailableSharingSections, normalizeSectionVisibilityForAvailable } from '@/utils/recordResultSectionAvailability'
 import { normalizeExtraImagesSettings } from '@/constants/recordPrintExtraImages'
+import { normalizeCompletedTimeSettings } from '@/constants/recordPrintCompletedTime'
+import { getRecordCompletedAtMs } from '@/utils/recordResultSectionAvailability'
 import { RECORD_RESULT_SHARING_WIDTH_CSS } from '@/constants/recordResultSharingLayout'
 
 defineOptions({ name: 'RecordPrintViewMain' })
@@ -118,6 +123,15 @@ const extraImagesSettings = computed({
     printSettings.value = { ...printSettings.value, extraImages: value }
   }
 })
+
+const completedTimeSettings = computed({
+  get: () => printSettings.value.completedTime,
+  set: (value) => {
+    printSettings.value = { ...printSettings.value, completedTime: value }
+  }
+})
+
+const completedAtMs = computed(() => getRecordCompletedAtMs(recordData.value))
 
 const availableSectionKeys = computed(() =>
   getAvailableSharingSections(recordData.value, { layout: 'sharing' })
@@ -188,10 +202,12 @@ function applySettings(payload) {
     availableSectionKeys.value
   )
   const nextExtraImages = normalizeExtraImagesSettings(payload?.extraImages, sourceImageUrls.value)
+  const nextCompletedTime = normalizeCompletedTimeSettings(payload?.completedTime)
 
   printSettings.value = {
     sectionVisibility: nextVisibility,
-    extraImages: nextExtraImages
+    extraImages: nextExtraImages,
+    completedTime: nextCompletedTime
   }
 
   saveStoredPrintSettings(
@@ -274,17 +290,6 @@ onUnmounted(() => {
   color: #6b7280;
   font-weight: 700;
   padding: 1rem 0;
-}
-
-.record-print-toolbar {
-  position: fixed;
-  top: 0; right: 0;
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.35rem;
-  padding: 0.5rem 1rem 0;
 }
 
 .btn-share-image {

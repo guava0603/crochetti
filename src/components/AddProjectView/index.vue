@@ -107,7 +107,7 @@ function normalizeExistingImageUrls(value) {
     .filter(Boolean)
 }
 
-function mergeCraftTypes(projects) {
+function mergeCraftTypes() {
   return [...DEFAULT_PROJECT_CRAFT_TYPES]
 }
 
@@ -209,7 +209,7 @@ async function applyCopyFromQuery() {
     ...basicInfo.value,
     name: '',
     description: '',
-    craft_types: mergeCraftTypes(projects),
+    craft_types: mergeCraftTypes(),
     materials: mergeMaterials(projects),
     image_files: []
   }

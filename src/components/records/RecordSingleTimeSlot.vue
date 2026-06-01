@@ -129,27 +129,6 @@ const slot = computed(() => {
   return list[idx]
 })
 
-const totalComponentCount = computed(() => {
-  const list = currentRecord.value?.component_list
-  return Array.isArray(list) ? list.length : 0
-})
-
-const slotStartComponentCount = computed(() => {
-  const list = slot.value?.end_at_list
-  if (!Array.isArray(list)) return null
-  let n = 0
-  for (const endAt of list) {
-    if (endAt && (endAt.row_index != null || endAt.crochet_count != null)) n += 1
-  }
-  return n
-})
-
-const slotStartAtText = computed(() => {
-  if (slotStartComponentCount.value == null) return ''
-  if (totalComponentCount.value <= 0) return ''
-  return t('record.slotStartAt', { n: slotStartComponentCount.value, total: totalComponentCount.value })
-})
-
 const userStatusCatalog = computed(() => statusCatalog.catalog.value)
 const userStatusNotes = computed(() => statusCatalog.notes.value)
 

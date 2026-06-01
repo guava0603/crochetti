@@ -197,36 +197,4 @@ defineExpose({
   flex-direction: column;
   gap: 0.75rem;
 }
-
-.yarn-meta {
-  display: flex;
-  flex-direction: column;
-}
-
-.yarn-meta__rows {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.3rem;
-}
-
-.yarn-meta__row {
-  width: 100%;
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 0.8fr;
-  gap: 0.2rem;
-  align-items: center;
-}
-
-.yarn-meta__cell {
-  min-width: 0;
-}
-
-.yarn-meta__delete {
-  position: absolute;
-  top: -0.5rem;
-  right: -0.5rem;
-}
-
-
 </style>

@@ -26,7 +26,7 @@
           <h2 class="result-title">{{ t('recordResult.title') }}</h2>
         </div>
 
-        <div v-if="showTopCardBlock" class="top-card">
+        <div v-if="showTopCardBlock" class="top-card export-healing-card">
           <span class="card-inner-frame" aria-hidden="true" />
           <div class="top-badge" aria-hidden="true">
             <div class="top-badge__circle" />
@@ -68,7 +68,7 @@
           <div v-if="isSharingLayout" class="more-status">
             <h2 v-if="showMoreStatusTitleBlock" class="result-title">{{ t('recordResult.nextStatuses') }}</h2>
             <div class="rest-grid">
-              <div v-for="g in rankedGroups.slice(1, 5)" :key="g.key" class="rest-card">
+              <div v-for="g in rankedGroups.slice(1, 5)" :key="g.key" class="rest-card export-healing-card">
                 <span class="card-inner-frame" aria-hidden="true" />
                 <div
                   class="rest-card-header"
@@ -114,48 +114,50 @@
           </div>
 
           <template v-else>
-            <div class="rest-title">{{ t('recordResult.nextStatuses') }}</div>
-            <div class="rest-grid">
-              <div v-for="g in rankedGroups.slice(1, 5)" :key="g.key" class="rest-card">
-                <span class="card-inner-frame" aria-hidden="true" />
-                <div
-                  class="rest-card-header"
-                  :class="{ 'rest-card-header--clickable': hasRestDetails(g) }"
-                  :role="hasRestDetails(g) ? 'button' : undefined"
-                  :tabindex="hasRestDetails(g) ? 0 : -1"
-                  :aria-expanded="hasRestDetails(g) ? isRestExpanded(g.key) : undefined"
-                  @click="hasRestDetails(g) && toggleRestExpanded(g.key)"
-                  @keydown.enter.prevent="hasRestDetails(g) && toggleRestExpanded(g.key)"
-                  @keydown.space.prevent="hasRestDetails(g) && toggleRestExpanded(g.key)"
-                >
-                  <div class="rest-card-start">
-                    <ProgressRing
-                      class="rest-card-ring"
-                      :value="getGroupPercent(g)"
-                      :size="40"
-                      :stroke="6"
-                      :show-percent-number="false"
-                      :animate-on-mount="chartAnimateOnMount"
-                    />
-                    <div class="rest-card-title">{{ g.label }}</div>
+            <div class="more-status">
+              <div class="rest-title">{{ t('recordResult.nextStatuses') }}</div>
+              <div class="rest-grid">
+                <div v-for="g in rankedGroups.slice(1, 5)" :key="g.key" class="rest-card export-healing-card">
+                  <span class="card-inner-frame" aria-hidden="true" />
+                  <div
+                    class="rest-card-header"
+                    :class="{ 'rest-card-header--clickable': hasRestDetails(g) }"
+                    :role="hasRestDetails(g) ? 'button' : undefined"
+                    :tabindex="hasRestDetails(g) ? 0 : -1"
+                    :aria-expanded="hasRestDetails(g) ? isRestExpanded(g.key) : undefined"
+                    @click="hasRestDetails(g) && toggleRestExpanded(g.key)"
+                    @keydown.enter.prevent="hasRestDetails(g) && toggleRestExpanded(g.key)"
+                    @keydown.space.prevent="hasRestDetails(g) && toggleRestExpanded(g.key)"
+                  >
+                    <div class="rest-card-start">
+                      <ProgressRing
+                        class="rest-card-ring"
+                        :value="getGroupPercent(g)"
+                        :size="40"
+                        :stroke="6"
+                        :show-percent-number="false"
+                        :animate-on-mount="chartAnimateOnMount"
+                      />
+                      <div class="rest-card-title">{{ g.label }}</div>
+                    </div>
+                    <div class="rest-card-sub">{{ formatDuration(g.durationMs) }}</div>
                   </div>
-                  <div class="rest-card-sub">{{ formatDuration(g.durationMs) }}</div>
-                </div>
 
-                <div v-if="hasRestDetails(g) && isRestExpanded(g.key)" class="rest-card-details" @click.stop>
-                  <BarChart
-                    v-if="getGroupNoteLines(g).length"
-                    class="rest-card-details-chart"
-                    orientation="horizontal"
-                    :show-labels="true"
-                    :show-value-label="true"
-                    :animate-on-mount="chartAnimateOnMount"
-                    :values="getGroupNoteLines(g).map(l => l.percent)"
-                    :titles="getGroupNoteLines(g).map(l => l.note)"
-                    :value-labels="getGroupNoteLines(g).map(l => formatDuration(l.durationMs))"
-                    :bar-width="10"
-                    :gap="10"
-                  />
+                  <div v-if="hasRestDetails(g) && isRestExpanded(g.key)" class="rest-card-details" @click.stop>
+                    <BarChart
+                      v-if="getGroupNoteLines(g).length"
+                      class="rest-card-details-chart"
+                      orientation="horizontal"
+                      :show-labels="true"
+                      :show-value-label="true"
+                      :animate-on-mount="chartAnimateOnMount"
+                      :values="getGroupNoteLines(g).map(l => l.percent)"
+                      :titles="getGroupNoteLines(g).map(l => l.note)"
+                      :value-labels="getGroupNoteLines(g).map(l => formatDuration(l.durationMs))"
+                      :bar-width="10"
+                      :gap="10"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -716,31 +718,6 @@ onUnmounted(() => {
   font-variant-numeric: tabular-nums;
 }
 
-.summary-highlight {
-  display: inline;
-  padding: 0.05em 0.18em;
-  color: rgba(17, 24, 39, 0.78);
-  font-weight: 950;
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
-  border-radius: 6px;
-  background:
-    linear-gradient(
-      to bottom,
-      transparent 38%,
-      var(--color-highlight-yellow) 38%,
-      var(--color-highlight-yellow) 92%,
-      transparent 92%
-    ),
-    linear-gradient(
-      to bottom,
-      transparent 52%,
-      rgba(255, 214, 64, 0.55) 52%,
-      rgba(255, 214, 64, 0.55) 88%,
-      transparent 88%
-    );
-}
-
 .result-empty {
   margin-top: 0.75rem;
   color: #6b7280;
@@ -753,40 +730,8 @@ onUnmounted(() => {
   gap: 1rem;
 }
 
-/* Match the AchievementToast inner-card style (Japanese healing vibe) */
-.top-card,
-.rest-card {
-  background: rgba(245, 235, 218, 0.96);
-  border: 0.15625rem solid rgba(122, 90, 58, 0.85);
-  box-shadow:
-    0 0.75rem 1.625rem rgba(0, 0, 0, 0.10),
-    0 0.125rem 0 rgba(122, 90, 58, 0.30) inset;
-  backdrop-filter: blur(0.5rem);
-  -webkit-backdrop-filter: blur(0.5rem);
-  position: relative;
-}
-
-.card-inner-frame {
-  position: absolute;
-  inset: 0.4375rem;
-  border-radius: 0.875rem;
-  border: 0.09375rem dashed rgba(122, 90, 58, 0.38);
-  box-sizing: border-box;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.rest-card > :not(.card-inner-frame) {
-  position: relative;
-  z-index: 1;
-}
-
 .top-card {
   position: relative;
-  padding: 6.25rem 1rem 1rem;
-  border-radius: 1rem;
-  margin-top: 4rem;
-  min-height: 12rem;
 }
 
 .top-badge {
@@ -907,16 +852,6 @@ onUnmounted(() => {
   grid-template-columns: 1fr;
 }
 
-.rest-card {
-  border-radius: 14px;
-  padding: 1rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.6rem;
-  overflow: hidden;
-}
-
 .rest-card-header {
   display: flex;
   flex-direction: row;
@@ -990,13 +925,6 @@ onUnmounted(() => {
   transition: none !important;
 }
 
-/* html2canvas: opaque fill + no inset shadow (inset reads as dark interior in exports). */
-.record-result-view--static :deep(.top-card),
-.record-result-view--static :deep(.rest-card) {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  background: #f5ebda !important;
-  background-color: #f5ebda !important;
-  box-shadow: 0 0.75rem 1.625rem rgba(0, 0, 0, 0.1) !important;
-}
 </style>
+
+<style src="@/assets/export-card.css"></style>

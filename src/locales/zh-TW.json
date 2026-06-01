@@ -815,10 +815,10 @@
       "empty": "無"
     },
     "actions": {
-      "downloadDesign": "下載織圖",
+      "downloadDesign": "輸出設計稿",
       "editProject": "編輯設計稿",
       "deleteProject": "刪除設計稿",
-      "copyProjectLink": "複製設計稿連結",
+      "copyProjectLink": "複製連結",
       "saveProject": "收藏設計稿",
       "unsaveProject": "取消收藏"
     },
@@ -941,9 +941,23 @@
       "projectTitle": "設計名稱",
       "completedTime": "完成時間",
       "extraImages": "照片",
-      "textInfo": "文字資訊",
+      "textInfo": "文案",
       "moreStatus": "其他狀態",
       "extraNote": "回饋心得"
+    },
+    "completedTime": {
+      "precisionLabel": "時間精度",
+      "precisionSliderLabel": "完成時間精度",
+      "previewLabel": "預覽：{time}",
+      "previewEmpty": "尚無完成時間",
+      "units": {
+        "year": "年",
+        "month": "月",
+        "day": "日",
+        "hour": "時",
+        "minute": "分",
+        "second": "秒"
+      }
     },
     "extraImages": {
       "title": "照片版面",
@@ -951,14 +965,12 @@
       "orderLabel": "排列方式",
       "spacingLabel": "圖片間隔",
       "roundedCornersLabel": "圓角",
+      "aspectPreviewLabel": "目前比例 {ratio}",
+      "aspectSliderLabel": "方框比例",
+      "rotateAspectLabel": "旋轉比例（1:x ↔ x:1）",
       "orders": {
         "horizontal": "橫向",
         "vertical": "直向"
-      },
-      "sizes": {
-        "5_4": "5:4",
-        "3_2": "3:2",
-        "1_1": "1:1"
       }
     }
   },
@@ -1234,7 +1246,6 @@
       "hookSelectPlaceholder": "選擇鉤針…",
       "needleSelectPlaceholder": "選擇棒針…",
       "yarnSelectPlaceholder": "選擇毛線…",
-      "yarnAmountPlaceholder": "毛線用量",
       "stitchNotesPlaceholder": "輸入備註",
       "creating": "建立中…",
       "createProject": "建立設計稿",

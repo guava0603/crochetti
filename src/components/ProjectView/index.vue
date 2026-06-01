@@ -44,47 +44,14 @@
           </div>
         </template>
 
-        <div class="project-description">
-          <p v-if="projectData?.description?.length > 0" class="project-description-text">
-            {{ projectData.description }}
-          </p>
-
-          <div
-            v-if="projectMaterialsHookLines.length > 0 || projectMaterialsYarnLines.length > 0"
-            class="project-materials"
-            :aria-label="t('project.componentMetadata.title')"
-          >
-            <div class="project-materials__title">{{ t('project.componentMetadata.title') }}</div>
-
-            <div v-if="projectMaterialsHookLines.length > 0" class="project-materials__row">
-              <span class="project-materials__label">{{ t('project.componentMetadata.hook') }}</span>
-              <span class="project-materials__value">{{ projectMaterialsHookLines.join('\n') }}</span>
-            </div>
-
-            <div v-if="projectMaterialsYarnLines.length > 0" class="project-materials__row">
-              <span class="project-materials__label">{{ t('project.componentMetadata.yarn') }}</span>
-              <span class="project-materials__value">{{ projectMaterialsYarnLines.join('\n') }}</span>
-            </div>
-          </div>
-
-          <div
-            v-if="selfDefinedStitchIntroductions.length > 0"
-            class="project-stitch-intro"
-            :aria-label="t('project.stitchIntroduction.title')"
-          >
-            <div class="project-stitch-intro__title">{{ t('project.stitchIntroduction.title') }}</div>
-            <ul class="project-stitch-intro__list">
-              <li
-                v-for="stitch in selfDefinedStitchIntroductions"
-                :key="stitch.stitch_id"
-                class="project-stitch-intro__item"
-              >
-                <div class="project-stitch-intro__name">{{ stitch.name }}</div>
-                <p class="project-stitch-intro__description">{{ stitch.description }}</p>
-              </li>
-            </ul>
-          </div>
-
+        <ProjectMetaSections
+          variant="page"
+          show-materials-title
+          :description="description"
+          :hook-lines="hookLines"
+          :yarn-lines="yarnLines"
+          :stitch-introductions="stitchIntroductions"
+        >
           <button
             type="button"
             class="btn-playing project-start-cta"
@@ -93,7 +60,7 @@
           >
             {{ t('project.startMakingCta') }}
           </button>
-        </div>
+        </ProjectMetaSections>
 
         <!-- Display each component -->
         <div class="design-cards">
@@ -157,8 +124,10 @@ import ImageGroup from '@/components/Carousel/ImageGroup.vue'
 import CarouselWithDot from '@/components/Carousel/CarouselWithDot.vue'
 import BottomSheetScroll from '@/components/layout/BottomSheetScroll.vue'
 import RecordSelectionModal from '@/components/modals/RecordSelectionModal.vue'
+import ProjectMetaSections from '@/components/projects/ProjectMetaSections.vue'
 import { useAchievementStore } from '@/stores/achievementStore'
 import { provideSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
+import { useProjectMetaDisplay } from '@/composables/useProjectMetaDisplay'
 import { useAppBanner } from '@/composables/appBanner'
 
 import { openError } from '@/services/ui/notice'
@@ -166,8 +135,6 @@ import { openToast } from '@/services/ui/toast'
 import { openConfirmation } from '@/services/ui/confirmation'
 import { formatDateTimeCompact } from '@/utils/dateTime'
 import { toMs } from '@/utils/toMs'
-import { normalizeYarnMetaList } from '@/utils/yarnMeta'
-import { toTrimmedText as toText, uniqueTrimmedStrings } from '@/utils/text'
 
 defineOptions({ name: 'ProjectViewMain' })
 
@@ -304,42 +271,7 @@ provideSelfDefinedStitchesContext({
 const noticeMessage = ref('')
 let noticeTimer = null
 
-const projectMaterialsHookLines = computed(() => {
-  const raw = projectData.value?.materials?.hook
-  return uniqueTrimmedStrings(raw)
-})
-
-const projectMaterialsYarnLines = computed(() => {
-  const meta = normalizeYarnMetaList(projectData.value?.materials?.yarn)
-  return meta
-    .map((m) => {
-      const type = toText(m?.type)
-      const amount = toText(m?.amount)
-      if (!type) return ''
-      return amount ? `${type}: ${amount}` : type
-    })
-    .filter(Boolean)
-})
-
-const selfDefinedStitchIntroductions = computed(() => {
-  const list = projectData.value?.self_defined_stitches
-  if (!Array.isArray(list)) return []
-
-  const out = []
-  for (const stitch of list) {
-    if (!stitch || typeof stitch !== 'object') continue
-    const name = String(stitch.name || '').trim()
-    const description = String(stitch.description || '').trim()
-    if (!name || !description) continue
-    out.push({
-      stitch_id: stitch.stitch_id,
-      name,
-      description
-    })
-  }
-
-  return out.sort((a, b) => Number(a.stitch_id) - Number(b.stitch_id))
-})
+const { description, hookLines, yarnLines, stitchIntroductions } = useProjectMetaDisplay(projectData)
 
 const isProjectOwner = computed(() => {
   const authorId = projectData.value?.authorId
@@ -806,19 +738,6 @@ const handleStartCta = async () => {
   color: #374151;
 }
 
-.header-section {
-  display: none;
-}
-
-.header-title {
-  display: none;
-}
-
-.project-title {
-  margin: 0;
-  text-align: center;
-}
-
 .page-content {
   background: var(--color-surface-page);
   height: 100%;
@@ -827,10 +746,13 @@ const handleStartCta = async () => {
   overflow: hidden;
 }
 
-/* ProjectView: stay in the top band above the fixed bottom sheet (min 65%). */
+/* ProjectView: top band above bottom sheet (min 65%). Sheet height uses
+   (viewport − safe-area-top); match that band so the image area has no gap on iPhone. */
 :deep(.image-carousel.project-image-carousel) {
   flex: 0 0 auto;
-  height: calc(35% + 3rem);
+  --project-carousel-safe-top: var(--safe-area-top, env(safe-area-inset-top, 0px));
+  /* 35% of sheet container + notch band (same as 35% + 65%×safe-top). */
+  height: calc(35% + 0.65 * var(--project-carousel-safe-top) + 3rem);
   min-height: 0;
 }
 
@@ -847,10 +769,6 @@ const handleStartCta = async () => {
 .project-title-section span {
   font-size: 1.5rem;
   font-weight: 900;
-}
-
-.project-contenrt-wrapper {
-  padding: 0 2rem;
 }
 
 .design-cards {
@@ -880,115 +798,10 @@ const handleStartCta = async () => {
   width: 100%;
 }
 
-.project-description {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  margin: 1rem 0;
-  padding: 0 1rem;
-}
-
-.project-materials {
-  width: min(680px, 100%);
-  padding: 1rem;
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(17, 24, 39, 0.06);
-}
-
-.project-materials__title {
-  font-weight: 900;
-  color: #111827;
-  margin-bottom: 0.5rem;
-}
-
-.project-materials__row {
-  display: grid;
-  grid-template-columns: 0.3fr 1.3fr;
-  gap: 0.75rem;
-  align-items: start;
-  padding: 0.35rem 0;
-}
-
-.project-materials__label {
-  font-size: 0.85rem;
-  font-weight: 900;
-  color: #6b7280;
-}
-
-.project-materials__value {
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: #111827;
-  white-space: pre-wrap;
-}
-
-.project-stitch-intro {
-  width: min(680px, 100%);
-  padding: 1rem;
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(17, 24, 39, 0.06);
-}
-
-.project-stitch-intro__title {
-  font-weight: 900;
-  color: #111827;
-  margin-bottom: 0.5rem;
-}
-
-.project-stitch-intro__list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 0.75rem;
-}
-
-.project-stitch-intro__item {
-  padding: 0.5rem 0;
-  border-top: 1px solid rgba(17, 24, 39, 0.06);
-}
-
-.project-stitch-intro__item:first-child {
-  border-top: none;
-  padding-top: 0;
-}
-
-.project-stitch-intro__name {
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: #111827;
-}
-
-.project-stitch-intro__description {
-  margin: 0.35rem 0 0;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #374151;
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
-
 .project-start-cta {
   width: min(680px, 70%);
   margin-top: 1.5rem;
   text-align: center;
-}
-
-.project-description-text {
-  width: min(680px, 100%);
-  margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.55;
-  white-space: pre-wrap;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, .5);
-  font-weight: 800;
-  border: 0.3rem solid var(--color-surface-page);
 }
 
 .project-record-tracking {

@@ -9,6 +9,10 @@
 </template>
 
 <script setup>
+/**
+ * Route shell for design PNG export. Printable UI lives in DesignPrintContent —
+ * avoid ::before / ::after there (use real elements; see export-card.css).
+ */
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 

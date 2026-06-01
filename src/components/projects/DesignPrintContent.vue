@@ -8,61 +8,30 @@
       'printed-domain': showPrintedDomainBorder
     }"
   >
-    <h1 v-if="showProjectSections && projectName" class="design-print__title">{{ projectName }}</h1>
-
     <div class="design-print__body">
       <section v-if="showProjectSections && showImages" class="capture-block capture-block--images">
         <ExtraImages
           :images="resolvedProjectImages.images"
-          :size="resolvedProjectImages.size"
+          :aspect-ratio-css="resolvedProjectImages.aspectRatioCss"
           :display-order="resolvedProjectImages.displayOrder"
           :gap-px="resolvedProjectImages.gapPx"
           :rounded-corners="resolvedProjectImages.roundedCorners"
         />
       </section>
 
-      <div
-        v-if="showProjectSections && (showDescription || showMaterials || showSelfDefinedStitches)"
-        class="project-description"
-      >
-        <p v-if="showDescription" class="project-description-text">
-          {{ projectDescription }}
-        </p>
+      <h1 v-if="showProjectSections && projectName" class="design-print__title">{{ projectName }}</h1>
 
-        <div
-          v-if="showMaterials"
-          class="project-materials"
-          :aria-label="t('project.componentMetadata.title')"
-        >
-          <div v-if="projectMaterialsHookLines.length > 0" class="project-materials__row">
-            <span class="project-materials__label">{{ t('project.componentMetadata.hook') }}</span>
-            <span class="project-materials__value">{{ projectMaterialsHookLines.join('\n') }}</span>
-          </div>
-
-          <div v-if="projectMaterialsYarnLines.length > 0" class="project-materials__row">
-            <span class="project-materials__label">{{ t('project.componentMetadata.yarn') }}</span>
-            <span class="project-materials__value">{{ projectMaterialsYarnLines.join('\n') }}</span>
-          </div>
-        </div>
-
-        <div
-          v-if="showSelfDefinedStitches"
-          class="project-stitch-intro"
-          :aria-label="t('project.stitchIntroduction.title')"
-        >
-          <div class="project-stitch-intro__title">{{ t('project.stitchIntroduction.title') }}</div>
-          <ul class="project-stitch-intro__list">
-            <li
-              v-for="stitch in selfDefinedStitchIntroductions"
-              :key="stitch.stitch_id"
-              class="project-stitch-intro__item"
-            >
-              <div class="project-stitch-intro__name">{{ stitch.name }}</div>
-              <p class="project-stitch-intro__description">{{ stitch.description }}</p>
-            </li>
-          </ul>
-        </div>
-      </div>
+      <ProjectMetaSections
+        v-if="showProjectSections"
+        variant="print"
+        :description="description"
+        :hook-lines="hookLines"
+        :yarn-lines="yarnLines"
+        :stitch-introductions="stitchIntroductions"
+        :show-description="showDescription"
+        :show-materials="showMaterials"
+        :show-self-defined-stitches="showSelfDefinedStitches"
+      />
 
       <section
         v-for="(component, cIndex) in componentList"
@@ -86,13 +55,11 @@
 
 <script setup>
 import { computed, nextTick, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 import ComponentCard from '@/components/cards/ComponentCard.vue/index.vue'
 import ExtraImages from '@/components/records/ExtraImages.vue'
+import ProjectMetaSections from '@/components/projects/ProjectMetaSections.vue'
+import { useProjectMetaDisplay } from '@/composables/useProjectMetaDisplay'
 import { isComponentType } from '@/utils/componentTypes'
-import { uniqueTrimmedStrings, toTrimmedText as toText } from '@/utils/text'
-import { normalizeYarnMetaList } from '@/utils/yarnMeta'
 import { normalizeDesignSectionVisibility } from '@/constants/designPrintSections'
 import { resolveExtraImagesForDisplay } from '@/constants/recordPrintExtraImages'
 import { measurePrintedDomainWidthPx } from '@/constants/recordResultSharingLayout'
@@ -135,12 +102,7 @@ const props = defineProps({
   }
 })
 
-const { t } = useI18n({ useScope: 'global' })
-const route = useRoute()
-
 const isCapturing = ref(false)
-
-const projectId = computed(() => String(route.params.project_id || '').trim())
 
 const sectionVisibilityNormalized = computed(() => normalizeDesignSectionVisibility(props.sectionVisibility))
 
@@ -157,21 +119,9 @@ provideSelfDefinedStitchesContext({ stitchesRef: selfDefinedStitchesRef })
 
 const projectName = computed(() => String(props.projectData?.name || '').trim())
 
-const projectDescription = computed(() => String(props.projectData?.description || '').trim())
-
-const projectMaterialsHookLines = computed(() => uniqueTrimmedStrings(props.projectData?.materials?.hook))
-
-const projectMaterialsYarnLines = computed(() => {
-  const meta = normalizeYarnMetaList(props.projectData?.materials?.yarn)
-  return meta
-    .map((m) => {
-      const type = toText(m?.type)
-      const amount = toText(m?.amount)
-      if (!type) return ''
-      return amount ? `${type}: ${amount}` : type
-    })
-    .filter(Boolean)
-})
+const { description, hookLines, yarnLines, stitchIntroductions } = useProjectMetaDisplay(
+  () => props.projectData
+)
 
 const projectImages = computed(() => {
   const raw = props.projectData?.images
@@ -186,34 +136,17 @@ const resolvedProjectImages = computed(() =>
   resolveExtraImagesForDisplay(props.extraImagesSettings, projectImages.value)
 )
 
-const selfDefinedStitchIntroductions = computed(() => {
-  const list = props.projectData?.self_defined_stitches
-  if (!Array.isArray(list)) return []
-
-  const out = []
-  for (const stitch of list) {
-    if (!stitch || typeof stitch !== 'object') continue
-    const name = String(stitch.name || '').trim()
-    const description = String(stitch.description || '').trim()
-    if (!name || !description) continue
-    out.push({ stitch_id: stitch.stitch_id, name, description })
-  }
-
-  return out.sort((a, b) => Number(a.stitch_id) - Number(b.stitch_id))
-})
-
 const showDescription = computed(
-  () => projectDescription.value.length > 0 && isSectionVisible('description')
+  () => description.value.length > 0 && isSectionVisible('description')
 )
 const showImages = computed(() => projectImages.value.length > 0 && isSectionVisible('images'))
 const showNotes = computed(() => isSectionVisible('notes'))
 const showMaterials = computed(
   () =>
-    (projectMaterialsHookLines.value.length > 0 || projectMaterialsYarnLines.value.length > 0) &&
-    isSectionVisible('materials')
+    (hookLines.value.length > 0 || yarnLines.value.length > 0) && isSectionVisible('materials')
 )
 const showSelfDefinedStitches = computed(
-  () => selfDefinedStitchIntroductions.value.length > 0 && isSectionVisible('selfDefinedStitches')
+  () => stitchIntroductions.value.length > 0 && isSectionVisible('selfDefinedStitches')
 )
 
 const componentList = computed(() => {
@@ -300,6 +233,10 @@ defineExpose({
 </script>
 
 <style scoped>
+/*
+ * Design export (DownloadDesignView → DesignPrintView): use real DOM for decorations.
+ * Do not style printable content with ::before / ::after — html2canvas omits them.
+ */
 .design-print {
   width: v-bind(layoutWidthCss);
   max-width: v-bind(layoutWidthCss);
@@ -325,90 +262,6 @@ defineExpose({
   border-color: transparent;
 }
 
-/* Align project-level blocks with ProjectView styles. */
-.project-description {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-}
-
-.project-description-text {
-  width: min(680px, 100%);
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.6;
-  color: #111827;
-  font-weight: 800;
-}
-
-.project-materials {
-  width: min(680px, 100%);
-  padding: 0.5rem 1rem;
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(17, 24, 39, 0.06);
-}
-
-.project-materials__row {
-  display: grid;
-  grid-template-columns: 0.3fr 1.3fr;
-  gap: 0.75rem;
-  align-items: start;
-  padding: 0.35rem 0;
-}
-
-.project-materials__label {
-  font-size: 0.85rem;
-  font-weight: 900;
-  color: #6b7280;
-}
-
-.project-materials__value {
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: #111827;
-  white-space: pre-wrap;
-}
-
-.project-stitch-intro {
-  width: min(680px, 100%);
-  padding: 1rem;
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(17, 24, 39, 0.06);
-}
-
-.project-stitch-intro__title {
-  font-weight: 900;
-  color: #111827;
-  margin-bottom: 0.5rem;
-}
-
-.project-stitch-intro__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.project-stitch-intro__name {
-  font-weight: 900;
-  color: #111827;
-}
-
-.project-stitch-intro__description {
-  margin: 0.15rem 0 0;
-  font-weight: 700;
-  line-height: 1.55;
-  color: #374151;
-  white-space: pre-wrap;
-}
-
 /* Print page should never show translate toggle. */
 :deep(.translate-toggle) {
   display: none !important;
@@ -428,91 +281,5 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
-}
-
-.capture-block__title {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
-  font-weight: 800;
-  color: #111827;
-}
-
-.capture-block__subtitle {
-  margin: 0 0 0.35rem;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #374151;
-}
-
-.capture-block__text {
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.6;
-  color: #111827;
-}
-
-.capture-meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 0.75rem;
-  margin-bottom: 0.35rem;
-  line-height: 1.5;
-}
-
-.capture-meta-row__label {
-  font-weight: 700;
-  color: #374151;
-  flex: 0 0 auto;
-}
-
-.capture-meta-row__value {
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: #111827;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.capture-stitch-list {
-  margin: 0;
-  padding-left: 1.1rem;
-}
-
-.capture-stitch-list__item {
-  margin-bottom: 0.65rem;
-}
-
-.capture-stitch-list__name {
-  font-weight: 800;
-  color: #111827;
-}
-
-.capture-stitch-list__description {
-  margin: 0.2rem 0 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: #374151;
-  line-height: 1.5;
-}
-
-.capture-notes-list {
-  margin: 0 0 0.75rem;
-  padding-left: 1.1rem;
-  color: #374151;
-}
-
-.capture-notes-list li {
-  margin-bottom: 0.25rem;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.component-title {
-  margin: 0 0 0.75rem;
-  font-size: 1.05rem;
-  font-weight: 900;
-  color: #111827;
-  word-break: break-word;
 }
 </style>

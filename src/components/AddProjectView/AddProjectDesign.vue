@@ -76,6 +76,7 @@ import {
   mergeYarnMetaWithTypes,
   normalizeComponentYarnSelection,
   normalizeYarnMetaList,
+  stripComponentYarnAmountMetadata,
   yarnMetaIdMap
 } from '@/utils/yarnMeta'
 import {
@@ -567,9 +568,12 @@ function normalizeProjectMaterialsInPlace(componentList) {
     component.needle = []
 
     if (!component.metadata || typeof component.metadata !== 'object') component.metadata = {}
-    component.metadata.yarn = component.yarn
-    component.metadata.hook = hookValues
-    component.metadata.needle = []
+    component.metadata = stripComponentYarnAmountMetadata({
+      ...component.metadata,
+      yarn: component.yarn,
+      hook: hookValues,
+      needle: []
+    })
   }
 }
 
