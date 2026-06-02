@@ -1,6 +1,7 @@
 <template>
   <div class="limited-textarea">
     <textarea
+      ref="textareaRef"
       v-bind="textareaAttrs"
       :class="[attrs.class, 'limited-textarea__control', { 'limited-textarea__control--with-counter': showCounter }]"
       :value="modelValue"
@@ -24,7 +25,7 @@
 </template>
 
 <script setup>
-import { computed, useAttrs } from 'vue'
+import { computed, nextTick, onMounted, ref, useAttrs, watch } from 'vue'
 import { countChars, countWordsLike } from '@/utils/textCount'
 
 defineOptions({
@@ -54,6 +55,10 @@ const props = defineProps({
     type: [Number, String],
     default: 3
   },
+  autosize: {
+    type: Boolean,
+    default: true
+  },
   disabled: {
     type: Boolean,
     default: false
@@ -63,6 +68,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'blur', 'focus'])
 
 const attrs = useAttrs()
+const textareaRef = ref(null)
 
 const textareaAttrs = computed(() => {
   const out = { ...attrs }
@@ -79,12 +85,35 @@ const count = computed(() => {
 const showCounter = computed(() => Number.isFinite(Number(props.limit)) && Number(props.limit) > 0)
 const isOverLimit = computed(() => showCounter.value && count.value > Number(props.limit))
 
+function resizeToContent(el) {
+  if (!props.autosize) return
+  const target = el || textareaRef.value
+  if (!target) return
+
+  // Reset first so shrink works.
+  target.style.height = 'auto'
+  target.style.height = `${target.scrollHeight}px`
+}
+
 function handleInput(e) {
   const next = e?.target?.value ?? ''
   // Don't enforce; just report. Parents decide whether to block submit.
   // Still trim nothing here to avoid surprising edits.
   emit('update:modelValue', next)
+  // Resize immediately for snappy UX.
+  resizeToContent(e?.target)
 }
+
+onMounted(() => {
+  void nextTick(() => resizeToContent())
+})
+
+watch(
+  () => props.modelValue,
+  () => {
+    void nextTick(() => resizeToContent())
+  }
+)
 </script>
 
 <style scoped>
@@ -95,6 +124,9 @@ function handleInput(e) {
 
 .limited-textarea__control {
   width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  overflow: hidden;
 }
 
 .limited-textarea__control--with-counter {

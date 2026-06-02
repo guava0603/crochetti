@@ -9,6 +9,7 @@
         :default-position="defaultPosition"
         :stitches="stitchesForList"
         :self-defined-stitches="selfDefinedStitchesForList"
+        :user-defined-stitches="userDefinedStitchesForList"
         :rope-presets="ropePresets"
         :enabled-stitch-ids="null"
         :show-custom-button="resolvedShowCustomButton"
@@ -23,7 +24,24 @@
     </div>
 
     <Teleport v-if="enableWizard" to="body">
-      <AddCrochetWizard v-model="showMoreWizard" :start-at="wizardStartAt" @submit="handleWizardSubmit" />
+      <AddCustomCrochetModal
+        v-model:show="showCustomModal"
+        @submit="handleWizardSubmit"
+      />
+      <AddRopeCrochetModal
+        v-model:show="showRopeModal"
+        @submit="handleWizardSubmit"
+      />
+      <AddRaisedCrochetModal
+        v-model:show="showRaisedListModal"
+        @submit="handleWizardSubmit"
+        @request-details="openRaisedDetailsModal"
+      />
+      <AddRaisedDetailsCrochetModal
+        v-model:show="showRaisedDetailsModal"
+        :raised-type="raisedDetailsType"
+        @submit="handleWizardSubmit"
+      />
     </Teleport>
   </div>
 </template>
@@ -33,8 +51,12 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { BasicStitchGeneral, createRope } from '@/constants/crochetData'
 import CrochetList from './CrochetList.vue'
-import AddCrochetWizard from '@/components/features/crochet-editor/Wizard/AddCrochet/index.vue'
+import AddCustomCrochetModal from '@/components/modals/crochet/AddCustomCrochetModal.vue'
+import AddRopeCrochetModal from '@/components/modals/crochet/AddRopeCrochetModal.vue'
+import AddRaisedCrochetModal from '@/components/modals/crochet/AddRaisedCrochetModal.vue'
+import AddRaisedDetailsCrochetModal from '@/components/modals/crochet/AddRaisedDetailsCrochetModal.vue'
 import { useSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
+import { useUserCrochetDisplay } from '@/composables/useUserCrochetDisplay'
 import { openError } from '@/services/ui/notice'
 import { normalizeRopeChainCount } from '@/utils/ropeChainCount'
 
@@ -90,6 +112,7 @@ const emit = defineEmits(['add-crochet', 'add-bundle', 'add-rope', 'position-cha
 const mode = ref('normal')
 
 const { list: selfDefinedStitches, addStitch: addSelfDefinedStitch } = useSelfDefinedStitchesContext()
+const { userSelfDefinedStitches } = useUserCrochetDisplay()
 
 const stitchesForList = computed(() => {
   return Array.isArray(props.stitches) ? props.stitches : BasicStitchGeneral
@@ -103,6 +126,10 @@ const resolvedShowCustomButton = computed(() => {
 const selfDefinedStitchesForList = computed(() => {
   if (!props.enableSelfDefinedStitches) return []
   return Array.isArray(selfDefinedStitches.value) ? selfDefinedStitches.value : []
+})
+
+const userDefinedStitchesForList = computed(() => {
+  return Array.isArray(userSelfDefinedStitches.value) ? userSelfDefinedStitches.value : []
 })
 
 
@@ -126,21 +153,28 @@ const handlePositionChange = (pos) => {
   emit('position-change', pos)
 }
 
-const showMoreWizard = ref(false)
-
-const wizardStartAt = ref('root')
+const showCustomModal = ref(false)
+const showRopeModal = ref(false)
+const showRaisedListModal = ref(false)
+const showRaisedDetailsModal = ref(false)
+const raisedDetailsType = ref('')
 
 const openRaisedWizard = () => {
   if (props.disabled || !props.enableWizard) return
-  wizardStartAt.value = 'raised-list'
-  showMoreWizard.value = true
+  showRaisedListModal.value = true
 }
 
-const openCustomWizard = () => {
-  if (props.disabled || !props.enableWizard) return
-  wizardStartAt.value = 'custom'
-  showMoreWizard.value = true
+function openRaisedDetailsModal(type) {
+  raisedDetailsType.value = String(type || '')
+  showRaisedDetailsModal.value = true
 }
+
+const openCustomModal = () => {
+  if (props.disabled || !props.enableWizard) return
+  showCustomModal.value = true
+}
+
+const openCustomWizard = openCustomModal
 
 const ropePresets = ref([])
 
@@ -163,8 +197,7 @@ const pushRopePreset = (chainCount) => {
 
 const openRopeBundleWizard = () => {
   if (props.disabled || !props.enableWizard) return
-  wizardStartAt.value = 'rope-details'
-  showMoreWizard.value = true
+  showRopeModal.value = true
 }
 
 const handleRopePresetClick = (payload) => {

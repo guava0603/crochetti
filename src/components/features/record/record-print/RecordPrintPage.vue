@@ -9,16 +9,13 @@
           :disabled="!recordData || recordLoading"
           @click="openSettings"
         />
-        <button
-          type="button"
-          class="btn-share-image"
-          :disabled="!recordData || recordLoading || sharing"
+        <ToolbarButton
+          icon-src="assets/image/settings/027__download.svg"
           :aria-label="t('record.shareCompletedResultImage')"
           :title="t('record.shareCompletedResultImage')"
+          :disabled="!recordData || recordLoading || sharing"
           @click="shareImage"
-        >
-          <ButtonPrinter />
-        </button>
+        />
       </div>
 
       <div v-if="recordLoading" class="print-loading">{{ t('common.loading') }}</div>
@@ -45,7 +42,9 @@
       :completed-at-ms="completedAtMs"
       :source-images="sourceImageUrls"
       :available-keys="availableSectionKeys"
+      :project-id="projectId"
       @save="applySettings"
+      @go-to-project="goToProject"
     />
   </div>
 </template>
@@ -56,7 +55,6 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import ToolbarButton from '@/components/shell/layout/ToolbarButton.vue'
-import ButtonPrinter from '@/components/shared/buttons/svg/ButtonPrinter.vue'
 import RecordResultSharing from '@/components/features/record/RecordResultSharing.vue'
 import RecordPrintSettingsModal from '@/components/modals/record/RecordPrintSettingsModal.vue'
 import { provideRecordContext } from '@/composables/recordContext'
@@ -94,6 +92,7 @@ function callApi(name, ...args) {
 }
 
 const recordId = computed(() => String(route.params.record_id || ''))
+const projectId = computed(() => String(recordData.value?.project_id || '').trim())
 const recordData = ref(null)
 const recordLoading = ref(false)
 const sharingRef = ref(null)
@@ -212,6 +211,11 @@ function applySettings(payload) {
   )
 }
 
+function goToProject() {
+  if (!projectId.value) return
+  router.push({ name: 'project', params: { project_id: projectId.value } })
+}
+
 async function shareImage() {
   if (sharing.value) return
   sharing.value = true
@@ -292,26 +296,4 @@ onUnmounted(() => {
   padding: 1rem 0;
 }
 
-.btn-share-image {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border: none;
-  border-radius: 12px;
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.15s;
-  color: var(--color-icon-base);
-}
-
-.btn-share-image:hover:not(:disabled) {
-  background: rgba(243, 244, 246, 0.98);
-}
-
-.btn-share-image:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
 </style>

@@ -53,8 +53,12 @@ const footerType = computed(() => {
   - Fixed banner/footer heights so page body is stable even if a route doesn't render its own.
 */
 .app-shell {
-  --safe-top: env(safe-area-inset-top);
-  --safe-bottom: env(safe-area-inset-bottom);
+  /* Use shared safe-area tokens everywhere. */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  /* Back-compat aliases used by some components. */
+  --safe-top: var(--safe-area-top);
+  --safe-bottom: var(--safe-area-bottom);
 
   /* App shell fixed regions */
   --app-banner-height: 4rem;

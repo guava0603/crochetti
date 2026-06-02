@@ -100,6 +100,7 @@ defineEmits(['click'])
 .add-new--row {
   width: 100%;
   padding: 0.7rem;
+  margin-top: 0.35rem;
   background: rgb(var(--color-icon-add-rgb) / 0.12);
   border: 1px dashed var(--color-icon-add);
   border-radius: 8px;

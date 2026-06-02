@@ -23,6 +23,7 @@ import { BasicStitch, CROCHET_LANG, getStitchDisplayText } from '@/constants/cro
 import { getCrochetIconUrl } from '@/constants/crochetIcons'
 import { useCrochetLang } from '@/composables/useCrochetLang'
 import { useSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
+import { getSelfDefinedCustomDisplayText } from '@/utils/userCrochetDisplay'
 
 const props = defineProps({
   stitchId: {
@@ -77,6 +78,9 @@ const displayText = computed(() => {
 
     const lang = Number(crochetLang.value)
     const base = (() => {
+      if (lang === CROCHET_LANG.custom) {
+        return getSelfDefinedCustomDisplayText(s.value)
+      }
       if (isIconMode.value) return textZh || name
       if (lang === CROCHET_LANG.symbol_uk) return symbolUk || symbolJp || name
       if (lang === CROCHET_LANG.symbol_jp) return symbolJp || name

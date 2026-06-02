@@ -248,7 +248,6 @@ defineExpose({
 .design-print.printed-domain {
   border: 1px solid rgba(17, 24, 39, 0.12);
   border-radius: 12px;
-  background: var(--color-surface-sheet);
   padding: 0.9rem 0.9rem 1.1rem;
 }
 

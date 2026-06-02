@@ -225,7 +225,7 @@ async function handleBannerBack() {
   left: 0;
   width: 100vw;
   padding: 1rem;
-  padding-top: calc(1rem + var(--safe-top));
+  padding-top: calc(0.5rem + var(--safe-top));
   background: var(--color-surface-sheet);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   z-index: var(--z-fixed);

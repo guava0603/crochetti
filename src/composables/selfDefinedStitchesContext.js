@@ -1,4 +1,6 @@
 import { computed, inject, provide } from 'vue'
+import { useUserCrochetDisplay } from '@/composables/useUserCrochetDisplay'
+import { mergeSelfDefinedStitchLists } from '@/utils/userCrochetDisplay'
 
 const SELF_DEFINED_STITCHES_KEY = Symbol('self-defined-stitches')
 
@@ -12,7 +14,11 @@ function normalizeId(v) {
 }
 
 export function provideSelfDefinedStitchesContext({ stitchesRef, addStitch } = {}) {
-  const list = computed(() => asArray(stitchesRef?.value))
+  const { userSelfDefinedStitches } = useUserCrochetDisplay()
+  const list = computed(() => mergeSelfDefinedStitchLists(
+    userSelfDefinedStitches.value,
+    asArray(stitchesRef?.value)
+  ))
 
   const byId = computed(() => {
     const map = new Map()

@@ -19,6 +19,7 @@
     "action": "Action",
     "actions": "Actions",
     "copy": "Copy",
+    "add": "Add",
     "delete": "Delete",
     "rows": "Rows",
     "notes": "Notes",
@@ -695,6 +696,7 @@
       "crochetLang": "Crochet display",
       "crochetLangSymbolJp": "JP symbols",
       "crochetLangSymbolUk": "UK symbols",
+      "crochetLangCustom": "Custom",
       "crochetLangTextZh": "Text",
       "crochetLangIcon": "Icons",
       "copyRow": "Copy row",
@@ -777,6 +779,7 @@
       "title": "Materials",
       "yarn": "Yarn",
       "hook": "Hook",
+      "castOn": "Cast-on",
       "needle": "Needles",
       "yarnType": "Type",
       "yarnAmount": "Amount",
@@ -888,7 +891,7 @@
     "centeredPosition": "Row {row}, stitch {stitch}",
     "selectedPosition": "Row {row}, stitch {stitch}",
     "componentFallbackName": "Component {n}",
-    "syncProject": "Sync Project",
+    "syncProject": "Sync design",
     "syncing": "Syncing…",
     "syncNoChangesNotice": "Nothing to sync — your record is already up to date.",
     "syncSuccessNotice": "Project synced.",
@@ -1060,6 +1063,7 @@
     "followFailed": "Failed to follow. Please try again.",
     "unfollowFailed": "Failed to unfollow. Please try again.",
     "tabs": {
+      "createdDesigns": "Created",
       "savedDesigns": "Saved designs"
     },
     "loading": "Loading user data...",
@@ -1082,6 +1086,11 @@
       "title": "System settings",
       "languageLabel": "Language",
       "crochetDisplayLabel": "Stitch display",
+      "customDisplayButton": "Custom display",
+      "customDisplayModal": {
+        "title": "Custom stitch display",
+        "hint": "Set how each stitch appears when you choose Custom display. Leave a field blank to use the default text label."
+      },
       "langZhTw": "Traditional Chinese",
       "langEn": "English",
       "crochetSymbolJp": "JP symbols",

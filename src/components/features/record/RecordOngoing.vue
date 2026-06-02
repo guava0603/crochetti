@@ -24,9 +24,16 @@
                 <div class="component-label">{{ getComponentLabel(item, index) }}</div>
 
                 <div
-                  v-if="hasProjectMeta && (getComponentHookLines(item).length > 0 || getComponentYarnLines(item).length > 0)"
+                  v-if="
+                    getComponentCastOnLabel(item)
+                    || (hasProjectMeta && (getComponentHookLines(item).length > 0 || getComponentYarnLines(item).length > 0))
+                  "
                   class="component-meta"
                 >
+                  <div v-if="getComponentCastOnLabel(item)" class="component-meta__row">
+                    <span class="component-meta__label">{{ $t('project.componentMetadata.castOn') }}</span>
+                    <span class="component-meta__value">{{ getComponentCastOnLabel(item) }}</span>
+                  </div>
                   <div v-if="getComponentHookLines(item).length" class="component-meta__row">
                     <span class="component-meta__label">{{ $t('project.componentMetadata.hook') }}</span>
                     <span class="component-meta__value">{{ getComponentHookLines(item).join('、') }}</span>
@@ -114,6 +121,7 @@ import { DEFAULT_STATUS_ID, originalStatuses } from '@/constants/status.js'
 import { MIN_CUSTOM_STATUS_ID } from '@/constants/recordStatusCatalog'
 import { useUserRecordStatusCatalog } from '@/composables/useUserRecordStatusCatalog'
 import { yarnDisplayLines } from '@/utils/yarnMeta'
+import { getComponentCastOnLabel as resolveComponentCastOnLabel } from '@/utils/componentCastOn'
 
 const props = defineProps({
   currentUser: { type: Object, default: null },
@@ -186,6 +194,10 @@ function getComponentYarnLines(component) {
   const idsOrTypes = uniqueTextList(selection)
   if (projectYarnMetaList.value.length === 0) return idsOrTypes
   return yarnDisplayLines(idsOrTypes, projectYarnMetaList.value)
+}
+
+function getComponentCastOnLabel(component) {
+  return resolveComponentCastOnLabel(component, t)
 }
 
 

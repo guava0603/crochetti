@@ -171,6 +171,14 @@ const showCompletedTimeSettings = computed(
     Number.isFinite(props.completedAtMs)
 )
 
+const showGoToProject = computed(() => Boolean(String(props.projectId || '').trim()))
+
+function handleGoToProject() {
+  if (!showGoToProject.value) return
+  emit('go-to-project')
+  emit('update:show', false)
+}
+
 function syncDraftFromProps() {
   const next = normalizeSectionVisibility(props.modelValue)
   for (const key of RECORD_RESULT_SHARING_SECTION_KEYS) {
@@ -239,6 +247,34 @@ function handleSave() {
 .extra-images-settings {
   margin-top: 0.65rem;
   margin-left: 0.5rem;
+}
+
+.section-item--action {
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 0.35rem;
+}
+
+.modal-nav-action {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  background: rgba(17, 24, 39, 0.04);
+  color: #111827;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.modal-nav-action:hover:not(:disabled) {
+  background: rgba(17, 24, 39, 0.08);
+}
+
+.modal-nav-action:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 </style>

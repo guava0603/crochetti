@@ -222,11 +222,9 @@ const baseBannerTitle = computed(() => {
 })
 
 const bannerTitle = computed(() => {
-  const prefix = projectNameForBanner.value
-  const base = baseBannerTitle.value
-  if (!prefix) return base
-  if (!base) return prefix
-  return `${prefix} - ${base}`
+  const name = projectNameForBanner.value
+  if (name) return name
+  return baseBannerTitle.value
 })
 
 watch(

@@ -154,7 +154,9 @@ Private to owner (`firestore.rules`).
 | `is_privacy` | Hide content from non-owner | Firestore |
 | `friend_code` / `friendCode` | 6-character code | Firestore |
 | `friend_code_updated_at` | Regenerate audit | Firestore |
-| `crochet_lang` | Stitch display mode (number enum) | Firestore + `localStorage` cache |
+| `crochet_lang` | Stitch display mode (number enum: JP / text / icon / UK / custom) | Firestore + `localStorage` cache |
+| `stitch_display_aliases` | Per built-in `stitch_id` custom label map for custom display mode | Firestore |
+| `user_self_defined_stitches[]` | User-global custom stitches (same shape as project `self_defined_stitches`) | Firestore |
 | `save_project_list[]` | Bookmarked project ids | Firestore |
 | `following_list[]`, `fan_list[]` | Social graph | Firestore |
 | `avatar_used_ids[]` | Avatar achievement tracking | Firestore |

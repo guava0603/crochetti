@@ -23,15 +23,29 @@
 
     <div class="modal-field">
       <div class="modal-label">{{ t('user.systemSettings.crochetDisplayLabel') }}</div>
-      <div class="control">
+      <div class="control control--stack">
         <ButtonTranslate
           v-model="draftCrochetKey"
           :aria-label="t('user.systemSettings.crochetDisplayLabel')"
           :disabled="saving"
+          :is-always-open="true"
         />
+        <button
+          type="button"
+          class="custom-display-settings-btn"
+          :disabled="saving"
+          @click="showCustomDisplayModal = true"
+        >
+          {{ t('user.systemSettings.customDisplayButton') }}
+        </button>
       </div>
     </div>
   </ModalShell>
+
+  <CustomCrochetDisplayModal
+    v-model:show="showCustomDisplayModal"
+    @saved="handleCustomDisplaySaved"
+  />
 </template>
 
 <script setup>
@@ -39,6 +53,8 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SelectionButtonGroup from '@/components/shared/selection/ButtonGroup.vue'
 import ButtonTranslate from '@/components/shared/buttons/svg/ButtonTranslate.vue'
+import CustomCrochetDisplayModal from '@/components/modals/global/CustomCrochetDisplayModal.vue'
+import { useUserCrochetDisplay } from '@/composables/useUserCrochetDisplay'
 import { setI18nLocale } from '@/i18n'
 import { CROCHET_LANG } from '@/constants/crochetData'
 import { useCrochetLang } from '@/composables/useCrochetLang'
@@ -53,8 +69,10 @@ const emit = defineEmits(['close'])
 
 const { t, locale } = useI18n({ useScope: 'global' })
 const { crochetLang, setCrochetLang } = useCrochetLang()
+const { hasCustomDisplay } = useUserCrochetDisplay()
 
 const saving = ref(false)
+const showCustomDisplayModal = ref(false)
 const initialLocale = ref('en')
 const initialCrochetKey = ref('jp')
 const draftLocale = ref('en')
@@ -73,7 +91,9 @@ watch(
         ? 'icon'
         : crochetId === CROCHET_LANG.symbol_uk
           ? 'uk'
-        : 'jp'
+          : crochetId === CROCHET_LANG.custom
+            ? 'custom'
+            : 'jp'
 
     initialLocale.value = normalizedLocale
     initialCrochetKey.value = currentCrochetKey
@@ -91,9 +111,17 @@ const isDirty = computed(() => {
       ? 'icon'
       : draftCrochetKey.value === 'uk'
         ? 'uk'
-        : 'jp'
+        : draftCrochetKey.value === 'custom'
+          ? 'custom'
+          : 'jp'
   return l !== initialLocale.value || c !== initialCrochetKey.value
 })
+
+function handleCustomDisplaySaved() {
+  if (!hasCustomDisplay.value && draftCrochetKey.value === 'custom') {
+    draftCrochetKey.value = initialCrochetKey.value === 'custom' ? 'text' : initialCrochetKey.value
+  }
+}
 
 async function handleCancel() {
   if (!isDirty.value || saving.value) {
@@ -118,7 +146,9 @@ async function handleConfirm() {
         ? CROCHET_LANG.icon
         : draftCrochetKey.value === 'uk'
           ? CROCHET_LANG.symbol_uk
-          : CROCHET_LANG.symbol_jp
+          : draftCrochetKey.value === 'custom'
+            ? CROCHET_LANG.custom
+            : CROCHET_LANG.symbol_jp
     setI18nLocale(nextLocale)
     await setCrochetLang(nextCrochet)
     emit('close')
@@ -136,5 +166,31 @@ const uiLocaleItems = computed(() => [
 <style scoped>
 .control {
   display: flex;
+}
+
+.control--stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.custom-display-settings-btn {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #111827;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.55rem 0.85rem;
+  cursor: pointer;
+}
+
+.custom-display-settings-btn:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.custom-display-settings-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 </style>

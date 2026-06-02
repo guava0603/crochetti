@@ -56,6 +56,7 @@ import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage
 import { openError } from '@/services/ui/notice'
 import { useFooterContext } from '@/composables/footerContext'
 import { fetchProject } from '@/services/firestore/projects'
+import { buildProjectSourceFromCopyFrom } from '@/utils/projectSource'
 
 defineOptions({ name: 'AddProjectViewMain' })
 
@@ -341,7 +342,8 @@ const handleSubmit = async (data) => {
       self_defined_stitches: Array.isArray(data?.self_defined_stitches) ? data.self_defined_stitches : [],
       images: existingImageUrls,
       authorId: user.uid,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      source: buildProjectSourceFromCopyFrom(route.query?.copyFrom)
     }
 
     const projectId = await callApi('createProject', projectData)

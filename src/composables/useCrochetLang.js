@@ -23,6 +23,7 @@ const normalizeCrochetLang = (value) => {
   if (next === CROCHET_LANG.symbol_uk) return CROCHET_LANG.symbol_uk
   if (next === CROCHET_LANG.text_zh) return CROCHET_LANG.text_zh
   if (next === CROCHET_LANG.icon) return CROCHET_LANG.icon
+  if (next === CROCHET_LANG.custom) return CROCHET_LANG.custom
   return CROCHET_LANG.symbol_jp
 }
 

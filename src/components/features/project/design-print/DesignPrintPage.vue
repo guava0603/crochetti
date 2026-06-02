@@ -9,16 +9,13 @@
           :disabled="!projectData || loading"
           @click="openSettings"
         />
-        <button
-          type="button"
-          class="btn-share-image"
-          :disabled="!projectData || loading || sharing"
+        <ToolbarButton
+          icon-src="assets/image/settings/027__download.svg"
           :aria-label="t('project.downloadDesignPage.shareOrDownload')"
           :title="t('project.downloadDesignPage.shareOrDownload')"
+          :disabled="!projectData || loading || sharing"
           @click="shareImage"
-        >
-          <ButtonPrinter />
-        </button>
+        />
       </div>
 
       <div v-if="loading" class="print-loading">{{ t('common.loading') }}</div>
@@ -76,7 +73,6 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import ToolbarButton from '@/components/shell/layout/ToolbarButton.vue'
-import ButtonPrinter from '@/components/shared/buttons/svg/ButtonPrinter.vue'
 import DesignPrintContent from '@/components/features/project/design-print/DesignPrintContent.vue'
 import DesignPrintSettingsModal from '@/components/modals/project/DesignPrintSettingsModal.vue'
 import { useAppBanner } from '@/composables/appBanner'
@@ -311,26 +307,4 @@ onUnmounted(() => {
   color: #374151;
 }
 
-.btn-share-image {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border: none;
-  border-radius: 12px;
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.15s;
-  color: var(--color-icon-base);
-}
-
-.btn-share-image:hover:not(:disabled) {
-  background: rgba(243, 244, 246, 0.98);
-}
-
-.btn-share-image:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
 </style>

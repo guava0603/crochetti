@@ -8,72 +8,149 @@
   >
     <template #step-fallback>
       <div class="copy-project">
-        <p class="copy-project__hint">{{ t('addProject.copy.hint') }}</p>
-
         <div class="copy-project__picker">
-          <div class="copy-project__picker-title">{{ t('addProject.copy.selectLabel') }}</div>
-
           <div class="copy-project__picker-row">
-            <SelectionInput
-              v-model="selectedId"
+            <SelectionInputCombineList
+              v-model="selectedProjectText"
               :disabled="loading || projectOptions.length === 0"
               :placeholder="t('addProject.copy.selectPlaceholder')"
-              :options="projectOptions"
+              :suggestions="projectSuggestions"
+              :strict="true"
             />
           </div>
         </div>
 
-        <div class="copy-project__actions">
-          <button
-            type="button"
-            class="btn-cancel"
-            @click="$router.back()"
-          >
-            {{ t('common.cancel') }}
-          </button>
-
-          <button
-            type="button"
-            class="btn-confirm"
-            :disabled="!selectedId"
-            @click="goNext"
-          >
-            {{ t('addProject.common.next') }}
-          </button>
-        </div>
       </div>
     </template>
   </ProjectWizardLayout>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import ProjectWizardLayout from '@/components/features/project/ProjectWizardLayout.vue'
-import SelectionInput from '@/components/shared/selection/SelectionInput.vue'
+import SelectionInputCombineList from '@/components/shared/inputs/SelectionInputCombineList.vue'
 
 import { auth } from '@/firebaseConfig'
-import { fetchUserProjectSummaries } from '@/services/firestore/user'
+import { fetchProjectSummariesByIds } from '@/services/firestore/projects'
+import { fetchUserProfile, fetchUserProjectSummaries, fetchUsers } from '@/services/firestore/user'
+import { useFooterContext } from '@/composables/footerContext'
 
 defineOptions({ name: 'AddProjectCopyView' })
 
 const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
+const footer = useFooterContext()
 
-const selectedId = ref('')
-const projectSummaries = ref([])
+const selectedProjectText = ref('')
+const createdProjectSummaries = ref([])
+const savedProjectSummaries = ref([])
+const authorNameById = ref({})
 const loading = ref(false)
 
-const isDirty = computed(() => Boolean(String(selectedId.value || '').trim()))
+const isDirty = computed(() => Boolean(String(selectedProjectText.value || '').trim()))
 
 const projectOptions = computed(() => {
-  const list = Array.isArray(projectSummaries.value) ? projectSummaries.value : []
+  const list = Array.isArray(createdProjectSummaries.value) ? createdProjectSummaries.value : []
   return list.map((p) => ({
     value: String(p.id),
     label: String(p.name || p.id),
   }))
+})
+
+const combinedProjectSummaries = computed(() => {
+  const created = Array.isArray(createdProjectSummaries.value) ? createdProjectSummaries.value : []
+  const saved = Array.isArray(savedProjectSummaries.value) ? savedProjectSummaries.value : []
+  const seen = new Set()
+  const out = []
+
+  for (const p of created) {
+    const id = String(p?.id || '').trim()
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    out.push({ ...p, __kind: 'created' })
+  }
+
+  for (const p of saved) {
+    const id = String(p?.id || '').trim()
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    const authorId = String(p?.authorId || '').trim()
+    const authorName = authorId ? String(authorNameById.value?.[authorId] || '').trim() : ''
+    out.push({ ...p, __kind: 'saved', __authorName: authorName })
+  }
+
+  return out
+})
+
+const projectSuggestions = computed(() => {
+  const list = Array.isArray(combinedProjectSummaries.value) ? combinedProjectSummaries.value : []
+  const raw = list
+    .map((p) => {
+      const id = String(p?.id || '').trim()
+      const name = String(p?.name || '').trim()
+      if (!id) return null
+      if (!name) return null
+
+      if (p.__kind === 'saved') {
+        const authorName = String(p.__authorName || '').trim()
+        if (authorName) return { label: `${name} (${authorName})`, id }
+        return { label: name, id }
+      }
+
+      return { label: `[自創] ${name}`, id }
+    })
+    .filter(Boolean)
+
+  // Ensure the labels are unique so we can map them back to IDs without showing IDs.
+  const used = new Map()
+  return raw.map((item) => {
+    const base = String(item.label || '').trim()
+    if (!base) return ''
+    const count = (used.get(base) || 0) + 1
+    used.set(base, count)
+    return count === 1 ? base : `${base} ·${count}`
+  }).filter(Boolean)
+})
+
+const suggestionIdByLabel = computed(() => {
+  const list = Array.isArray(combinedProjectSummaries.value) ? combinedProjectSummaries.value : []
+  const raw = list
+    .map((p) => {
+      const id = String(p?.id || '').trim()
+      const name = String(p?.name || '').trim()
+      if (!id) return null
+      if (!name) return null
+
+      if (p.__kind === 'saved') {
+        const authorName = String(p.__authorName || '').trim()
+        if (authorName) return { label: `${name} (${authorName})`, id }
+        return { label: name, id }
+      }
+
+      return { label: `[自創] ${name}`, id }
+    })
+    .filter(Boolean)
+
+  const used = new Map()
+  const out = {}
+  for (const item of raw) {
+    const base = String(item.label || '').trim()
+    if (!base) continue
+    const count = (used.get(base) || 0) + 1
+    used.set(base, count)
+    const label = count === 1 ? base : `${base} ·${count}`
+    out[label] = String(item.id || '').trim()
+  }
+  return out
+})
+
+const selectedProjectId = computed(() => {
+  const label = String(selectedProjectText.value || '').trim()
+  if (!label) return ''
+  return String(suggestionIdByLabel.value?.[label] || '').trim()
 })
 
 async function loadProjects() {
@@ -82,7 +159,40 @@ async function loadProjects() {
 
   loading.value = true
   try {
-    projectSummaries.value = await fetchUserProjectSummaries({ userId: uid, includePrivate: true })
+    const [created, profile] = await Promise.all([
+      fetchUserProjectSummaries({ userId: uid, includePrivate: true }),
+      fetchUserProfile({ userId: uid })
+    ])
+
+    createdProjectSummaries.value = created
+
+    const ids = Array.isArray(profile?.save_project_list) ? profile.save_project_list : []
+    if (ids.length) {
+      savedProjectSummaries.value = await fetchProjectSummariesByIds(ids)
+    } else {
+      savedProjectSummaries.value = []
+    }
+
+    const authorIds = Array.from(new Set(
+      (Array.isArray(savedProjectSummaries.value) ? savedProjectSummaries.value : [])
+        .map((p) => String(p?.authorId || '').trim())
+        .filter(Boolean)
+    ))
+
+    if (authorIds.length) {
+      const users = await fetchUsers({ userIds: authorIds })
+      const nextMap = {}
+      for (const u of Array.isArray(users) ? users : []) {
+        const id = String(u?.id || '').trim()
+        if (!id) continue
+        const name = String(u?.name || '').trim()
+        if (!name) continue
+        nextMap[id] = name
+      }
+      authorNameById.value = nextMap
+    } else {
+      authorNameById.value = {}
+    }
   } finally {
     loading.value = false
   }
@@ -92,8 +202,31 @@ onMounted(() => {
   loadProjects()
 })
 
+watch(
+  () => [loading.value, selectedProjectId.value],
+  () => {
+    footer?.setActions?.({
+      ariaLabel: t('addProject.copy.title'),
+      justify: 'space-between',
+      secondary: {
+        label: t('common.cancel'),
+        disabled: Boolean(loading.value),
+        onClick: () => router.back()
+      },
+      primary: {
+        label: t('addProject.common.next'),
+        disabled: Boolean(loading.value) || !String(selectedProjectId.value || '').trim(),
+        onClick: goNext
+      }
+    })
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => footer?.clearActions?.())
+
 function goNext() {
-  const id = String(selectedId.value || '').trim()
+  const id = String(selectedProjectId.value || '').trim()
   if (!id) return
 
   // Pass selected project id via query for AddProjectView to prefill.
@@ -116,13 +249,6 @@ function goNext() {
   margin: 0 0 1rem 0;
 }
 
-.copy-project__actions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  padding-top: 1rem;
-}
-
 .copy-project__picker {
   padding: 0.75rem 0;
 }
@@ -138,46 +264,4 @@ function goNext() {
   align-items: center;
 }
 
-.btn-secondary {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  padding: 0.5rem 0.9rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.btn-secondary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-cancel {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  padding: 0.625rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btn-confirm {
-  background: var(--color-icon-add);
-  color: white;
-  border: none;
-  padding: 0.625rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btn-confirm:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 </style>

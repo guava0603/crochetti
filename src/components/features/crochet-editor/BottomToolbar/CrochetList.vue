@@ -2,8 +2,38 @@
   <div class="crochet-list-wrapper">
     <div class="crochet-list">
       <button
-        v-for="crochet in stitches"
+        v-for="crochet in stitchesBeforeUser"
         :key="getStitchId(crochet)"
+        type="button"
+        class="crochet-button"
+        :class="{ 'is-selected': selectedStitchId === getStitchId(crochet) }"
+        :disabled="disabled || !isStitchEnabled(getStitchId(crochet)) || isStitchDisabledByPositionSelection(getStitchId(crochet)) || isStitchDisabledByAdjustMode(getStitchId(crochet))"
+        @click="handleStitchClick(getStitchId(crochet))"
+      >
+        <img
+          v-if="supportsIcons && getStitchIconUrl(crochet)"
+          class="crochet-icon"
+          :src="getStitchIconUrl(crochet)"
+          :alt="getStitchLabel(crochet)"
+        />
+        <div v-else class="crochet-symbol">{{ getStitchLabel(crochet) }}</div>
+      </button>
+
+      <button
+        v-for="sd in userDefinedStitches"
+        :key="`user-${getStitchId(sd)}`"
+        type="button"
+        class="crochet-button crochet-button--self-defined crochet-button--user-defined"
+        :class="{ 'is-selected': selectedStitchId === getStitchId(sd) }"
+        :disabled="disabled || !isStitchEnabled(getStitchId(sd)) || isStitchDisabledByPositionSelection(getStitchId(sd)) || isStitchDisabledByAdjustMode(getStitchId(sd))"
+        @click="handleStitchClick(getStitchId(sd))"
+      >
+        <div class="crochet-symbol">{{ getStitchLabel(sd) }}</div>
+      </button>
+
+      <button
+        v-for="crochet in stitchesAfterUser"
+        :key="`after-${getStitchId(crochet)}`"
         type="button"
         class="crochet-button"
         :class="{ 'is-selected': selectedStitchId === getStitchId(crochet) }"
@@ -136,6 +166,7 @@ import {
 import { getCrochetIconUrl } from '@/constants/crochetIcons'
 import { useCrochetLang } from '@/composables/useCrochetLang'
 import { normalizeRopeChainCount } from '@/utils/ropeChainCount'
+import { getSelfDefinedCustomDisplayText, splitGeneralStitchesAroundTreble } from '@/utils/userCrochetDisplay'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -157,6 +188,10 @@ const props = defineProps({
     default: false
   },
   selfDefinedStitches: {
+    type: Array,
+    default: () => []
+  },
+  userDefinedStitches: {
     type: Array,
     default: () => []
   },
@@ -205,12 +240,26 @@ const formatRopePresetLabel = (p) => {
   return `${t('toolbar.addCrochet.ropeBundle.title')} ${safe}${getStitchDisplayText(BasicStitchGeneral[1], crochetLang.value) || 'ch'}`
 }
 
+const stitchesBeforeUser = computed(() => {
+  return splitGeneralStitchesAroundTreble(props.stitches).before
+})
+
+const stitchesAfterUser = computed(() => {
+  return splitGeneralStitchesAroundTreble(props.stitches).after
+})
+
 const selfDefinedIdSet = computed(() => {
   const set = new Set()
-  const list = Array.isArray(props.selfDefinedStitches) ? props.selfDefinedStitches : []
-  for (const s of list) {
-    const id = Number(s?.stitch_id)
-    if (Number.isFinite(id)) set.add(id)
+  const lists = [
+    props.userDefinedStitches,
+    props.selfDefinedStitches
+  ]
+  for (const raw of lists) {
+    const list = Array.isArray(raw) ? raw : []
+    for (const s of list) {
+      const id = Number(s?.stitch_id)
+      if (Number.isFinite(id)) set.add(id)
+    }
   }
   return set
 })
@@ -478,6 +527,7 @@ const getStitchLabel = (stitch) => {
     const textZh = typeof stitch.text_zh === 'string' ? String(stitch.text_zh).trim() : ''
 
     const lang = Number(crochetLang.value)
+    if (lang === CROCHET_LANG.custom) return getSelfDefinedCustomDisplayText(stitch)
     if (lang === CROCHET_LANG.symbol_uk) return symbolUk || symbolJp || name
     if (lang === CROCHET_LANG.symbol_jp) return symbolJp || name
     if (lang === CROCHET_LANG.text_zh || lang === CROCHET_LANG.icon) return textZh || name

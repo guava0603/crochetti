@@ -14,6 +14,18 @@
       @blur="handleBlur"
     />
 
+    <button
+      v-if="showClear"
+      type="button"
+      class="selection-combine__clear"
+      aria-label="Clear"
+      :disabled="disabled"
+      @mousedown.prevent
+      @click="clear"
+    >
+      ×
+    </button>
+
     <div
       v-if="showMenu"
       class="selection-combine__menu"
@@ -75,6 +87,10 @@ const emit = defineEmits(['update:modelValue', 'blur', 'focus'])
 const inputRef = ref(null)
 const isMenuOpen = ref(false)
 
+const showClear = computed(() => {
+  return !props.disabled && Boolean(String(props.modelValue || '').trim())
+})
+
 function openMenu(e) {
   if (props.disabled) return
   isMenuOpen.value = true
@@ -108,6 +124,12 @@ function selectSuggestion(s) {
   emit('update:modelValue', String(s ?? ''))
   closeMenu()
   // Keep focus for quick edits
+  inputRef.value?.focus?.()
+}
+
+function clear() {
+  emit('update:modelValue', '')
+  closeMenu()
   inputRef.value?.focus?.()
 }
 
@@ -146,7 +168,7 @@ const showMenu = computed(() => {
 
 .selection-combine__input {
   width: 100%;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 2.25rem 0.5rem 0.75rem;
   border: 1px solid var(--color-border-edit-project, var(--color-border));
   border-radius: 8px;
   font-size: 0.95rem;
@@ -172,6 +194,31 @@ const showMenu = computed(() => {
   padding: 0.25rem;
   max-height: 220px;
   overflow: auto;
+}
+
+.selection-combine__clear {
+  position: absolute;
+  right: 0.45rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.06);
+  color: #374151;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.selection-combine__clear:hover:not(:disabled) {
+  background: rgba(17, 24, 39, 0.1);
+}
+
+.selection-combine__clear:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .selection-combine__option {
