@@ -1196,7 +1196,7 @@
     },
     "copy": {
       "title": "從現有設計稿複製",
-      "hint": "請選擇一個或多個現有設計稿作為範本。",
+      "hint": "請選擇一個設計稿作為範本。",
       "selectLabel": "設計稿",
       "selectPlaceholder": "搜尋設計稿…",
       "selectAria": "選擇要複製的設計稿",

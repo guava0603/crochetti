@@ -37,7 +37,7 @@
       </button>
     </div>
 
-    <div v-if="showMenu" class="addable-multi-selection__menu" @mousedown.prevent>
+    <div v-if="showMenu" class="addable-multi-selection__menu dropdown-modal" @mousedown.prevent>
       <input
         ref="searchRef"
         class="addable-multi-selection__search"

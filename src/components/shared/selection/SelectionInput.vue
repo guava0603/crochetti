@@ -18,7 +18,7 @@
       <span class="selection-input__caret" aria-hidden="true">▾</span>
     </div>
 
-    <div v-if="open" class="selection-input__menu" role="listbox" @mousedown.prevent>
+    <div v-if="open" class="selection-input__menu dropdown-modal" role="listbox" @mousedown.prevent>
       <template v-for="item in normalizedOptions" :key="item.key">
         <div v-if="item.kind === 'group'" class="selection-input__group">
           {{ item.label }}

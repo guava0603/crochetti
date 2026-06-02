@@ -68,3 +68,17 @@
       transparent 88%
     );
 }
+
+/* Shared dropdown "modal" menu surface */
+.dropdown-modal {
+  max-height: 25vw;
+  overflow: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge legacy */
+}
+
+.dropdown-modal::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}

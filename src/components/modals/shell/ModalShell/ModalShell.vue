@@ -36,8 +36,8 @@
             <slot v-if="$slots.footer" name="footer" />
             <ModalDefaultFooter
               v-else
-              :cancel-label="cancelLabel"
-              :save-label="saveLabel"
+              :cancel-label="cancelLabelComputed"
+              :save-label="saveLabelComputed"
               :saving-label="savingLabel"
               :saving="saving"
               :save-disabled="saveDisabled"
@@ -73,6 +73,8 @@ const props = defineProps({
   showClose: { type: Boolean, default: true },
   bodyClass: { type: [String, Array, Object], default: '' },
   showSaveFooter: { type: Boolean, default: false },
+  step: { type: Number, default: null },
+  stepCount: { type: Number, default: null },
   cancelLabel: { type: String, default: '' },
   saveLabel: { type: String, default: '' },
   savingLabel: { type: String, default: '' },
@@ -83,7 +85,7 @@ const props = defineProps({
   showSave: { type: Boolean, default: true }
 })
 
-const emit = defineEmits(['update:show', 'close', 'save'])
+const emit = defineEmits(['update:show', 'close', 'save', 'back', 'next'])
 
 const slots = useSlots()
 
@@ -99,17 +101,47 @@ const containerStyle = computed(() => ({
 
 const showFooter = computed(() => Boolean(slots.footer) || props.showSaveFooter)
 
+const stepMeta = computed(() => {
+  const step = Number(props.step)
+  const count = Number(props.stepCount)
+  if (!Number.isFinite(step) || !Number.isFinite(count)) return null
+  if (count <= 1) return null
+  if (step < 1 || step > count) return null
+  return { step, count }
+})
+
+const cancelLabelComputed = computed(() => {
+  if (props.cancelLabel) return props.cancelLabel
+  if (stepMeta.value && stepMeta.value.step > 1) return '上一步'
+  return ''
+})
+
+const saveLabelComputed = computed(() => {
+  if (props.saveLabel) return props.saveLabel
+  if (stepMeta.value && stepMeta.value.step < stepMeta.value.count) return '下一步'
+  if (stepMeta.value && stepMeta.value.step === stepMeta.value.count) return '確認'
+  return ''
+})
+
 function emitClose() {
   emit('update:show', false)
   emit('close')
 }
 
 function emitCancel() {
-  emitClose()
+  if (stepMeta.value && stepMeta.value.step > 1) {
+    emit('back')
+  } else {
+    emitClose()
+  }
 }
 
 function emitSave() {
-  emit('save')
+  if (stepMeta.value && stepMeta.value.step < stepMeta.value.count) {
+    emit('next')
+  } else {
+    emit('save')
+  }
 }
 
 function handleOverlayClick() {

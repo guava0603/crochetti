@@ -138,9 +138,11 @@ const handleStartNewProject = async () => {
   await router.push('/add-project')
 }
 
-const handleCopyProject = async () => {
+const handleCopyProject = async (projectId) => {
+  const id = projectId != null ? String(projectId).trim() : ''
+  if (!id) return
   showAddProjectStartModeModal.value = false
-  await router.push('/add-project/copy')
+  await router.push({ name: 'add-project', query: { copyFrom: id } })
 }
 
 const handleQuickStart = async () => {

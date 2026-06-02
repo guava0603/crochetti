@@ -34,7 +34,7 @@
       />
     </div>
 
-    <div v-if="showMenu" class="multiple-selection__menu" @mousedown.prevent>
+    <div v-if="showMenu" class="multiple-selection__menu dropdown-modal" @mousedown.prevent>
       <button
         v-for="(opt, idx) in filteredOptions"
         :key="`${opt.value}-${idx}`"

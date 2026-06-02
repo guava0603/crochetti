@@ -63,12 +63,6 @@ const router = createRouter({
       meta: { bannerTitleKey: 'addProject.bannerTitle', requiresAuth: true, footer: 'action' },
     },
     {
-      path: '/add-project/copy',
-      name: 'add-project-copy',
-      component: () => import('../views/AddProjectCopyView.vue'),
-      meta: { bannerTitleKey: 'addProject.bannerTitle', requiresAuth: true, footer: 'action' },
-    },
-    {
       path: '/quick-start',
       name: 'quick-start',
       component: () => import('../views/QuickStartRecordView.vue'),
