@@ -16,11 +16,18 @@
       />
     </div>
 
-    <div class="carousel__viewport">
+    <div
+      class="carousel__viewport"
+      :class="{ 'carousel__viewport--fit-active-height': fitHeightToActiveItem }"
+      :style="viewportStyle"
+    >
       <div
         ref="rowEl"
         class="carousel__row"
-        :class="{ 'carousel__row--no-gesture': disableGesture }"
+        :class="{
+          'carousel__row--no-gesture': disableGesture,
+          'carousel__row--fit-active-height': fitHeightToActiveItem
+        }"
         role="region"
         @scroll.passive="handleScroll"
       >
@@ -74,15 +81,34 @@ const props = defineProps({
   disableGesture: {
     type: Boolean,
     default: false
+  },
+  /** Size the viewport to the active slide height (slides may differ). */
+  fitHeightToActiveItem: {
+    type: Boolean,
+    default: false
+  },
+  /** Scroll the page to the top when the active slide index changes. */
+  scrollPageToTopOnIndexChange: {
+    type: Boolean,
+    default: false
   }
 })
 
 const rowEl = ref(null)
 const itemEls = ref([])
 const activeIndex = ref(0)
+const activeItemHeightPx = ref(null)
 
 let programmaticScroll = null
 let programmaticScrollTimeout = 0
+let itemResizeObserver = null
+
+const viewportStyle = computed(() => {
+  if (!props.fitHeightToActiveItem) return {}
+  const h = Number(activeItemHeightPx.value)
+  if (!Number.isFinite(h) || h <= 0) return {}
+  return { height: `${h}px` }
+})
 
 const count = computed(() => (Array.isArray(props.items) ? props.items.length : 0))
 
@@ -258,13 +284,58 @@ async function scrollToEnd() {
   }
 }
 
+function scrollPageToTop() {
+  if (typeof window === 'undefined') return
+  const el = document.scrollingElement || document.documentElement || document.body
+  if (el?.scrollTo) {
+    el.scrollTo({ top: 0, behavior: 'smooth' })
+    return
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function measureActiveItemHeight() {
+  if (!props.fitHeightToActiveItem) return
+  const el = itemEls.value?.[activeIndex.value]
+  if (!el) {
+    activeItemHeightPx.value = null
+    return
+  }
+  const row = rowEl.value
+  let padTop = 0
+  let padBottom = 0
+  if (row && typeof window !== 'undefined') {
+    const style = window.getComputedStyle(row)
+    padTop = Number.parseFloat(style.paddingTop) || 0
+    padBottom = Number.parseFloat(style.paddingBottom) || 0
+  }
+  activeItemHeightPx.value = padTop + el.offsetHeight + padBottom
+}
+
+function observeItemHeights() {
+  if (!props.fitHeightToActiveItem || typeof ResizeObserver === 'undefined') return
+  itemResizeObserver?.disconnect()
+  itemResizeObserver = new ResizeObserver(() => {
+    measureActiveItemHeight()
+  })
+  const els = Array.isArray(itemEls.value) ? itemEls.value : []
+  for (const el of els) {
+    if (el) itemResizeObserver.observe(el)
+  }
+  measureActiveItemHeight()
+}
+
 function handleResize() {
   updateActiveIndexFromScroll()
+  measureActiveItemHeight()
 }
 
 onMounted(() => {
   window.addEventListener('resize', handleResize)
-  nextTick(() => updateActiveIndexFromScroll())
+  nextTick(() => {
+    updateActiveIndexFromScroll()
+    observeItemHeights()
+  })
 
   const row = rowEl.value
   if (row) {
@@ -279,6 +350,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
+  itemResizeObserver?.disconnect()
+  itemResizeObserver = null
   if (scrollRaf) cancelAnimationFrame(scrollRaf)
   if (programmaticScrollTimeout) clearTimeout(programmaticScrollTimeout)
 
@@ -300,13 +373,33 @@ watch(
     const max = Math.max(0, len - 1)
     if (activeIndex.value > max) activeIndex.value = max
     updateActiveIndexFromScroll()
+    observeItemHeights()
+  }
+)
+
+watch(
+  () => props.fitHeightToActiveItem,
+  async (enabled) => {
+    if (!enabled) {
+      activeItemHeightPx.value = null
+      itemResizeObserver?.disconnect()
+      itemResizeObserver = null
+      return
+    }
+    await nextTick()
+    observeItemHeights()
   }
 )
 
 watch(
   () => activeIndex.value,
-  (index) => {
+  async (index, prev) => {
     emit('active-index-change', index)
+    if (props.scrollPageToTopOnIndexChange && prev !== undefined && index !== prev) {
+      scrollPageToTop()
+    }
+    await nextTick()
+    measureActiveItemHeight()
   }
 )
 
@@ -358,6 +451,11 @@ defineExpose({
   position: relative;
 }
 
+.carousel__viewport--fit-active-height {
+  overflow: hidden;
+  transition: height 0.25s ease;
+}
+
 .carousel__row {
   display: flex;
   flex-direction: row;
@@ -378,6 +476,10 @@ defineExpose({
 
 .carousel__row--no-gesture {
   touch-action: pan-y;
+}
+
+.carousel__row--fit-active-height {
+  align-items: flex-start;
 }
 
 .carousel__row::-webkit-scrollbar {

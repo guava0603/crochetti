@@ -15,7 +15,7 @@
 
 <script setup>
 import { watch } from 'vue'
-import { createSelection } from '@/constants/selection'
+import { normalizePreviewClickPayload } from '@/utils/crochetSelectionPath'
 import CrochetNode from './Crochet/CrochetNode.vue'
 
 const props = defineProps({
@@ -30,7 +30,6 @@ const props = defineProps({
 })
 
 watch(() => props.nodeList, (newList) => {
-  // Ensure nodeList is always an array
   if (!Array.isArray(newList)) {
     console.warn('nodeList should be an array')
   }
@@ -41,26 +40,16 @@ const emit = defineEmits(['add-inner-selection'])
 const handleNodeSelection = (rootIndex, payload) => {
   if (!props.canSelectInner) return
 
-  const innerPath = Array.isArray(payload) ? payload : []
+  const clickPayload = normalizePreviewClickPayload(rootIndex, payload)
+  if (!clickPayload) return
 
-  if (innerPath.length > 0) {
-    emit('add-inner-selection', { rootIndex, innerPath })
-    return
-  }
-
-  emit('add-inner-selection', createSelection(rootIndex, rootIndex))
+  emit('add-inner-selection', clickPayload)
 }
 </script>
 
 <style scoped>
 .crochet-node-display {
   line-height: 1.2;
-}
-
-.node-item {
-  display: inline-flex;
-  align-items: baseline;
-  cursor: pointer;
 }
 
 .separator {

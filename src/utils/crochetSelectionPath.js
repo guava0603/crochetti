@@ -17,6 +17,46 @@ export function hasSingleWrappedRootPattern(rootList) {
 }
 
 /**
+ * Turn a bubbled CrochetNode selection into a payload for mergeInnerSelectionPath.
+ * Returns null when the payload cannot be interpreted.
+ */
+export function normalizePreviewClickPayload(rootIndex, payload) {
+  const root = Number(rootIndex)
+  if (!Number.isFinite(root)) return null
+
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    !Array.isArray(payload) &&
+    Array.isArray(payload.innerPath)
+  ) {
+    return payload
+  }
+
+  if (Array.isArray(payload) && payload.length > 0) {
+    const first = payload[0]
+    if (!isSelectionRange(first)) return null
+
+    if (first.start === root) {
+      const deeper = payload.slice(1)
+      return deeper.length
+        ? { rootIndex: root, innerPath: deeper }
+        : createSelection(root, root)
+    }
+
+    if (payload.every(isSelectionRange)) {
+      return payload.length === 1
+        ? createSelection(root, root)
+        : { rootIndex: root, innerPath: payload }
+    }
+
+    return null
+  }
+
+  return createSelection(root, root)
+}
+
+/**
  * Merge a preview click into the row selection path.
  *
  * Supports:
@@ -33,18 +73,22 @@ export function mergeInnerSelectionPath({
   if (payload && typeof payload === 'object' && Array.isArray(payload.innerPath)) {
     const rootIndex = Number(payload.rootIndex)
     const innerPath = payload.innerPath.filter(isSelectionRange)
-    if (!Number.isFinite(rootIndex) || innerPath.length === 0) return null
+    if (!Number.isFinite(rootIndex) || innerPath.length === 0) {
+      return null
+    }
 
     const rootSel = createSelection(rootIndex, rootIndex)
 
     if (base.length === 0) {
       if (hasSingleWrappedRootPattern(rootList)) {
-        return [rootSel, ...innerPath]
+        // First drill into a lone row pattern (e.g. [短針, 7中長針]×3): select the pattern token only.
+        return [rootSel]
       }
-      return innerPath.length === 1 ? innerPath : [rootSel, ...innerPath]
+      // innerPath is relative to rootIndex (e.g. [{0,0}] inside 2中長針), never a row-root path by itself.
+      return [rootSel, ...innerPath]
     }
 
-    return [...base, ...innerPath]
+    return [...base, rootSel, ...innerPath]
   }
 
   if (isSelectionRange(payload)) {

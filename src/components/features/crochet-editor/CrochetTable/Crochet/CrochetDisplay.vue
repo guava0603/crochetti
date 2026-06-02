@@ -132,12 +132,17 @@ const isSameSinglePath = (a, b) => {
 const handleChildSelectionChange = (rootIndex, nextSelectionList) => {
   if (props.tableType === 'view') return
 
-  // Edit table: always select nothing.
-  let next = []
-  if (props.tableType === 'record') {
-    const safeChild = Array.isArray(nextSelectionList) ? nextSelectionList : []
-    next = [createSelection(rootIndex, rootIndex), ...safeChild]
+  // Design table: open row editor at root only; drill-down is via the preview panel.
+  if (props.tableType === 'edit') {
+    selectionList.value = []
+    emitSelectionChange()
+    return
+  }
 
+  const safeChild = Array.isArray(nextSelectionList) ? nextSelectionList : []
+  const next = [createSelection(rootIndex, rootIndex), ...safeChild]
+
+  if (props.tableType === 'record') {
     // Record table: never toggle-off selection (avoid unselect), but still
     // re-emit the selection so the toolbar can open again.
     if (isSameSinglePath(selectionList.value, next)) {

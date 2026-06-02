@@ -23,7 +23,10 @@
           :items="projectData.component_list"
           :aria-label="$t('addProject.design.componentsAria')"
           :get-dot-variant="(item) => (item?.type === 'stitch' ? 'outline' : 'solid')"
+          fit-height-to-active-item
+          scroll-page-to-top-on-index-change
           bleed
+          class="add-project-component-carousel"
         >
           <template #default="{ item, index }">
             <ComponentCard

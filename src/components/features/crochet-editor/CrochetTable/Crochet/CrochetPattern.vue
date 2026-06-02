@@ -2,7 +2,10 @@
   <!-- Pattern node: [stitch1, stitch2, ...] * n -->
   <span class="pattern-wrapper">
     <template v-if="isLongPattern">
-      <span class="pattern-count">[</span>
+      <span
+        class="pattern-count pattern-count--clickable"
+        @click.stop="handleLongPatternShellClick"
+      >[</span>
       <template v-for="(stitchNode, nIndex) in node.pattern" :key="nIndex">
         <CrochetNode
           :table-type="tableType"
@@ -13,7 +16,10 @@
         />
         <span v-if="nIndex < node.pattern.length - 1" class="separator">, </span>
       </template>
-      <span class="pattern-count">
+      <span
+        class="pattern-count pattern-count--clickable"
+        @click.stop="handleLongPatternShellClick"
+      >
         ]
         <template v-if="patternCount > 1">
           <template v-if="showZhRepeat">{{ t('crochet.display.patternRepeatSuffix', { count: patternCount }) }}</template>
@@ -26,10 +32,14 @@
         v-if="compactInnerType === 'stitch'"
         class="compact-stitch"
         :class="{ clickable: tableType !== 'view' }"
-        @click.stop="handleCompactInnerClick"
+        @click.stop="handleCompactPatternClick"
       >
         <span v-if="(node.count || 1) > 1" class="compact-count">{{ node.count }}</span>
-        <span class="compact-inner" :class="{ selected: compactInnerSelected }">
+        <span
+          class="compact-inner"
+          :class="{ selected: compactInnerSelected, clickable: tableType !== 'view' }"
+          @click.stop="handleCompactInnerDrill"
+        >
           <component
             :is="StitchComponent"
             :stitch-id="node.pattern[0].stitch_id"
@@ -145,9 +155,20 @@ const handleChildSelectionChange = (nIndex, nextSelectionList) => {
   }
 }
 
-const handleCompactInnerClick = () => {
+const handleCompactPatternClick = () => {
+  if (props.tableType === 'view') return
+  emit('selection-change', [])
+}
+
+const handleCompactInnerDrill = () => {
   if (props.tableType === 'view') return
   handleChildSelectionChange(0, [])
+}
+
+/** Select this pattern node at the parent level (brackets / × suffix), without drilling to a child. */
+const handleLongPatternShellClick = () => {
+  if (props.tableType === 'view') return
+  emit('selection-change', [])
 }
 
 // selection-change is handled by CrochetNode; CrochetPattern only forwards.
@@ -167,6 +188,10 @@ const handleCompactInnerClick = () => {
   font-weight: 600;
 }
 
+.pattern-count--clickable {
+  cursor: pointer;
+}
+
 .compact-inner {
   display: inline-block;
   border-radius: 3px;
@@ -181,6 +206,10 @@ const handleCompactInnerClick = () => {
 .compact-count {
   display: inline-block;
   border-bottom: 2px solid transparent;
+}
+
+.compact-inner.clickable {
+  cursor: pointer;
 }
 
 .compact-inner.selected {

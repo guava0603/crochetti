@@ -23,6 +23,33 @@ describe('getCountFromRowCopy', () => {
     })).toBe(20)
   })
 
+  it('reads leaf.count for a single-stitch repeat pattern at depth 1', () => {
+    const tokenRowCopy = [
+      { type: 'pattern', count: 6, pattern: [{ type: 'stitch', stitch_id: 1 }] }
+    ]
+    expect(getCountFromRowCopy(tokenRowCopy, [{ start: 0, end: 0 }], {
+      selectedNodeType: 'pattern'
+    })).toBe(6)
+  })
+
+  it('reads wrapper count when selectedNodeType is stitch but leaf is the repeat wrapper', () => {
+    const tokenRowCopy = [
+      { type: 'pattern', count: 6, pattern: [{ type: 'stitch', stitch_id: 1 }] }
+    ]
+    expect(getCountFromRowCopy(tokenRowCopy, [{ start: 0, end: 0 }], {
+      selectedNodeType: 'stitch'
+    })).toBe(6)
+  })
+
+  it('reads wrapper count when selecting inner stitch of a single-stitch repeat token', () => {
+    const tokenRowCopy = [
+      { type: 'pattern', count: 6, pattern: [{ type: 'stitch', stitch_id: 1 }] }
+    ]
+    expect(getCountFromRowCopy(tokenRowCopy, [{ start: 0, end: 0 }, { start: 0, end: 0 }], {
+      selectedNodeType: 'stitch'
+    })).toBe(6)
+  })
+
   it('reads plain inner stitch count as 1', () => {
     expect(getCountFromRowCopy(rowCopy, [{ start: 0, end: 0 }, { start: 0, end: 0 }], {
       selectedNodeType: 'stitch'

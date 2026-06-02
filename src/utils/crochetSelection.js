@@ -10,7 +10,8 @@ export const computeCurrentSelectedData = (selectionList, stitchNodeList) => {
       selectionState: 'select_range',
       selectedNodeType: 'pattern',
       selectedCount: 1,
-      currentPattern: rootList
+      currentPattern: rootList,
+      virtualWholeRow: true
     }
   }
 

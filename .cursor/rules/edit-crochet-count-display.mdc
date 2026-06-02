@@ -1,0 +1,36 @@
+---
+description: Authoritative ×/ch display rules for Edit crochet (resolveDisplayCount)
+globs: src/utils/editCrochetCount.js,src/utils/rowCopyCount.js,src/components/features/crochet-editor/BottomToolbar/EditCrochet.vue,src/components/features/crochet-editor/CrochetTable/EditingTable.vue
+alwaysApply: false
+---
+
+# Edit crochet count display (authoritative spec)
+
+Implemented in `resolveDisplayCount` / `countAtSelection` (`src/utils/editCrochetCount.js`). Do not reintroduce the old "×1 at `6短針` token depth 1" rule unless the product explicitly changes.
+
+## Algorithm (leaf + parent)
+
+1. **virtualWholeRow** → `selectedCount`
+2. **rope** leaf → chain count
+3. **stitch** leaf + parent is `isSingleStitchPattern` → `parent.count`
+4. **pattern** / **bundle** leaf → `leaf.count`
+5. Else → `1`
+
+Depth = `selectionPath.length`. Source of truth is **row snapshot** (`rowCopy`), then `pendingPattern` fallback.
+
+## Examples
+
+| Selection | × shows |
+|-----------|---------|
+| `6短針` pattern at depth 1 | **6** (`leaf.count`) |
+| Inner stitch of `6短針` (depth 2+) | **6** (`parent.count`) |
+| `20[x,v]` pattern at depth 1 | **20** |
+| Inner `x` in `20[x,v]` (no compact parent) | **1** |
+| Inner `x` in `20[5x,v]` | **5** (parent is single-stitch pattern) |
+| Plain stitch at depth 1 | **1** |
+
+## Related behavior
+
+- `applyCountToRowCopy` in `rowCopyCount.js` applies count edits to the leaf node.
+- Plain stitch 1→N: `EditingTable` wraps to pattern and auto-drills selection inward.
+- Never cache one count across selection depths; always derive via `resolveDisplayCount`.

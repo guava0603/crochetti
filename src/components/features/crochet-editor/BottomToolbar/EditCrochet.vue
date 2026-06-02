@@ -81,8 +81,7 @@ import CrochetNodeDisplay from '@/components/features/crochet-editor/CrochetTabl
 import { addStitchToPatternList } from '@/utils/patternEdit.js'
 import { createBundle, createSimpleStitch } from '@/constants/crochetData.js'
 import { openConfirmation } from '@/services/ui/confirmation'
-import { resolveEditCount } from '@/utils/editCrochetCount'
-import { getCountFromRowCopy } from '@/utils/rowCopyCount'
+import { resolveDisplayCount } from '@/utils/editCrochetCount'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -177,8 +176,8 @@ const stitchTabItems = computed(() => ([
 ]))
 
 const canSelectPreviewInner = computed(() => {
-  const base = isPatternSelected.value || props.selectedNodeType === 'bundle'
-  return base
+  if (props.virtualWholeRow) return true
+  return isPatternSelected.value || props.selectedNodeType === 'bundle'
 })
 
 const crochetColumnLabel = computed(() => {
@@ -239,10 +238,6 @@ const presetPosition = computed(() => {
   return info?.position ?? ''
 })
 
-const selectionDepth = computed(() => (
-  Array.isArray(props.selectionPath) ? props.selectionPath.length : 0
-))
-
 const countDirty = ref(false)
 const pendingStitchId = ref(null)
 const pendingPosition = ref('')
@@ -251,36 +246,18 @@ const pendingPattern = ref(props.currentPattern ? [...props.currentPattern] : []
 const suppressDraftEmit = ref(false)
 const draftTouched = ref(false)
 
-const readCountFromRowCopy = () => getCountFromRowCopy(props.rowCopy, props.selectionPath, {
+const countContext = (pendingPattern) => ({
+  rowCopy: props.rowCopy,
+  selectionPath: props.selectionPath,
   selectedNodeType: props.selectedNodeType,
-  virtualWholeRow: props.virtualWholeRow
+  virtualWholeRow: props.virtualWholeRow,
+  selectedCount: props.selectedCount,
+  pendingPattern
 })
 
-const baseDisplayCount = computed(() => {
-  if (Array.isArray(props.rowCopy) && props.rowCopy.length) {
-    return readCountFromRowCopy()
-  }
-  return resolveEditCount({
-    selectedNodeType: props.selectedNodeType,
-    selectedCount: props.selectedCount,
-    pendingPattern: props.currentPattern,
-    virtualWholeRow: props.virtualWholeRow,
-    selectionDepth: selectionDepth.value
-  })
-})
+const baseDisplayCount = computed(() => resolveDisplayCount(countContext(props.currentPattern)))
 
-const displayCount = computed(() => {
-  if (Array.isArray(props.rowCopy) && props.rowCopy.length) {
-    return readCountFromRowCopy()
-  }
-  return resolveEditCount({
-    selectedNodeType: props.selectedNodeType,
-    selectedCount: props.selectedCount,
-    pendingPattern: pendingPattern.value,
-    virtualWholeRow: props.virtualWholeRow,
-    selectionDepth: selectionDepth.value
-  })
-})
+const displayCount = computed(() => resolveDisplayCount(countContext(pendingPattern.value)))
 
 const isDirty = computed(() => {
   const basePattern = Array.isArray(props.currentPattern) ? props.currentPattern : []

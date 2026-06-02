@@ -1,5 +1,8 @@
-import { isSingleStitchPattern } from '@/utils/editCrochetCount'
-import { getRopeChainCount } from '@/utils/ropeChainCount'
+import {
+  getLeafAtSelectionPath,
+  isSingleStitchPattern,
+  resolveDisplayCount
+} from '@/utils/editCrochetCount'
 
 function createStitchRepeatPattern(count, stitchNode) {
   return {
@@ -9,76 +12,14 @@ function createStitchRepeatPattern(count, stitchNode) {
   }
 }
 
-export function getLeafAtSelectionPath(rootList, selectionPath) {
-  const root = Array.isArray(rootList) ? rootList : []
-  const path = Array.isArray(selectionPath) ? selectionPath : []
+export { getLeafAtSelectionPath } from '@/utils/editCrochetCount'
 
-  if (!path.length) {
-    return { list: root, index: null, node: null }
-  }
-
-  let currentList = root
-  for (let i = 0; i < path.length - 1; i += 1) {
-    const idx = path[i]?.start
-    const node = currentList?.[idx]
-    if (!node) return null
-
-    if (node.type === 'pattern') {
-      currentList = Array.isArray(node.pattern) ? node.pattern : []
-      continue
-    }
-    if (node.type === 'bundle') {
-      currentList = Array.isArray(node.bundle) ? node.bundle : []
-      continue
-    }
-    return null
-  }
-
-  const last = path[path.length - 1]
-  const leafIdx = last?.start
-  if (leafIdx === null || leafIdx === undefined) return null
-
-  return {
-    list: currentList,
-    index: leafIdx,
-    node: currentList?.[leafIdx] ?? null
-  }
-}
-
-export function getCountFromRowCopy(rowCopy, selectionPath, {
-  selectedNodeType = '',
-  virtualWholeRow = false
-} = {}) {
-  const type = String(selectedNodeType || '')
-  const root = Array.isArray(rowCopy) ? rowCopy : []
-
-  if (virtualWholeRow) {
-    if (root.length === 1 && root[0]?.type === 'pattern') {
-      return Math.max(1, Number(root[0].count) || 1)
-    }
-    return 1
-  }
-
-  const leafInfo = getLeafAtSelectionPath(root, selectionPath)
-  const node = leafInfo?.node
-  if (!node) return 1
-
-  if (type === 'rope') {
-    return getRopeChainCount(node)
-  }
-
-  if (type === 'stitch') {
-    if (isSingleStitchPattern(node)) {
-      return Math.max(1, Number(node.count) || 1)
-    }
-    return 1
-  }
-
-  if (type === 'pattern' || type === 'bundle') {
-    return Math.max(1, Number(node.count) || 1)
-  }
-
-  return 1
+export function getCountFromRowCopy(rowCopy, selectionPath, options = {}) {
+  return resolveDisplayCount({
+    rowCopy,
+    selectionPath,
+    ...options
+  })
 }
 
 export function applyCountToRowCopy(rowCopy, selectionPath, nextCount, {

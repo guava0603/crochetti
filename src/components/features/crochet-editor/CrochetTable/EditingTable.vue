@@ -100,7 +100,8 @@ import AddNew from '@/components/shared/buttons/AddNew.vue'
 import ButtonTranslate from '@/components/shared/buttons/svg/ButtonTranslate.vue'
 import { computeCurrentSelectedData } from '@/utils/crochetSelection.js'
 import { mergeInnerSelectionPath, shouldApplyCountOverrideToLeaf } from '@/utils/crochetSelectionPath'
-import { applyCountToRowCopy } from '@/utils/rowCopyCount'
+import { isSingleStitchPattern } from '@/utils/editCrochetCount'
+import { applyCountToRowCopy, getLeafAtSelectionPath } from '@/utils/rowCopyCount'
 import { isRowContainerGroupedStart } from '@/utils/crochetTable.js'
 import { createSelection, isRangeSelection } from '@/constants/selection'
 import { BasicStitch, createPattern } from '@/constants/crochetData.js'
@@ -748,6 +749,26 @@ const handleRowCopyCountChange = ({ count } = {}) => {
 		const nextSel = [createSelection(0, 0)]
 		rowSelectionByIndex.value = { [rowIndex]: nextSel }
 		rowRefs.get(rowIndex)?.setSelection?.(nextSel)
+		return
+	}
+
+	// Plain stitch 1→N: wrap into a single-stitch pattern and drill into the inner stitch
+	// so × shows N (repeat count), not ×1 (token-level outer multiplier).
+	if (data.selectedNodeType === 'stitch' && count > 1) {
+		const prevLeaf = getLeafAtSelectionPath(baseRoot, activeSelectionList.value)
+		const nextLeaf = getLeafAtSelectionPath(nextRoot, activeSelectionList.value)
+		if (
+			prevLeaf?.node?.type === 'stitch' &&
+			isSingleStitchPattern(nextLeaf?.node)
+		) {
+			const baseSel = activeSelectionList.value
+			const innerSel = [
+				...(Array.isArray(baseSel) ? baseSel : []),
+				createSelection(0, 0)
+			]
+			rowSelectionByIndex.value = { [rowIndex]: innerSel }
+			rowRefs.get(rowIndex)?.setSelection?.(innerSel)
+		}
 	}
 }
 
@@ -968,6 +989,10 @@ const handleEditRow = async (rowIndex) => {
 	activeGroupIndex.value = null
 	activeToolbarKey.value = TOOLBAR_KEYS.EDIT
 	activeEditTab.value = EDIT_TABS.CROCHET
+	rowSelectionByIndex.value = { [rowIndex]: [] }
+	nextTick(() => {
+		rowRefs.get(rowIndex)?.setSelection?.([])
+	})
 }
 
 const handleBlurRow = () => {
@@ -1129,6 +1154,25 @@ const handleToggleSelectMultipleRows = (next) => {
 	}
 }
 
+const resetRowEditSelectionToRoot = (rowIndex) => {
+	rowSelectionByIndex.value = { [rowIndex]: [] }
+
+	const rowRef = rowRefs.get(rowIndex)
+	if (!rowRef || typeof rowRef.setSelection !== 'function') return
+
+	suppressSelectionSideEffects.value = true
+	rowRef.setSelection([])
+	for (const [otherRowIndex, otherRowRef] of rowRefs.entries()) {
+		if (otherRowIndex === rowIndex) continue
+		if (otherRowRef && typeof otherRowRef.clearSelection === 'function') {
+			otherRowRef.clearSelection()
+		}
+	}
+	nextTick(() => {
+		suppressSelectionSideEffects.value = false
+	})
+}
+
 const handleRowSelectionChange = (rowIndex, nextSelectionList) => {
 	const safeList = Array.isArray(nextSelectionList) ? nextSelectionList : []
 
@@ -1139,7 +1183,7 @@ const handleRowSelectionChange = (rowIndex, nextSelectionList) => {
 	}
 
 	if (safeList.length > 0) {
-		// One row began selection: clear all other row selections (state + UI).
+		// Preview / programmatic drill (setSelection with a path). Table edit clicks emit [] only.
 		rowSelectionByIndex.value = { [rowIndex]: safeList }
 
 		suppressSelectionSideEffects.value = true
@@ -1153,17 +1197,14 @@ const handleRowSelectionChange = (rowIndex, nextSelectionList) => {
 			suppressSelectionSideEffects.value = false
 		})
 	} else {
-		const next = { ...rowSelectionByIndex.value }
-		delete next[rowIndex]
-		rowSelectionByIndex.value = next
+		// Table click in edit mode: stay at whole-row root.
+		resetRowEditSelectionToRoot(rowIndex)
 	}
 
 	editingRowIndex.value = rowIndex
 	activeToolbarKey.value = TOOLBAR_KEYS.EDIT
 	activeEditTab.value = EDIT_TABS.CROCHET
-	if (safeList.length > 0) {
-		void scrollToEditingRow(rowIndex)
-	}
+	void scrollToEditingRow(rowIndex)
 }
 
 const handleDeleteSelection = async () => {
