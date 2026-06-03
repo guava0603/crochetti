@@ -34,6 +34,21 @@ export function resolvePublicAssetUrl(path) {
  * Accepts `010__arrow_anti-clockwise`, `010__arrow_anti-clockwise.svg`,
  * or `assets/image/settings/010__arrow_anti-clockwise.svg`.
  */
+/** Returns `010__arrow_anti-clockwise` when `icon` is a settings id or path, else `''`. */
+export function getSettingsIconId(icon) {
+  const raw = String(icon || '').trim()
+  if (!raw) return ''
+
+  if (!raw.includes('/')) {
+    const id = raw.replace(/\.svg$/i, '')
+    return SETTINGS_ICON_FILENAME_RE.test(`${id}.svg`) ? id : ''
+  }
+
+  const name = raw.split('/').pop() || ''
+  if (!isSettingsIconFilename(name)) return ''
+  return name.replace(/\.svg$/i, '')
+}
+
 export function resolveSettingsIconUrl(icon) {
   const raw = String(icon || '').trim()
   if (!raw) return ''

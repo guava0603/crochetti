@@ -3,14 +3,14 @@
     <div class="print-page-content">
       <div class="print-page-toolbar">
         <ToolbarButton
-          icon-src="assets/image/settings/083__setting_edit.svg"
+          icon-src="083__setting_edit"
           :aria-label="t('print.editSettings')"
           :title="t('print.editSettings')"
           :disabled="!recordData || recordLoading"
           @click="openSettings"
         />
         <ToolbarButton
-          icon-src="assets/image/settings/027__download.svg"
+          icon-src="027__download"
           :aria-label="t('record.shareCompletedResultImage')"
           :title="t('record.shareCompletedResultImage')"
           :disabled="!recordData || recordLoading || sharing"

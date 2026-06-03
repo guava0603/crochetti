@@ -279,7 +279,7 @@ const moreMenuSections = computed(() => {
     dangerItems.push({
       action: 'deleteRecord',
       label: t('record.deleteRecord'),
-      iconUrl: '/assets/image/settings/086__empty.svg',
+      iconSrc: '086__empty',
       danger: true,
       disabled: !recordData.value || savingResult.value,
       onSelect: handleDeleteRecord
@@ -331,7 +331,7 @@ const moreMenuSections = computed(() => {
           {
             action: 'deleteRecord',
             label: t('record.deleteRecord'),
-            iconUrl: '/assets/image/settings/086__empty.svg',
+            iconSrc: '086__empty',
             danger: true,
             disabled: !recordData.value,
             onSelect: handleDeleteRecord
@@ -362,7 +362,7 @@ const moreMenuSections = computed(() => {
         {
           action: 'deleteRecord',
           label: t('record.deleteRecord'),
-          iconUrl: '/assets/image/settings/086__empty.svg',
+          iconSrc: '086__empty',
           danger: true,
           disabled: !recordData.value,
           onSelect: handleDeleteRecord

@@ -4,14 +4,16 @@
     :disabled="disabled"
     @click="handleClick"
   >
-    <img class="btn-delete__icon" :src="emptyIconUrl" alt="" aria-hidden="true" />
+    <img class="btn-delete__icon" :src="emptyIconSrc" alt="" aria-hidden="true" />
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { openConfirmation } from '@/services/ui/confirmation'
-import emptyIconUrl from '@/assets/image/settings/086__empty.svg?url'
+import { resolveSettingsIconUrl } from '@/utils/settingsIcon'
+
+const emptyIconSrc = resolveSettingsIconUrl('086__empty')
 
 const props = defineProps({
   disabled: { type: Boolean, default: false },

@@ -289,12 +289,11 @@ const isSavedByCurrentUser = computed(() => {
   return list.map(String).includes(String(projectId.value))
 })
 
-const SETTINGS_ICON_BASE = `${import.meta.env.BASE_URL}assets/image/settings/`
 const PROJECT_ACTION_ICONS = {
-  copyLink: `${SETTINGS_ICON_BASE}069__hyperlink.svg`,
-  downloadDesign: `${SETTINGS_ICON_BASE}027__download.svg`,
-  editProject: `${SETTINGS_ICON_BASE}083__setting_edit.svg`,
-  deleteProject: `${SETTINGS_ICON_BASE}017__circle_close.svg`
+  copyLink: '069__hyperlink',
+  downloadDesign: '027__download',
+  editProject: '083__setting_edit',
+  deleteProject: '017__circle_close'
 }
 
 const projectActionItems = computed(() => {
@@ -372,7 +371,7 @@ function toMoreMenuItem(raw) {
   }
 
   if (typeof raw.icon === 'string') {
-    item.iconUrl = raw.icon
+    item.iconSrc = raw.icon
   } else if (raw.icon) {
     item.icon = raw.icon
   }

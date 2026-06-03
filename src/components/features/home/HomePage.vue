@@ -497,12 +497,6 @@ const handleLogout = async () => {
   }
 }
 
-const SETTINGS_ICON_BASE = (() => {
-  const base = import.meta.env.BASE_URL || '/'
-  const normalized = base.endsWith('/') ? base : `${base}/`
-  return `${normalized}assets/image/settings/`
-})()
-
 const settingsMenuSections = computed(() => [
   {
     key: 'profile',
@@ -510,19 +504,19 @@ const settingsMenuSections = computed(() => [
       {
         action: 'edit-profile',
         label: t('user.settings.editProfile'),
-        iconUrl: `${SETTINGS_ICON_BASE}083__setting_edit.svg`,
+        iconSrc: '083__setting_edit',
         onSelect: openProfileSettings
       },
       {
         action: 'system-settings',
         label: t('user.moreMenu.systemSettings'),
-        iconUrl: `${SETTINGS_ICON_BASE}082__setting_cog.svg`,
+        iconSrc: '082__setting_cog',
         onSelect: openSystemSettings
       },
       {
         action: 'copy-user-id',
         label: t('user.moreMenu.copyUserId'),
-        iconUrl: `${SETTINGS_ICON_BASE}069__hyperlink.svg`,
+        iconSrc: '069__hyperlink',
         onSelect: handleCopyMyUserId
       }
     ]
@@ -533,7 +527,7 @@ const settingsMenuSections = computed(() => [
       {
         action: 'logout',
         label: t('auth.logout'),
-        iconUrl: `${SETTINGS_ICON_BASE}017__circle_close.svg`,
+        iconSrc: '017__circle_close',
         danger: true,
         onSelect: handleLogout
       }

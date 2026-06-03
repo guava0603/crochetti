@@ -1,7 +1,7 @@
 <template>
   <FloatDockedButton
     class="user-fab"
-    image-src="assets/image/settings/015__circle_plus.svg"
+    image-src="015__circle_plus"
     :invert-icon="true"
     :aria-label="t('user.fab.searchUser')"
     @click="showModal = true"

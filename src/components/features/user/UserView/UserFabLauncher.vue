@@ -2,7 +2,7 @@
   <Teleport to="#bottom-floating-right-slot">
     <FloatDockedButton
       v-if="shouldShowFab"
-      image-src="assets/image/settings/015__circle_plus.svg"
+      image-src="015__circle_plus"
       :invert-icon="true"
       :aria-label="ariaLabel"
       :title="ariaLabel"

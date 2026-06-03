@@ -2,7 +2,7 @@
   <Teleport to=".top-banner__side--right">
     <ThinIconButton
       src="039__file_choose"
-      size="s"
+      size="l"
       background="transparent"
       :disabled="savingDraft"
       :aria-label="savingDraft ? $t('addProject.savingDraft') : $t('addProject.saveToDraft')"

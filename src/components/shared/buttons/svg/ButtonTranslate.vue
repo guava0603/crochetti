@@ -13,9 +13,11 @@
     @keydown.esc.stop.prevent="close"
   >
     <div class="translate-toggle__strip">
-      <button
-        type="button"
+      <ThinIconButton
         class="translate-toggle__trigger"
+        src="064__telephone directory"
+        size="m"
+        background="transparent"
         :class="{ 'is-disabled': disabled }"
         :disabled="disabled"
         :aria-label="ariaLabel"
@@ -23,15 +25,7 @@
         :aria-expanded="open ? 'true' : 'false'"
         aria-haspopup="true"
         @click="toggle"
-      >
-        <img
-          class="translate-toggle__icon-img"
-          :src="translateIconUrl"
-          alt=""
-          aria-hidden="true"
-          draggable="false"
-        />
-      </button>
+      />
 
       <div
         class="translate-toggle__options"
@@ -61,6 +55,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import ThinIconButton from '@/components/shared/buttons/ThinIconButton.vue'
 import { useI18n } from 'vue-i18n'
 import { useCrochetLang } from '@/composables/useCrochetLang'
 import { useUserCrochetDisplay } from '@/composables/useUserCrochetDisplay'
@@ -78,12 +73,6 @@ const emit = defineEmits(['update:modelValue'])
 const { t } = useI18n({ useScope: 'global' })
 const { crochetLang: crochetLangRef, setCrochetLang } = useCrochetLang()
 const { hasCustomDisplay } = useUserCrochetDisplay()
-
-const translateIconUrl = computed(() => {
-  const base = import.meta.env.BASE_URL || '/'
-  const normalized = base.endsWith('/') ? base : `${base}/`
-  return `${normalized}assets/image/settings/${encodeURIComponent('064__telephone directory.svg')}`
-})
 
 const rootRef = ref(null)
 const open = ref(props.isAlwaysOpen)
@@ -308,11 +297,6 @@ onUnmounted(() => {
 .translate-toggle__trigger:focus-visible {
   outline: 0.1875rem solid rgb(var(--color-icon-add-rgb, 34 197 94) / 0.35);
   outline-offset: 0.125rem;
-}
-
-.translate-toggle__icon-img {
-  display: block;
-  transform: scale(1.5);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -5,23 +5,18 @@
     :class="{ 'more-menu--sm': type === 'sm' }"
     @keydown.esc.stop.prevent="close"
   >
-    <button
+    <ThinIconButton
       class="more-menu__button"
-      type="button"
+      src="082__setting_cog"
+      size="l"
+      background="transparent"
       :disabled="disabled"
       :aria-expanded="open"
       aria-haspopup="menu"
+      :aria-label="label"
+      :title="label"
       @click="toggle"
-    >
-      <img
-        class="more-menu__icon-img"
-        :src="settingsIconUrl"
-        alt=""
-        aria-hidden="true"
-        draggable="false"
-      />
-      <span class="sr-only">{{ label }}</span>
-    </button>
+    />
 
     <Teleport to="body">
       <div v-if="open" class="more-menu__sheet-layer" @keydown.esc.stop.prevent="close">
@@ -86,6 +81,8 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import ThinIconButton from '@/components/shared/buttons/ThinIconButton.vue'
+import { resolveSettingsIconUrl } from '@/utils/settingsIcon'
 
 const props = defineProps({
   disabled: { type: Boolean, default: false },
@@ -113,11 +110,6 @@ const rootRef = ref(null)
 const sheetContentRef = ref(null)
 const open = ref(false)
 const busyAction = ref('')
-
-const settingsIconUrl = computed(() => {
-  const base = import.meta.env.BASE_URL || '/'
-  return `${base}assets/image/settings/082__setting_cog.svg`
-})
 
 const pullState = {
   active: false,
@@ -193,10 +185,15 @@ function normalizeItems(list) {
   if (!Array.isArray(list)) return []
   return list
     .filter((i) => i && typeof i.label === 'string' && i.label.length)
-    .map((i) => ({
-      ...i,
-      iconUrl: typeof i.iconUrl === 'string' ? i.iconUrl : ''
-    }))
+    .map((i) => {
+      const iconSrc = typeof i.iconSrc === 'string' ? i.iconSrc : ''
+      const iconUrlRaw = typeof i.iconUrl === 'string' ? i.iconUrl : ''
+      const iconUrl = iconSrc ? resolveSettingsIconUrl(iconSrc) : iconUrlRaw
+      return {
+        ...i,
+        iconUrl
+      }
+    })
 }
 
 const normalizedSections = computed(() => {
@@ -266,40 +263,6 @@ onUnmounted(() => {
 .more-menu {
   position: relative;
   display: inline-flex;
-}
-
-.more-menu__button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.05s, opacity 0.15s;
-}
-
-.more-menu__button:hover {
-  background: rgba(243, 244, 246, 0.98);
-}
-
-.more-menu__button:active {
-  transform: translateY(1px);
-}
-
-.more-menu__button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.more-menu__icon-img {
-  width: 20px;
-  height: 20px;
-  display: block;
-  object-fit: contain;
-  transform: scale(2);
 }
 
 .more-menu__sheet-layer {

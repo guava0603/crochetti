@@ -3,7 +3,7 @@
     <div class="app-footer__side app-footer__side--left">
       <ToolbarButton
         class="footer-button-l"
-        :icon-src="leftIconSrc"
+        icon-src="101__home"
         :aria-label="leftAriaLabel"
         :title="leftAriaLabel"
         size="md"
@@ -18,7 +18,7 @@
     <div class="app-footer__side app-footer__side--right">
       <ToolbarButton
         class="footer-button-r"
-        :icon-src="rightIconSrc"
+        icon-src="048__chat"
         :aria-label="rightAriaLabel"
         :title="rightAriaLabel"
         size="md"
@@ -41,21 +41,11 @@ defineOptions({ name: 'FooterBar' })
 const router = useRouter()
 const { t } = useI18n({ useScope: 'global' })
 
-const leftIconSrc = computed(() => {
-  const base = import.meta.env.BASE_URL || '/'
-  return `${base}assets/image/settings/101__home.svg`
-})
-
 const leftAriaLabel = computed(() => t('common.home'))
 
 function onLeftClick() {
   router.push({ name: 'home' })
 }
-
-const rightIconSrc = computed(() => {
-  const base = import.meta.env.BASE_URL || '/'
-  return `${base}assets/image/settings/048__chat.svg`
-})
 
 const rightAriaLabel = computed(() => t('wishPool.title'))
 

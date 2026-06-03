@@ -64,38 +64,42 @@
           @add-bundle="handleAddBundle"
           @add-rope="handleAddRope"
         />
-      </div>
-      </div>
-    </div>
 
-    <div class="edit-crochet__actions" role="toolbar" :aria-label="t('toolbar.editCrochet.actionsAria')">
-      <ThinIconButton
-        src="010__arrow_anti-clockwise"
-        size="s"
-        background="transparent"
-        :disabled="!canUndo"
-        :aria-label="t('toolbar.editCrochet.undo')"
-        :title="t('toolbar.editCrochet.undo')"
-        @click="handleUndo"
-      />
-      <ThinIconButton
-        src="009__arrow_lockwise"
-        size="s"
-        background="transparent"
-        :disabled="!canRedo"
-        :aria-label="t('toolbar.editCrochet.redo')"
-        :title="t('toolbar.editCrochet.redo')"
-        @click="handleRedo"
-      />
-      <ThinIconButton
-        src="137__previous"
-        size="s"
-        background="transparent"
-        :disabled="!canDeleteLast"
-        :aria-label="t('toolbar.editCrochet.deleteLast')"
-        :title="t('toolbar.editCrochet.deleteLast')"
-        @click="handleDeleteLast"
-      />
+        <div class="edit-crochet__actions" role="toolbar" :aria-label="t('toolbar.editCrochet.actionsAria')">
+          <div class="edit-crochet__actions-start">
+            <ThinIconButton
+              src="010__arrow_anti-clockwise"
+              size="m"
+              background="transparent"
+              :disabled="!canUndo"
+              :aria-label="t('toolbar.editCrochet.undo')"
+              :title="t('toolbar.editCrochet.undo')"
+              @click="handleUndo"
+            />
+            <ThinIconButton
+              src="009__arrow_lockwise"
+              size="m"
+              background="transparent"
+              :disabled="!canRedo"
+              :aria-label="t('toolbar.editCrochet.redo')"
+              :title="t('toolbar.editCrochet.redo')"
+              @click="handleRedo"
+            />
+          </div>
+          <div class="edit-crochet__actions-end">
+            <ThinIconButton
+              src="137__previous"
+              size="m"
+              background="transparent"
+              :disabled="!canDeleteLast"
+              :aria-label="t('toolbar.editCrochet.deleteLast')"
+              :title="t('toolbar.editCrochet.deleteLast')"
+              @click="handleDeleteLast"
+            />
+          </div>
+        </div>
+      </div>
+      </div>
     </div>
   </div>
 </template>
@@ -689,7 +693,6 @@ defineExpose({
 }
 
 .edit-crochet__body {
-  flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -708,11 +711,22 @@ defineExpose({
   flex: none;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  margin-top: 0.25rem;
+}
+
+.edit-crochet__actions-start,
+.edit-crochet__actions-end {
+  display: flex;
+  align-items: center;
   gap: 0.35rem;
-  padding: 0.35rem 0.5rem;
-  border-top: 1px solid var(--color-border, #e5e7eb);
-  background: rgba(255, 255, 255, 0.92);
+}
+
+.edit-crochet__actions-end {
+  margin-left: auto;
 }
 
 .edit-columns {

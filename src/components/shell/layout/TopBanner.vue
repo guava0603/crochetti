@@ -13,7 +13,7 @@
           <ToolbarButton
             v-if="bannerShowBack"
             class="btn-back banner-button-l"
-            icon-src="assets/image/settings/001__arrow_left.svg"
+            icon-src="001__arrow_left"
             :aria-label="t('common.back')"
             :title="t('common.back')"
             @click="handleBannerBack"
@@ -181,8 +181,8 @@ async function handleBannerBack() {
   color: var(--color-icon-base);
 }
 
-.app-banner--glass :deep(.btn-back .toolbar-button__icon),
-.app-banner--glass :deep(.more-menu__icon-img) {
+.app-banner--glass :deep(.btn-back .thin-icon-button__icon),
+.app-banner--glass :deep(.more-menu__button .thin-icon-button__icon) {
   width: 1.5rem;
   height: 1.5rem;
   filter: drop-shadow(0 0.125rem 0.25rem rgba(0, 0, 0, 0.1));

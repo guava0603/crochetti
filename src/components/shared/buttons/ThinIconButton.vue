@@ -7,6 +7,7 @@
     :disabled="isDisabled"
     :aria-label="ariaLabel || undefined"
     :title="title || ariaLabel || undefined"
+    v-bind="extraAttrs"
     @click="handleClick"
   >
     <img
@@ -21,8 +22,17 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, useAttrs } from 'vue'
 import { resolveSettingsIconUrl } from '@/utils/settingsIcon'
+
+defineOptions({ inheritAttrs: false })
+
+const attrs = useAttrs()
+
+const extraAttrs = computed(() => {
+  const { class: _class, style: _style, ...rest } = attrs
+  return rest
+})
 
 const props = defineProps({
   /** Settings icon id or path, e.g. `010__arrow_anti-clockwise` or `assets/image/settings/010__arrow_anti-clockwise.svg` */
@@ -160,10 +170,25 @@ function handleClick(e) {
   border-radius: 0.65rem;
 }
 
+/* Toolbar-sized control (matches legacy ToolbarButton). */
 .thin-icon-button--l {
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 0.8rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.thin-icon-button--l.thin-icon-button--bg-transparent:hover:not(.thin-icon-button--disabled) {
+  background: rgba(243, 244, 246, 0.8);
+}
+
+.thin-icon-button--l:focus-visible {
+  outline-offset: 0.1875rem;
+}
+
+.thin-icon-button--l.thin-icon-button--disabled,
+.thin-icon-button--l[disabled] {
+  opacity: 0.6;
 }
 
 .thin-icon-button--round-full.thin-icon-button--s,
@@ -201,8 +226,9 @@ function handleClick(e) {
 }
 
 .thin-icon-button--l .thin-icon-button__icon {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: auto;
+  height: auto;
+  transform: scale(1.5);
 }
 
 .thin-icon-button--inverted .thin-icon-button__icon {
