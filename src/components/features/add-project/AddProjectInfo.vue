@@ -164,9 +164,24 @@ const handleNext = () => {
 
 const canSubmit = computed(() => Boolean(String(formData.value?.name || '').trim()))
 
+function getFormData() {
+  return {
+    ...formData.value,
+    craft_types: [...DEFAULT_PROJECT_CRAFT_TYPES],
+    materials: {
+      hook: uniqueTrimmedStrings(formData.value?.materials?.hook),
+      needle: [],
+      yarn: normalizeYarnMetaList(formData.value?.materials?.yarn)
+        .map((m) => ({ id: toText(m?.id) || uuidv4(), type: toText(m?.type), amount: toText(m?.amount) }))
+        .filter((m) => m.type)
+    }
+  }
+}
+
 defineExpose({
   submit: handleNext,
-  canSubmit
+  canSubmit,
+  getFormData
 })
 </script>
 

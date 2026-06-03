@@ -46,7 +46,9 @@ async function fetchUserProjects(uid) {
   const projectsRef = collection(db, 'projects')
   const q = query(projectsRef, where('authorId', '==', String(uid)))
   const snap = await getDocs(q)
-  return snap.docs.map((d) => Object.assign({ id: d.id }, d.data()))
+  return snap.docs
+    .map((d) => Object.assign({ id: d.id }, d.data()))
+    .filter((p) => !p?.is_draft)
 }
 
 function shouldAward(achievement, { metrics, projects, records, profile }) {

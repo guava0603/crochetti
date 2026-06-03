@@ -486,6 +486,12 @@
       "message": "目前有尚未儲存的變更。要放棄並返回嗎？",
       "confirmText": "放棄變更"
     },
+    "saveProjectDraft": {
+      "title": "儲存為草稿",
+      "message": "目前有尚未儲存的變更。",
+      "discard": "丟棄",
+      "save": "儲存"
+    },
     "addProjectChooseComponentType": {
       "title": "新增",
       "message": "想新增哪一種？"
@@ -733,6 +739,10 @@
       "count": "數量",
       "addStitch": "新增針法",
       "changeStitch": "更換針法",
+      "actionsAria": "編輯針目操作",
+      "undo": "復原",
+      "redo": "重做",
+      "deleteLast": "刪除最後一針",
       "tabs": {
         "addToBundle": "加針"
       }
@@ -1192,7 +1202,19 @@
   "addProject": {
     "startMode": {
       "new": "新設計",
-      "copy": "複製現有設計"
+      "copy": "複製現有設計",
+      "draft": "草稿"
+    },
+    "saveToDraft": "存草稿",
+    "savingDraft": "儲存中…",
+    "draft": {
+      "defaultName": "未命名草稿",
+      "hint": "請選擇要繼續編輯的草稿。",
+      "selectPlaceholder": "搜尋草稿…",
+      "listLabel": "[草稿] {name}",
+      "savedTitle": "已儲存草稿",
+      "savedMessage": "你可以稍後從「草稿」繼續編輯。",
+      "savedToast": "已儲存草稿"
     },
     "copy": {
       "title": "從現有設計稿複製",
@@ -1215,7 +1237,8 @@
     },
     "errors": {
       "loginRequired": "必須先登入才能新增設計稿",
-      "createFailed": "建立設計稿失敗：{message}"
+      "createFailed": "建立設計稿失敗：{message}",
+      "draftSaveFailed": "儲存草稿失敗：{message}"
     },
     "info": {
       "projectNameLabel": "織品名稱",
@@ -1251,7 +1274,7 @@
       "addKnittingComponent": "新增棒針部位",
       "addStitch": "新增縫合",
       "relatedComponentsLabel": "關聯部位",
-      "relatedComponentsPlaceholder": "選擇部位",
+      "relatedComponentsPlaceholder": "選擇先前部位（可多選）",
       "hookSelectPlaceholder": "選擇鉤針…",
       "needleSelectPlaceholder": "選擇棒針…",
       "yarnSelectPlaceholder": "選擇毛線…",

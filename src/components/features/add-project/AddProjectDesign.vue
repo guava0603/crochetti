@@ -233,7 +233,6 @@ function ensureComponentIdsAndStitchFieldsInPlace(componentList) {
 
     if (c.type === 'stitch') {
       if (!Array.isArray(c.related_component_ids)) c.related_component_ids = []
-      if (c.related_component_ids.length === 0) c.related_component_ids.push('')
 
       if (!Array.isArray(c.notes)) c.notes = []
       c.notes = c.notes
@@ -299,7 +298,7 @@ const createComponent = (index, type = COMPONENT_TYPE_CROCHET) => {
     component.content = createPart()
   } else {
     component.content = { text: '' }
-    component.related_component_ids = ['']
+    component.related_component_ids = []
     component.notes = []
   }
 
@@ -652,10 +651,15 @@ watch(
   { deep: true }
 )
 
+function getProjectData() {
+  return deepClone(projectData.value)
+}
+
 defineExpose({
   submit: handleSubmit,
   back: handleBack,
-  canSubmit
+  canSubmit,
+  getProjectData
 })
 </script>
 

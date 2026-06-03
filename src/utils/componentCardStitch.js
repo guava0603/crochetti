@@ -1,7 +1,16 @@
 import { ensureComponentNotesArray } from '@/utils/componentCardNotes'
 import { normalizeIdList } from '@/utils/normalizeIdList'
-import { isComponentType } from '@/utils/componentTypes'
+import { isStitchType } from '@/utils/componentTypes'
 import { toTrimmedText as toText } from '@/utils/text'
+
+function relatedComponentOptionLabel(component, listIndex, componentList) {
+  const name = toText(component?.name)
+  if (name) return name
+  if (isStitchType(component?.type)) {
+    return `#${stitchSequenceNumber(componentList, listIndex)}`
+  }
+  return `#${listIndex + 1}`
+}
 
 export function ensureStitchComponentFields(component) {
   if (!component || typeof component !== 'object') return
@@ -32,10 +41,10 @@ export function buildRelatedComponentIdLabelMap(componentList) {
 
   for (let i = 0; i < list.length; i += 1) {
     const c = list[i]
-    if (!isComponentType(c?.type)) continue
+    if (!c || typeof c !== 'object') continue
     const id = toText(c?.id)
     if (!id) continue
-    map.set(id, toText(c?.name) || `#${i + 1}`)
+    map.set(id, relatedComponentOptionLabel(c, i, list))
   }
 
   return map
@@ -49,12 +58,11 @@ export function buildRelatedComponentOptions(componentList, componentIndex) {
   return list
     .slice(0, max)
     .map((c, i) => ({ c, i }))
-    .filter(({ c }) => isComponentType(c?.type))
+    .filter(({ c }) => c && toText(c?.id))
     .map(({ c, i }) => ({
-      value: toText(c?.id),
-      label: toText(c?.name) || `#${i + 1}`
+      value: toText(c.id),
+      label: relatedComponentOptionLabel(c, i, list)
     }))
-    .filter((o) => o.value)
 }
 
 export function filterRelatedComponentIds(rawIds, allowedIds) {
@@ -64,7 +72,7 @@ export function filterRelatedComponentIds(rawIds, allowedIds) {
       .map((id) => toText(id))
       .filter(Boolean)
   )
-  if (!allowed.size) return normalized
+  if (!allowed.size) return []
   return normalized.filter((id) => allowed.has(id))
 }
 

@@ -25,6 +25,7 @@
     @cancel="showAddProjectStartModeModal = false"
     @new="handleStartNewProject"
     @copy="handleCopyProject"
+    @draft="handleContinueDraft"
   />
 
   <SearchUserByIdModal
@@ -143,6 +144,13 @@ const handleCopyProject = async (projectId) => {
   if (!id) return
   showAddProjectStartModeModal.value = false
   await router.push({ name: 'add-project', query: { copyFrom: id } })
+}
+
+const handleContinueDraft = async (projectId) => {
+  const id = projectId != null ? String(projectId).trim() : ''
+  if (!id) return
+  showAddProjectStartModeModal.value = false
+  await router.push({ name: 'add-project', query: { draft: id } })
 }
 
 const handleQuickStart = async () => {

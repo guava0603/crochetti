@@ -1,6 +1,6 @@
 <template>
   <FormSubsection
-    v-if="visible && isEditing"
+    v-if="visible && isEditing && relatedComponentOptions.length > 0"
     wrapper-class="subsection"
     kind="multi-select"
     :title="t('addProject.design.relatedComponentsLabel')"

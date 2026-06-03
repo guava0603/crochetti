@@ -23,7 +23,8 @@
 
 <script setup>
 import { onBeforeUnmount, onMounted, watch } from 'vue'
-import { openConfirmation } from '@/services/ui/confirmation'
+import { openChoiceConfirmation, openConfirmation } from '@/services/ui/confirmation'
+import { useI18n } from 'vue-i18n'
 import { useAppBanner } from '@/composables/appBanner'
 
 defineOptions({
@@ -62,16 +63,44 @@ const props = defineProps({
   isDirty: {
     type: Boolean,
     default: false
+  },
+  /** When dirty on back: `discard` = discard changes; `saveDraft` = 儲存為草稿 modal */
+  leaveConfirmMode: {
+    type: String,
+    default: 'discard',
+    validator: (v) => ['discard', 'saveDraft'].includes(v)
   }
 })
 
-const emit = defineEmits(['last-page'])
+const emit = defineEmits(['last-page', 'save-draft-and-leave'])
 
+const { t } = useI18n({ useScope: 'global' })
 const appBanner = useAppBanner()
 
 async function handleLastPage() {
   if (!props.isDirty) {
     emit('last-page')
+    return
+  }
+
+  if (props.leaveConfirmMode === 'saveDraft') {
+    const choice = await openChoiceConfirmation({
+      type: 'saveProjectDraft',
+      choices: [
+        {
+          id: 'discard',
+          label: t('confirmation.saveProjectDraft.discard'),
+          class: 'modal-btn-cancel'
+        },
+        {
+          id: 'save',
+          label: t('confirmation.saveProjectDraft.save'),
+          class: 'modal-btn-confirm'
+        }
+      ]
+    })
+    if (choice === 'discard') emit('last-page')
+    else if (choice === 'save') emit('save-draft-and-leave')
     return
   }
 

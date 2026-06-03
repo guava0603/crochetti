@@ -34,6 +34,12 @@ const CONFIRMATION_PRESETS = {
     confirmClass: 'btn-confirm-delete'
   }),
 
+  saveProjectDraft: () => ({
+    title: t('confirmation.saveProjectDraft.title'),
+    message: t('confirmation.saveProjectDraft.message'),
+    cancelText: ''
+  }),
+
   addProjectChooseComponentType: () => ({
     title: t('confirmation.addProjectChooseComponentType.title'),
     message: t('confirmation.addProjectChooseComponentType.message'),

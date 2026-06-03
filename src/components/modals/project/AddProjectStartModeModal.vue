@@ -36,16 +36,26 @@
         >
           {{ t('addProject.startMode.copy') }}
         </div>
+        <div
+          class="modal-choice"
+          role="button"
+          tabindex="0"
+          @click="mode = 'draft'"
+          @keydown.enter.prevent="mode = 'draft'"
+          @keydown.space.prevent="mode = 'draft'"
+        >
+          {{ t('addProject.startMode.draft') }}
+        </div>
       </div>
     </template>
 
     <template v-else>
-      <p class="copy-hint">{{ t('addProject.copy.hint') }}</p>
+      <p class="copy-hint">{{ pickerHintText }}</p>
       <div class="copy-picker">
         <SelectionInputCombineList
           v-model="selectedProjectText"
           :disabled="loading || projectSuggestions.length === 0"
-          :placeholder="t('addProject.copy.selectPlaceholder')"
+          :placeholder="pickerPlaceholderText"
           :suggestions="projectSuggestions"
           :strict="true"
         />
@@ -60,8 +70,9 @@ import { useI18n } from 'vue-i18n'
 import { auth } from '@/firebaseConfig'
 import ModalShell from '@/components/modals/shell/ModalShell/ModalShell.vue'
 import SelectionInputCombineList from '@/components/shared/inputs/SelectionInputCombineList.vue'
-import { fetchProjectSummariesByIds } from '@/services/firestore/projects'
+import { fetchProjectSummariesByIds, fetchUserDraftSummaries } from '@/services/firestore/projects'
 import { fetchUserProfile, fetchUserProjectSummaries, fetchUsers } from '@/services/firestore/user'
+import { filterNonDraftProjects } from '@/utils/projectDraft'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -72,19 +83,30 @@ defineProps({
   }
 })
 
-const emit = defineEmits(['cancel', 'new', 'copy'])
+const emit = defineEmits(['cancel', 'new', 'copy', 'draft'])
 
 const titleText = computed(() => t('confirmation.addProjectStartMode.title'))
 const messageText = computed(() => t('confirmation.addProjectStartMode.message'))
 
 const step = ref(1)
-const mode = ref('new') // 'new' | 'copy'
+const mode = ref('new') // 'new' | 'copy' | 'draft'
 
 const selectedProjectText = ref('')
 const createdProjectSummaries = ref([])
 const savedProjectSummaries = ref([])
+const draftProjectSummaries = ref([])
 const authorNameById = ref({})
 const loading = ref(false)
+
+const pickerHintText = computed(() => {
+  if (mode.value === 'draft') return t('addProject.draft.hint')
+  return t('addProject.copy.hint')
+})
+
+const pickerPlaceholderText = computed(() => {
+  if (mode.value === 'draft') return t('addProject.draft.selectPlaceholder')
+  return t('addProject.copy.selectPlaceholder')
+})
 
 function handleCancel() {
   step.value = 1
@@ -99,8 +121,17 @@ function handleBack() {
 }
 
 const combinedProjectSummaries = computed(() => {
-  const created = Array.isArray(createdProjectSummaries.value) ? createdProjectSummaries.value : []
-  const saved = Array.isArray(savedProjectSummaries.value) ? savedProjectSummaries.value : []
+  if (mode.value === 'draft') {
+    return (Array.isArray(draftProjectSummaries.value) ? draftProjectSummaries.value : [])
+      .map((p) => ({ ...p, __kind: 'draft' }))
+  }
+
+  const created = filterNonDraftProjects(
+    Array.isArray(createdProjectSummaries.value) ? createdProjectSummaries.value : []
+  )
+  const saved = filterNonDraftProjects(
+    Array.isArray(savedProjectSummaries.value) ? savedProjectSummaries.value : []
+  )
   const seen = new Set()
   const out = []
 
@@ -123,24 +154,27 @@ const combinedProjectSummaries = computed(() => {
   return out
 })
 
+function labelForSummary(p) {
+  const id = String(p?.id || '').trim()
+  const name = String(p?.name || '').trim()
+  if (!id || !name) return null
+
+  if (p.__kind === 'draft') {
+    return { label: t('addProject.draft.listLabel', { name }), id }
+  }
+
+  if (p.__kind === 'saved') {
+    const authorName = String(p.__authorName || '').trim()
+    if (authorName) return { label: `${name} (${authorName})`, id }
+    return { label: name, id }
+  }
+
+  return { label: `[自創] ${name}`, id }
+}
+
 const projectSuggestions = computed(() => {
   const list = Array.isArray(combinedProjectSummaries.value) ? combinedProjectSummaries.value : []
-  const raw = list
-    .map((p) => {
-      const id = String(p?.id || '').trim()
-      const name = String(p?.name || '').trim()
-      if (!id) return null
-      if (!name) return null
-
-      if (p.__kind === 'saved') {
-        const authorName = String(p.__authorName || '').trim()
-        if (authorName) return { label: `${name} (${authorName})`, id }
-        return { label: name, id }
-      }
-
-      return { label: `[自創] ${name}`, id }
-    })
-    .filter(Boolean)
+  const raw = list.map(labelForSummary).filter(Boolean)
 
   const used = new Map()
   return raw.map((item) => {
@@ -154,22 +188,7 @@ const projectSuggestions = computed(() => {
 
 const suggestionIdByLabel = computed(() => {
   const list = Array.isArray(combinedProjectSummaries.value) ? combinedProjectSummaries.value : []
-  const raw = list
-    .map((p) => {
-      const id = String(p?.id || '').trim()
-      const name = String(p?.name || '').trim()
-      if (!id) return null
-      if (!name) return null
-
-      if (p.__kind === 'saved') {
-        const authorName = String(p.__authorName || '').trim()
-        if (authorName) return { label: `${name} (${authorName})`, id }
-        return { label: name, id }
-      }
-
-      return { label: `[自創] ${name}`, id }
-    })
-    .filter(Boolean)
+  const raw = list.map(labelForSummary).filter(Boolean)
 
   const used = new Map()
   const out = {}
@@ -208,6 +227,10 @@ function handleConfirm() {
   if (step.value !== 2) return
   const id = String(selectedProjectId.value || '').trim()
   if (!id) return
+  if (mode.value === 'draft') {
+    emit('draft', id)
+    return
+  }
   emit('copy', id)
 }
 
@@ -216,17 +239,20 @@ async function loadProjects() {
   if (!uid) {
     createdProjectSummaries.value = []
     savedProjectSummaries.value = []
+    draftProjectSummaries.value = []
     authorNameById.value = {}
     return
   }
 
   loading.value = true
   try {
-    const [created, profile] = await Promise.all([
+    const [created, profile, drafts] = await Promise.all([
       fetchUserProjectSummaries({ userId: uid, includePrivate: true }),
-      fetchUserProfile({ userId: uid })
+      fetchUserProfile({ userId: uid }),
+      fetchUserDraftSummaries({ userId: uid })
     ])
     createdProjectSummaries.value = created
+    draftProjectSummaries.value = drafts
 
     const ids = Array.isArray(profile?.save_project_list) ? profile.save_project_list : []
     savedProjectSummaries.value = ids.length ? await fetchProjectSummariesByIds(ids) : []
@@ -260,13 +286,25 @@ watch(
   () => step.value,
   (s) => {
     if (s !== 2) return
-    if (createdProjectSummaries.value.length || savedProjectSummaries.value.length) return
+    if (
+      createdProjectSummaries.value.length ||
+      savedProjectSummaries.value.length ||
+      draftProjectSummaries.value.length
+    ) {
+      return
+    }
     loadProjects()
   }
 )
 
+watch(
+  () => mode.value,
+  () => {
+    selectedProjectText.value = ''
+  }
+)
+
 onMounted(() => {
-  // prefetch (cheap) so step2 opens instantly
   loadProjects()
 })
 </script>

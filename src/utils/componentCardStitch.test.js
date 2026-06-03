@@ -19,19 +19,29 @@ describe('componentCardStitch', () => {
     expect(stitchSequenceNumber(list, 3)).toBe(3)
   })
 
-  it('buildRelatedComponentOptions only includes prior part components', () => {
+  it('buildRelatedComponentOptions lists every component before the current index', () => {
     const list = [
-      { type: 'component', id: 'a', name: 'A' },
-      { type: 'stitch', id: 's1' },
-      { type: 'component', id: 'b', name: 'B' }
+      { type: 'component-crochet', id: 'a', name: 'A' },
+      { type: 'stitch', id: 's1', name: 'Seam 1' },
+      { type: 'component-crochet', id: 'b', name: 'B' }
     ]
     expect(buildRelatedComponentOptions(list, 2)).toEqual([
-      { value: 'a', label: 'A' }
+      { value: 'a', label: 'A' },
+      { value: 's1', label: 'Seam 1' }
     ])
+  })
+
+  it('buildRelatedComponentOptions returns no options for the first component', () => {
+    const list = [{ type: 'stitch', id: 's1', name: 'Seam' }]
+    expect(buildRelatedComponentOptions(list, 0)).toEqual([])
   })
 
   it('filterRelatedComponentIds drops ids not in allowed set', () => {
     expect(filterRelatedComponentIds(['a', 'b', 'c'], ['a', 'c'])).toEqual(['a', 'c'])
+  })
+
+  it('filterRelatedComponentIds returns empty when nothing is allowed', () => {
+    expect(filterRelatedComponentIds(['a', 'b'], [])).toEqual([])
   })
 
   it('relatedComponentDisplayNames resolves labels from list', () => {

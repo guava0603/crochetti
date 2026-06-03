@@ -1,5 +1,6 @@
 import { auth, db } from '@/firebaseConfig'
 import { getAppId } from '@/utils/appId'
+import { filterNonDraftProjects } from '@/utils/projectDraft'
 import {
   arrayRemove,
   arrayUnion,
@@ -141,7 +142,7 @@ export async function fetchUserProjectSummaries({ userId, includePrivate = false
     : query(projectsRef, where('authorId', '==', String(userId)), where('is_public', '==', true))
 
   const querySnapshot = await getDocs(q)
-  return querySnapshot.docs.map((d) => {
+  const summaries = querySnapshot.docs.map((d) => {
     const data = d.data() || {}
     const images = Array.isArray(data?.images) ? data.images.filter(Boolean) : []
     return {
@@ -150,12 +151,14 @@ export async function fetchUserProjectSummaries({ userId, includePrivate = false
       description: data?.description || '',
       authorId: data?.authorId || '',
       is_public: Boolean(data?.is_public),
+      is_draft: Boolean(data?.is_draft),
       image: images[0] || null,
       created_at: data?.created_at ?? null,
       updated_at: data?.updated_at ?? null,
       createdAt: data?.createdAt || null
     }
   })
+  return filterNonDraftProjects(summaries)
 }
 
 export async function fetchUsers({ appId, userIds }) {

@@ -1,10 +1,24 @@
 <template>
+  <Teleport to=".top-banner__side--right">
+    <ThinIconButton
+      src="039__file_choose"
+      size="s"
+      background="transparent"
+      :disabled="savingDraft"
+      :aria-label="savingDraft ? $t('addProject.savingDraft') : $t('addProject.saveToDraft')"
+      :title="savingDraft ? $t('addProject.savingDraft') : $t('addProject.saveToDraft')"
+      @click.stop="handleSaveDraft"
+    />
+  </Teleport>
+
   <ProjectWizardLayout
     :title="$t('addProject.title')"
     :steps="[$t('addProject.steps.basicInfo'), $t('addProject.steps.design')]"
     :current-step="currentStep"
     :is-dirty="isDirty"
+    leave-confirm-mode="saveDraft"
     @last-page="$router.back()"
+    @save-draft-and-leave="handleSaveDraftAndLeave"
   >
     <template #step-1>
       <AddProjectInfo
@@ -38,7 +52,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useAchievementStore } from '@/stores/achievementStore'
@@ -46,14 +60,18 @@ import { v4 as uuidv4 } from '@lukeed/uuid'
 import AddProjectInfo from './AddProjectInfo.vue'
 import AddProjectDesign from './AddProjectDesign.vue'
 import ProjectWizardLayout from '@/components/features/project/ProjectWizardLayout.vue'
+import ThinIconButton from '@/components/shared/buttons/ThinIconButton.vue'
 import { normalizeEmptyNotesForSaveInPlace } from '@/utils/normalizeEmptyNotesForSave'
 import { DEFAULT_PROJECT_CRAFT_TYPES, normalizeProjectCraftTypes } from '@/constants/projectCraft'
+import { isProjectDraft } from '@/utils/projectDraft'
 import { toTrimmedText as toText, uniqueTrimmedStrings } from '@/utils/text'
+import { normalizeYarnMetaList } from '@/utils/yarnMeta'
 
 import { auth, storage } from '@/firebaseConfig'
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
 
 import { openError } from '@/services/ui/notice'
+import { openToast } from '@/services/ui/toast'
 import { useFooterContext } from '@/composables/footerContext'
 import { fetchProject } from '@/services/firestore/projects'
 import { buildProjectSourceFromCopyFrom } from '@/utils/projectSource'
@@ -77,6 +95,8 @@ const footer = useFooterContext()
 const currentStep = ref(1)
 const step1Dirty = ref(false)
 const step2Dirty = ref(false)
+const savingDraft = ref(false)
+const draftProjectId = ref('')
 const existingImages = ref([])
 const prefillKey = ref(0)
 const basicInfo = ref({
@@ -87,6 +107,54 @@ const basicInfo = ref({
   materials: { hook: [], needle: [], yarn: [] }
 })
 const designData = ref(null)
+const savedBaseline = ref(null)
+
+function normalizeImageList(value) {
+  const list = Array.isArray(value) ? value : []
+  return list
+    .filter(Boolean)
+    .map((x) => {
+      if (typeof File !== 'undefined' && x instanceof File) return `file:${x.name}:${x.size}`
+      return String(x)
+    })
+}
+
+function snapshotBasicInfo(info) {
+  const b = info && typeof info === 'object' ? info : {}
+  return {
+    name: toText(b.name),
+    description: toText(b.description),
+    image_files: normalizeImageList(b.image_files),
+    materials: {
+      hook: uniqueTrimmedStrings(b.materials?.hook),
+      yarn: normalizeYarnMetaList(b.materials?.yarn)
+        .map((m) => ({ type: toText(m?.type), amount: toText(m?.amount) }))
+        .filter((m) => m.type)
+    }
+  }
+}
+
+function capturePageSnapshot() {
+  return {
+    basicInfo: snapshotBasicInfo(basicInfo.value),
+    designData: designData.value ? deepClone(designData.value) : null,
+    existingImages: normalizeExistingImageUrls(existingImages.value)
+  }
+}
+
+function serializePageSnapshot(snap) {
+  try {
+    return JSON.stringify(snap)
+  } catch {
+    return ''
+  }
+}
+
+function syncSavedBaseline() {
+  savedBaseline.value = capturePageSnapshot()
+  step1Dirty.value = false
+  step2Dirty.value = false
+}
 
 function parseCopyFromIds(value) {
   const raw = typeof value === 'string' ? value : ''
@@ -94,6 +162,10 @@ function parseCopyFromIds(value) {
     .split(',')
     .map((x) => toText(x))
     .filter(Boolean)
+}
+
+function resolveDraftId() {
+  return toText(draftProjectId.value) || toText(route.query?.draft)
 }
 
 function deepClone(value) {
@@ -162,7 +234,52 @@ function mergeComponentLists(projects) {
   return out
 }
 
+function applyProjectPrefill(project, { fromDraft = false } = {}) {
+  if (!project) return
+
+  existingImages.value = normalizeExistingImageUrls(project?.images).slice(0, 3)
+
+  basicInfo.value = {
+    ...basicInfo.value,
+    name: toText(project?.name),
+    craft_types: normalizeProjectCraftTypes(project?.craft_types),
+    description: toText(project?.description),
+    image_files: [],
+    materials: {
+      hook: uniqueTrimmedStrings(project?.materials?.hook),
+      needle: uniqueTrimmedStrings(project?.materials?.needle),
+      yarn: Array.isArray(project?.materials?.yarn) ? deepClone(project.materials.yarn).filter(Boolean) : []
+    }
+  }
+
+  designData.value = {
+    component_list: Array.isArray(project?.component_list) ? deepClone(project.component_list) : [],
+    is_public: Boolean(project?.is_public),
+    self_defined_stitches: Array.isArray(project?.self_defined_stitches) ? deepClone(project.self_defined_stitches) : []
+  }
+
+  if (fromDraft) {
+    draftProjectId.value = toText(project?.id)
+  }
+
+  prefillKey.value += 1
+  nextTick(() => syncSavedBaseline())
+}
+
 async function applyCopyFromQuery() {
+  const draftId = toText(route.query?.draft)
+  if (draftId) {
+    if (designData.value != null && draftProjectId.value === draftId) return
+
+    const user = auth?.currentUser
+    const project = await fetchProject(draftId).catch(() => null)
+    if (!project || !isProjectDraft(project)) return
+    if (user && String(project?.authorId || '') !== String(user.uid)) return
+
+    applyProjectPrefill({ ...project, id: draftId }, { fromDraft: true })
+    return
+  }
+
   const ids = parseCopyFromIds(route.query?.copyFrom)
   if (!ids.length) return
 
@@ -171,36 +288,14 @@ async function applyCopyFromQuery() {
 
   if (ids.length === 1) {
     const project = await fetchProject(ids[0]).catch(() => null)
-    if (!project) return
-
-    existingImages.value = normalizeExistingImageUrls(project?.images).slice(0, 3)
-
-    basicInfo.value = {
-      ...basicInfo.value,
-      name: toText(project?.name),
-      craft_types: normalizeProjectCraftTypes(project?.craft_types),
-      description: toText(project?.description),
-      image_files: [],
-      materials: {
-        hook: uniqueTrimmedStrings(project?.materials?.hook),
-        needle: uniqueTrimmedStrings(project?.materials?.needle),
-        yarn: Array.isArray(project?.materials?.yarn) ? deepClone(project.materials.yarn).filter(Boolean) : []
-      }
-    }
-
-    designData.value = {
-      component_list: Array.isArray(project?.component_list) ? deepClone(project.component_list) : [],
-      is_public: Boolean(project?.is_public),
-      self_defined_stitches: Array.isArray(project?.self_defined_stitches) ? deepClone(project.self_defined_stitches) : []
-    }
-
-    prefillKey.value += 1
-
+    if (!project || isProjectDraft(project)) return
+    applyProjectPrefill(project)
     return
   }
 
   const projects = (await Promise.all(ids.map((id) => fetchProject(id).catch(() => null))))
     .filter(Boolean)
+    .filter((p) => !isProjectDraft(p))
 
   if (!projects.length) return
 
@@ -225,7 +320,7 @@ async function applyCopyFromQuery() {
 }
 
 watch(
-  () => route.query?.copyFrom,
+  () => [route.query?.copyFrom, route.query?.draft],
   () => {
     applyCopyFromQuery().catch((e) => console.warn('applyCopyFromQuery failed:', e))
   },
@@ -253,17 +348,162 @@ const setStep2Dirty = (v) => {
 
 const isDirty = computed(() => {
   if (step1Dirty.value || step2Dirty.value) return true
-  const nameDirty = Boolean(String(basicInfo.value?.name || '').trim())
-  const descDirty = Boolean(String(basicInfo.value?.description || '').trim())
-  const imagesDirty = Array.isArray(basicInfo.value?.image_files) && basicInfo.value.image_files.length > 0
-  const hookDirty = Array.isArray(basicInfo.value?.materials?.hook) && basicInfo.value.materials.hook.length > 0
-  const yarnDirty = Array.isArray(basicInfo.value?.materials?.yarn) && basicInfo.value.materials.yarn.length > 0
-  const hasBasic = nameDirty || descDirty || imagesDirty
-  const hasMaterials = hookDirty || yarnDirty
-
-  const hasDesign = designData.value != null
-  return hasBasic || hasMaterials || hasDesign
+  if (!savedBaseline.value) return false
+  return serializePageSnapshot(capturePageSnapshot()) !== serializePageSnapshot(savedBaseline.value)
 })
+
+onMounted(() => {
+  nextTick(() => {
+    if (!savedBaseline.value) syncSavedBaseline()
+  })
+})
+
+function collectBasicInfo() {
+  if (currentStep.value === 1 && typeof step1Ref.value?.getFormData === 'function') {
+    return step1Ref.value.getFormData()
+  }
+  return {
+    ...basicInfo.value,
+    craft_types: normalizeProjectCraftTypes(basicInfo.value?.craft_types),
+    materials: {
+      hook: Array.isArray(basicInfo.value?.materials?.hook) ? basicInfo.value.materials.hook : [],
+      needle: [],
+      yarn: Array.isArray(basicInfo.value?.materials?.yarn) ? basicInfo.value.materials.yarn : []
+    }
+  }
+}
+
+function collectDesignData() {
+  if (currentStep.value === 2 && typeof step2Ref.value?.getProjectData === 'function') {
+    return step2Ref.value.getProjectData()
+  }
+  if (designData.value && typeof designData.value === 'object') {
+    return deepClone(designData.value)
+  }
+  return {
+    component_list: [],
+    is_public: false,
+    self_defined_stitches: []
+  }
+}
+
+function buildPersistPayload({ isDraft }) {
+  const user = auth?.currentUser
+  if (!user) return null
+
+  const info = collectBasicInfo()
+  const design = collectDesignData()
+  const componentList = Array.isArray(design.component_list)
+    ? design.component_list.map((c) => (c && typeof c === 'object' ? { ...c } : c))
+    : []
+
+  normalizeEmptyNotesForSaveInPlace(componentList)
+
+  const name = toText(info.name) || (isDraft ? t('addProject.draft.defaultName') : '')
+
+  return {
+    name,
+    description: toText(info.description),
+    craft_types: normalizeProjectCraftTypes(info?.craft_types),
+    materials: {
+      hook: Array.isArray(info?.materials?.hook) ? info.materials.hook : [],
+      needle: [],
+      yarn: Array.isArray(info?.materials?.yarn) ? info.materials.yarn : []
+    },
+    component_list: componentList,
+    is_public: Boolean(design.is_public),
+    is_draft: Boolean(isDraft),
+    self_defined_stitches: Array.isArray(design?.self_defined_stitches) ? design.self_defined_stitches : [],
+    images: normalizeExistingImageUrls(existingImages.value).slice(0, 3),
+    authorId: user.uid,
+    source: buildProjectSourceFromCopyFrom(route.query?.copyFrom)
+  }
+}
+
+async function uploadPendingImages(projectId, existingImageUrls) {
+  const imageFiles = Array.isArray(basicInfo.value?.image_files)
+    ? basicInfo.value.image_files.filter((f) => f instanceof File).slice(0, 3)
+    : []
+
+  if (!imageFiles.length) return existingImageUrls
+
+  const urls = []
+  for (const file of imageFiles) {
+    const contentType = file.type || 'image/jpeg'
+    const ext = String(contentType).split('/')[1] || 'jpg'
+    const path = `projects/${projectId}/images/${uuidv4()}.${ext}`
+    const objRef = storageRef(storage, path)
+    await uploadBytes(objRef, file, { contentType })
+    urls.push(await getDownloadURL(objRef))
+  }
+
+  const merged = [...existingImageUrls, ...urls].filter(Boolean).slice(0, 3)
+  await callApi('updateProject', projectId, { images: merged })
+  existingImages.value = merged
+  basicInfo.value.image_files = []
+  return merged
+}
+
+function markSavedClean() {
+  syncSavedBaseline()
+}
+
+async function persistDraft({ showSuccessToast = false } = {}) {
+  if (savingDraft.value) return false
+
+  const user = auth?.currentUser
+  if (!user) {
+    await openError({
+      title: t('common.error'),
+      message: t('addProject.errors.loginRequired'),
+      confirmText: t('common.ok')
+    })
+    return false
+  }
+
+  const payload = buildPersistPayload({ isDraft: true })
+  if (!payload) return false
+
+  savingDraft.value = true
+  try {
+    let projectId = resolveDraftId()
+
+    if (projectId) {
+      await callApi('updateProject', projectId, payload)
+    } else {
+      projectId = await callApi('createProject', payload)
+      draftProjectId.value = projectId
+      await router.replace({ name: 'add-project', query: { draft: projectId } })
+    }
+
+    await uploadPendingImages(projectId, payload.images)
+    markSavedClean()
+
+    if (showSuccessToast) {
+      openToast({ message: t('addProject.draft.savedToast') })
+    }
+    return true
+  } catch (err) {
+    console.error('Error saving draft:', err)
+    await openError({
+      title: t('common.error'),
+      message: t('addProject.errors.draftSaveFailed', { message: String(err?.message || '') }),
+      confirmText: t('common.ok')
+    })
+    return false
+  } finally {
+    savingDraft.value = false
+  }
+}
+
+async function handleSaveDraft() {
+  await persistDraft({ showSuccessToast: true })
+}
+
+async function handleSaveDraftAndLeave() {
+  const ok = await persistDraft({ showSuccessToast: true })
+  if (ok) router.back()
+}
 
 watch(
   () => [currentStep.value, step1Dirty.value, step2Dirty.value, step1CanSubmit.value, step2CanSubmit.value],
@@ -303,6 +543,13 @@ onBeforeUnmount(() => footer.clearActions())
 
 const handleNextStep = (data) => {
   basicInfo.value = data
+  if (!designData.value) {
+    designData.value = {
+      component_list: [],
+      is_public: false,
+      self_defined_stitches: []
+    }
+  }
   currentStep.value = 2
 }
 
@@ -339,38 +586,33 @@ const handleSubmit = async (data) => {
       },
       component_list: componentList,
       is_public: data.is_public,
+      is_draft: false,
       self_defined_stitches: Array.isArray(data?.self_defined_stitches) ? data.self_defined_stitches : [],
       images: existingImageUrls,
       authorId: user.uid,
-      createdAt: new Date().toISOString(),
       source: buildProjectSourceFromCopyFrom(route.query?.copyFrom)
     }
 
-    const projectId = await callApi('createProject', projectData)
+    const existingDraftId = resolveDraftId()
+    let finalProjectId = existingDraftId
+
+    if (existingDraftId) {
+      await callApi('updateProject', existingDraftId, projectData)
+    } else {
+      finalProjectId = await callApi('createProject', projectData)
+    }
+
     await achievementStore.scanAndAwardNow(user.uid)
 
     if (imageFiles.length) {
       try {
-        const urls = []
-        for (const file of imageFiles) {
-          const contentType = file.type || 'image/jpeg'
-          const ext = String(contentType).split('/')[1] || 'jpg'
-          const path = `projects/${projectId}/images/${uuidv4()}.${ext}`
-          const objRef = storageRef(storage, path)
-          await uploadBytes(objRef, file, { contentType })
-          urls.push(await getDownloadURL(objRef))
-        }
-
-        const merged = [...existingImageUrls, ...urls].filter(Boolean).slice(0, 3)
-        await callApi('updateProject', projectId, { images: merged })
+        await uploadPendingImages(finalProjectId, existingImageUrls)
       } catch (error) {
         console.warn('Failed to upload project images:', error)
-        // Project is created; continue navigation.
       }
     }
 
-    // Replace so back does not return to add-project
-    router.replace({ name: 'project', params: { project_id: projectId } })
+    router.replace({ name: 'project', params: { project_id: finalProjectId } })
   } catch (err) {
     console.error('Error creating project:', err)
     await openError({

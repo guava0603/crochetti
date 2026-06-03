@@ -135,6 +135,7 @@ import { openToast } from '@/services/ui/toast'
 import { openConfirmation } from '@/services/ui/confirmation'
 import { formatDateTimeCompact } from '@/utils/dateTime'
 import { toMs } from '@/utils/toMs'
+import { isProjectDraft } from '@/utils/projectDraft'
 
 defineOptions({ name: 'ProjectViewMain' })
 
@@ -601,6 +602,13 @@ onMounted(async () => {
 
     if (!projectData.value) {
       console.error('Project not found')
+    } else if (
+      isProjectDraft(projectData.value) &&
+      props.currentUser?.uid &&
+      String(projectData.value?.authorId || '') === String(props.currentUser.uid)
+    ) {
+      await router.replace({ name: 'add-project', query: { draft: projectId.value } })
+      return
     }
     if (route.query?.copied === '1') {
       showNotice(t('project.copiedNotice'))

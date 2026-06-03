@@ -486,6 +486,12 @@
       "message": "You have unsaved changes. Discard them and go back?",
       "confirmText": "Discard"
     },
+    "saveProjectDraft": {
+      "title": "Save as draft",
+      "message": "You have unsaved changes.",
+      "discard": "Discard",
+      "save": "Save"
+    },
     "addProjectChooseComponentType": {
       "title": "Add",
       "message": "What would you like to add?"
@@ -734,6 +740,10 @@
       "count": "Count",
       "addStitch": "Add stitch",
       "changeStitch": "Change stitch",
+      "actionsAria": "Pattern edit actions",
+      "undo": "Undo",
+      "redo": "Redo",
+      "deleteLast": "Delete last stitch",
       "tabs": {
         "addToBundle": "Add"
       }
@@ -1190,7 +1200,19 @@
   "addProject": {
     "startMode": {
       "new": "Start new",
-      "copy": "Copy from existing"
+      "copy": "Copy from existing",
+      "draft": "Draft"
+    },
+    "saveToDraft": "Save draft",
+    "savingDraft": "Saving…",
+    "draft": {
+      "defaultName": "Untitled draft",
+      "hint": "Choose a draft to continue editing.",
+      "selectPlaceholder": "Search drafts…",
+      "listLabel": "[Draft] {name}",
+      "savedTitle": "Draft saved",
+      "savedMessage": "You can continue later from Draft.",
+      "savedToast": "Draft saved"
     },
     "copy": {
       "title": "Copy from existing",
@@ -1214,7 +1236,8 @@
     },
     "errors": {
       "loginRequired": "You must be logged in to create a project",
-      "createFailed": "Failed to create project: {message}"
+      "createFailed": "Failed to create project: {message}",
+      "draftSaveFailed": "Failed to save draft: {message}"
     },
     "info": {
       "projectNameLabel": "Project Name",
@@ -1250,7 +1273,7 @@
       "addKnittingComponent": "Add knitting component",
       "addStitch": "Add stitch",
       "relatedComponentsLabel": "Related components",
-      "relatedComponentsPlaceholder": "Select a component",
+      "relatedComponentsPlaceholder": "Select earlier parts (multiple)",
       "hookSelectPlaceholder": "Select hook…",
       "needleSelectPlaceholder": "Select needles…",
       "yarnSelectPlaceholder": "Select yarn…",
