@@ -6,13 +6,9 @@
 
         <form class="wish-pool-form" @submit.prevent="handleSubmit">
           <section class="subsection" aria-label="wish description">
-            <div class="subsection-header">
-              <h5>{{ $t('wishPool.descriptionLabel') }}</h5>
-            </div>
             <div class="subsection-body">
               <LimitedTextArea
                 v-model="description"
-                class="field__control field__control--textarea"
                 :placeholder="$t('wishPool.descriptionPlaceholder')"
                 :rows="10"
                 :disabled="loading"
@@ -23,9 +19,6 @@
           </section>
 
           <section class="subsection" aria-label="contact preference">
-            <div class="subsection-header">
-              <h5>{{ $t('wishPool.allowContact') }}</h5>
-            </div>
             <div class="subsection-body">
               <label class="contact-opt-in">
                 <input v-model="allowContact" type="checkbox" :disabled="loading" />
@@ -39,9 +32,8 @@
               <h5>{{ $t('wishPool.emailLabel') }}</h5>
             </div>
             <div class="subsection-body">
-              <input
+              <TextInput
                 v-model="email"
-                class="field__control"
                 type="email"
                 inputmode="email"
                 autocomplete="email"
@@ -63,6 +55,7 @@ import { useI18n } from 'vue-i18n'
 import { openError, openNotice } from '@/services/ui/notice'
 import { useFooterContext } from '@/composables/footerContext'
 import LimitedTextArea from '@/components/shared/inputs/LimitedTextArea.vue'
+import TextInput from '@/components/shared/inputs/TextInput.vue'
 import { useTextCount } from '@/composables/useTextCount'
 import { countWordsLike } from '@/utils/textCount'
 
@@ -174,7 +167,6 @@ async function handleSubmit() {
   width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
-  background: var(--color-surface-sheet);
 }
 
 .wish-pool-view__inner {
@@ -196,30 +188,14 @@ async function handleSubmit() {
 
 .subsection {
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
-  padding: 1rem;
+  border-bottom: 1px solid gba(0, 0, 0, 0.14);
+  padding-bottom: .5rem;
+  margin-bottom: .5rem;
 }
 
 .subsection-body {
   display: grid;
   gap: 0.75rem;
-}
-
-.field__control {
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  border-radius: 12px;
-  padding: 0.75rem 0.9rem;
-  font-weight: 700;
-  background: #fff;
-  color: var(--color-font-dark);
-}
-
-.field__control--textarea {
-  resize: vertical;
-  min-height: 180px;
-  line-height: 1.4;
 }
 
 .field__meta {

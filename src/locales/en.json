@@ -1378,7 +1378,7 @@
     "wordCount": "{n}/{max} words",
     "allowContact": "I agree to let the developer contact me by email",
     "emailLabel": "Email (optional)",
-    "emailPlaceholder": "name@example.com",
+    "emailPlaceholder": "name{'@'}example.com",
     "emailHint": "Only used for contacting you. It will not be public.",
     "submit": "Submit",
     "submitting": "Submitting…",

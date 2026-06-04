@@ -1378,7 +1378,7 @@
     "wordCount": "{n}/{max} 字",
     "allowContact": "我願意留下 Email 讓開發者聯絡我",
     "emailLabel": "Email",
-    "emailPlaceholder": "name@example.com",
+    "emailPlaceholder": "name{'@'}example.com",
     "emailHint": "僅用於回覆或聯絡，不會公開。",
     "submit": "送出",
     "submitting": "送出中…",
