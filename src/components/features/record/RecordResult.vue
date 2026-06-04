@@ -31,7 +31,7 @@
         </div>
 
         <div v-if="showTopCardBlock" class="top-card export-healing-card">
-          <span class="card-inner-frame" aria-hidden="true" />
+          <CardInnerFrame />
           <div class="top-badge" aria-hidden="true">
             <div class="top-badge__circle" />
             <ProgressRing
@@ -73,7 +73,7 @@
             <h2 v-if="showMoreStatusTitleBlock" class="result-title">{{ t('recordResult.nextStatuses') }}</h2>
             <div class="rest-grid">
               <div v-for="g in rankedGroups.slice(1, 5)" :key="g.key" class="rest-card export-healing-card">
-                <span class="card-inner-frame" aria-hidden="true" />
+                <CardInnerFrame />
                 <div
                   class="rest-card-header"
                   :class="{ 'rest-card-header--clickable': hasRestDetails(g) }"
@@ -122,7 +122,7 @@
               <div class="rest-title">{{ t('recordResult.nextStatuses') }}</div>
               <div class="rest-grid">
                 <div v-for="g in rankedGroups.slice(1, 5)" :key="g.key" class="rest-card export-healing-card">
-                  <span class="card-inner-frame" aria-hidden="true" />
+                  <CardInnerFrame />
                   <div
                     class="rest-card-header"
                     :class="{ 'rest-card-header--clickable': hasRestDetails(g) }"
@@ -183,6 +183,7 @@ import { useUserRecordStatusCatalog } from '@/composables/useUserRecordStatusCat
 import { resolveRecordStatusLabel } from '@/utils/recordStatusDisplay'
 import ProgressRing from '@/components/shared/ui/ProgressRing.vue'
 import BarChart from '@/components/shared/ui/BarChart.vue'
+import CardInnerFrame from '@/components/shared/ui/CardInnerFrame.vue'
 import { shareOrDownloadElementAsImage, downloadTextFile } from '@/utils/downloadImage'
 import { normalizeSectionVisibility } from '@/constants/recordResultSharingSections'
 
@@ -821,7 +822,7 @@ onUnmounted(() => {
 }
 
 .top-card-metrics {
-  margin-top: 2.75rem;
+  margin-top: calc(11.75rem - 3.25rem + 0.5rem);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;

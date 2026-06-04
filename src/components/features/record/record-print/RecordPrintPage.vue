@@ -80,6 +80,7 @@ const emit = defineEmits(['api'])
 
 const { t } = useI18n({ useScope: 'global' })
 const route = useRoute()
+const router = useRouter()
 const appBanner = useAppBanner()
 
 const currentUser = computed(() => props.currentUser)
@@ -224,6 +225,8 @@ async function shareImage() {
       flattenForExport: true,
       backgroundColor: '#ffffff'
     })
+  } catch (error) {
+    console.warn('RecordPrintPage: share image failed', error)
   } finally {
     sharing.value = false
   }

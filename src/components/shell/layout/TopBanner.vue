@@ -71,9 +71,6 @@ function applyRouteBannerDefaults(r) {
 
   // Banner is always visible; routes only define its *type* (title/overlay/transparent).
   appBanner.setBanner({ visible: true, variant, title, overlay, transparent })
-  // #region agent log
-  fetch('http://127.0.0.1:7900/ingest/ac6ceb27-9395-4309-8246-f894ce8ce241',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7f2bc0'},body:JSON.stringify({sessionId:'7f2bc0',location:'TopBanner.vue:applyRouteBannerDefaults',message:'route banner defaults applied',data:{path:r?.fullPath||r?.path,variant,overlay,transparent,metaVariant:meta.bannerVariant},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-  // #endregion
   // Never carry back handlers across routes.
   appBanner.resetHandlers()
 }

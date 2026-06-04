@@ -18,6 +18,7 @@
       :aria-label="t('recordResult.imageAlt', { n: idx + 1 })"
       :openable="true"
       :stop-propagation="true"
+      :lazy="false"
     />
   </div>
 </template>

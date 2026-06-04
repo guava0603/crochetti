@@ -23,7 +23,7 @@
 </template>
 
 <script setup>
-import { computed, useAttrs, watch } from 'vue'
+import { computed, useAttrs } from 'vue'
 import { resolveSettingsIconUrl } from '@/utils/settingsIcon'
 
 defineOptions({ inheritAttrs: false })
@@ -105,18 +105,6 @@ const rootClasses = computed(() => [
     'thin-icon-button--root-div': props.rootTag === 'div'
   }
 ])
-
-// #region agent log
-watch(
-  () => [props.background, externalClass.value],
-  ([bg, cls]) => {
-    const clsStr = Array.isArray(cls) ? cls.join(' ') : String(cls || '')
-    if (!clsStr.includes('btn-back') && !clsStr.includes('more-menu__button')) return
-    fetch('http://127.0.0.1:7900/ingest/ac6ceb27-9395-4309-8246-f894ce8ce241',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7f2bc0'},body:JSON.stringify({sessionId:'7f2bc0',runId:'post-fix',location:'ThinIconButton.vue:watch',message:'banner thin icon button props',data:{background:bg,externalClass:clsStr,bgClass:`thin-icon-button--bg-${bg}`},timestamp:Date.now(),hypothesisId:'F'})}).catch(()=>{})
-  },
-  { immediate: true }
-)
-// #endregion
 
 function handleClick(e) {
   if (isDisabled.value) {

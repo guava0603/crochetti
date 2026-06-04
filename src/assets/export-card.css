@@ -1,6 +1,7 @@
 /**
  * Healing-style export cards for html2canvas / print capture.
  * Use real `.card-inner-frame` elements only — never ::before / ::after (they fail in exports).
+ * Match each card's outer `border-radius` on its inner frame so corners stay parallel.
  */
 
 .export-healing-card {
@@ -16,24 +17,45 @@
 
 .export-healing-card .card-inner-frame {
   position: absolute;
-  inset: 0.4375rem;
-  border-radius: 0.875rem;
-  border: 0.09375rem dashed rgba(122, 90, 58, 0.38);
+  display: block;
+  top: 0.4375rem;
+  right: 0.4375rem;
+  bottom: 0.4375rem;
+  left: 0.4375rem;
   box-sizing: border-box;
   pointer-events: none;
   z-index: 0;
+  border: 0.09375rem dashed rgba(122, 90, 58, 0.38);
 }
 
-.export-healing-card > :not(.card-inner-frame) {
+.export-healing-card > :not(.card-inner-frame):not(.top-badge) {
   position: relative;
   z-index: 1;
 }
 
 .top-card.export-healing-card {
-  padding: 6.25rem 1rem 1rem;
+  padding: calc(11.75rem - 3.25rem + 0.75rem) 1rem 1rem;
   border-radius: 1rem;
   margin-top: 4rem;
   min-height: 12rem;
+}
+
+.top-card.export-healing-card .top-badge {
+  position: absolute;
+  left: 50%;
+  top: -3.25rem;
+  transform: translateX(-50%);
+  width: 188px;
+  height: 188px;
+  z-index: 2;
+}
+
+.top-card.export-healing-card .top-card-metrics {
+  margin-top: 0;
+}
+
+.top-card.export-healing-card .card-inner-frame {
+  border-radius: 1rem;
 }
 
 .rest-card.export-healing-card {
@@ -46,11 +68,19 @@
   overflow: hidden;
 }
 
+.rest-card.export-healing-card .card-inner-frame {
+  border-radius: 14px;
+}
+
 .extra-note-card.export-healing-card {
   margin-top: 1.5rem;
   padding: 0.85rem 1rem;
   border-radius: 10px;
   overflow: hidden;
+}
+
+.extra-note-card.export-healing-card .card-inner-frame {
+  border-radius: 10px;
 }
 
 .record-result-view--static .export-healing-card,

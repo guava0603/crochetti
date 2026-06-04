@@ -96,10 +96,14 @@ const props = defineProps({
   completedAtMs: {
     type: Number,
     default: null
+  },
+  projectId: {
+    type: String,
+    default: ''
   }
 })
 
-const emit = defineEmits(['update:show', 'save'])
+const emit = defineEmits(['update:show', 'save', 'go-to-project'])
 
 const { t } = useI18n({ useScope: 'global' })
 

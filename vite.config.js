@@ -20,4 +20,13 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.js'],
   },
+  server: {
+    proxy: {
+      '/__/firebase-storage': {
+        target: 'https://firebasestorage.googleapis.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/__\/firebase-storage/, '')
+      }
+    }
+  },
 })

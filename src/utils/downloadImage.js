@@ -10,46 +10,310 @@ import { Capacitor } from '@capacitor/core'
 import { getRemPx } from '@/constants/recordResultSharingLayout'
 import { sharePngBlobsViaNative } from '@/utils/nativeImageShare'
 
+/** Same-origin proxy path (see vite.config.js). Avoids CORS when inlining Storage images in dev. */
+const EXPORT_STORAGE_PROXY_PREFIX = '/__/firebase-storage'
+
 const EXPORT_CARD_BG = '#f5ebda'
 const EXPORT_CAPTURE_STYLE_ID = 'corchetti-export-capture-fix'
-const CARD_INNER_FRAME_INSET_REM = 0.4375
-const CARD_INNER_FRAME_RADIUS_REM = 0.875
 
-/** Real `.card-inner-frame` nodes size reliably in html2canvas; set explicit px box in the clone. */
-function normalizeCardInnerFrames(root, doc) {
+function shouldUseNativeImageShare() {
+  if (Capacitor.isNativePlatform()) return true
+  if (typeof window !== 'undefined' && window.location?.protocol === 'capacitor:') return true
+  return false
+}
+
+function isIosLikeDevice() {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent || ''
+  if (/iPad|iPhone|iPod/i.test(ua)) return true
+  return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
+}
+
+function parseAspectRatioValue(raw) {
+  const text = String(raw || '').trim()
+  if (!text) return null
+
+  const parts = text.split('/')
+  if (parts.length === 2) {
+    const w = parseFloat(parts[0])
+    const h = parseFloat(parts[1])
+    if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) return w / h
+  }
+
+  const single = parseFloat(text)
+  return Number.isFinite(single) && single > 0 ? single : null
+}
+
+/** html2canvas often ignores CSS aspect-ratio; pin explicit heights before capture. */
+function resolveExtraImagesWidth(el, sourceEl, layoutWidthPx, doc = document) {
+  const candidates = [
+    el?.offsetWidth || 0,
+    sourceEl?.offsetWidth || 0,
+    sourceEl ? Math.round(sourceEl.getBoundingClientRect().width) : 0
+  ]
+
+  for (const width of candidates) {
+    if (width > 0) return width
+  }
+
+  if (layoutWidthPx > 0) {
+    const remPx = getRemPx(doc)
+    return Math.max(0, Math.round(layoutWidthPx - 1.8 * remPx))
+  }
+
+  return 0
+}
+
+function normalizeExtraImagesForExport(root, layoutWidthPx = 0, sourceRoot = null, doc = document) {
   if (!root?.querySelectorAll) return
 
-  const remPx = getRemPx(doc)
-  const insetPx = CARD_INNER_FRAME_INSET_REM * remPx
-  const radiusPx = CARD_INNER_FRAME_RADIUS_REM * remPx
+  const sourceContainers = sourceRoot ? [...sourceRoot.querySelectorAll('.extra-images')] : []
 
-  for (const card of root.querySelectorAll('.export-healing-card')) {
-    const frame = card.querySelector(':scope > .card-inner-frame')
-    if (!frame) continue
+  root.querySelectorAll('.extra-images').forEach((el, index) => {
+    const sourceEl = sourceContainers[index]
+    const width = resolveExtraImagesWidth(el, sourceEl, layoutWidthPx, doc)
+    if (width <= 0) return
 
-    const w = card.offsetWidth
-    const h = card.offsetHeight
-    if (w <= 0 || h <= 0) continue
+    const computed = typeof getComputedStyle === 'function' ? getComputedStyle(el) : null
+    const ratio =
+      parseAspectRatioValue(computed?.aspectRatio) ||
+      parseAspectRatioValue(el.style.getPropertyValue('--extra-images-aspect-ratio')) ||
+      parseAspectRatioValue(sourceEl?.style.getPropertyValue('--extra-images-aspect-ratio')) ||
+      1.25
 
-    const innerW = Math.max(0, w - insetPx * 2)
-    const innerH = Math.max(0, h - insetPx * 2)
+    const height = Math.max(1, Math.round(width / ratio))
+    el.style.setProperty('height', `${height}px`, 'important')
+    el.style.setProperty('min-height', `${height}px`, 'important')
+    el.style.setProperty('aspect-ratio', 'auto', 'important')
+    el.style.setProperty('display', 'flex', 'important')
+    el.style.setProperty(
+      'flex-direction',
+      el.classList.contains('extra-images--vertical') ? 'column' : 'row',
+      'important'
+    )
 
-    frame.style.setProperty('display', 'block', 'important')
-    frame.style.setProperty('position', 'absolute', 'important')
-    frame.style.setProperty('top', `${insetPx}px`, 'important')
-    frame.style.setProperty('left', `${insetPx}px`, 'important')
-    frame.style.setProperty('width', `${innerW}px`, 'important')
-    frame.style.setProperty('height', `${innerH}px`, 'important')
-    frame.style.setProperty('right', 'auto', 'important')
-    frame.style.setProperty('bottom', 'auto', 'important')
-    frame.style.setProperty('margin', '0', 'important')
-    frame.style.setProperty('box-sizing', 'border-box', 'important')
-    frame.style.setProperty('border-radius', `${radiusPx}px`, 'important')
-    frame.style.setProperty('border-style', 'solid', 'important')
-    frame.style.setProperty('border-width', '1px', 'important')
-    frame.style.setProperty('border-color', 'rgba(122, 90, 58, 0.38)', 'important')
-    frame.style.setProperty('pointer-events', 'none', 'important')
+    const gapRaw = el.style.getPropertyValue('--extra-images-gap') || sourceEl?.style.getPropertyValue('--extra-images-gap')
+    const gap = Number.parseFloat(gapRaw) || 0
+    if (gap > 0) el.style.setProperty('gap', `${gap}px`, 'important')
+
+    const items = [...el.querySelectorAll('.extra-images__item')]
+    const count = Math.max(1, items.length)
+    const gapTotal = gap * Math.max(0, count - 1)
+    const itemWidth = Math.max(1, Math.floor((width - gapTotal) / count))
+    const itemHeight =
+      el.classList.contains('extra-images--vertical')
+        ? Math.max(1, Math.floor((height - gapTotal) / count))
+        : height
+
+    for (const item of items) {
+      item.style.setProperty('flex', '1 1 0', 'important')
+      item.style.setProperty('width', `${itemWidth}px`, 'important')
+      item.style.setProperty('height', `${itemHeight}px`, 'important')
+      item.style.setProperty('min-height', `${itemHeight}px`, 'important')
+    }
+
+    for (const node of el.querySelectorAll('.image-box, .image-box__cut, .image-box__img')) {
+      node.style.setProperty('width', '100%', 'important')
+      node.style.setProperty('height', '100%', 'important')
+      node.style.setProperty('display', 'block', 'important')
+    }
+  })
+}
+
+function snapshotExtraImagesLayout(root) {
+  if (!root?.querySelectorAll) return () => {}
+
+  const entries = [...root.querySelectorAll('.extra-images')].map((el) => ({
+    el,
+    height: el.style.height,
+    minHeight: el.style.minHeight,
+    aspectRatio: el.style.aspectRatio
+  }))
+
+  return () => {
+    for (const { el, height, minHeight, aspectRatio } of entries) {
+      el.style.height = height
+      el.style.minHeight = minHeight
+      el.style.aspectRatio = aspectRatio
+    }
   }
+}
+
+function waitForImage(img) {
+  return new Promise((resolve) => {
+    if (img.complete && img.naturalWidth > 0) {
+      resolve()
+      return
+    }
+
+    const done = () => resolve()
+    img.addEventListener('load', done, { once: true })
+    img.addEventListener('error', done, { once: true })
+  })
+}
+
+async function waitForImages(root) {
+  if (!root?.querySelectorAll) return
+
+  const imgs = [...root.querySelectorAll('img')].filter((img) => img.currentSrc || img.src)
+  if (!imgs.length) return
+
+  await Promise.all(imgs.map((img) => waitForImage(img)))
+}
+
+async function blobToDataUrl(blob) {
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
+  })
+}
+
+function loadImageElement(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('Failed to load image'))
+    img.src = src
+  })
+}
+
+/** html2canvas ignores object-fit: cover; bake cover crop into the data URL. */
+function drawCoverToDataUrl(img, width, height) {
+  const targetW = Math.max(1, Math.round(width))
+  const targetH = Math.max(1, Math.round(height))
+  const iw = img.naturalWidth
+  const ih = img.naturalHeight
+  if (!iw || !ih) return null
+
+  const canvas = document.createElement('canvas')
+  canvas.width = targetW
+  canvas.height = targetH
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  const scale = Math.max(targetW / iw, targetH / ih)
+  const srcW = targetW / scale
+  const srcH = targetH / scale
+  const sx = (iw - srcW) / 2
+  const sy = (ih - srcH) / 2
+  ctx.drawImage(img, sx, sy, srcW, srcH, 0, 0, targetW, targetH)
+  return canvas.toDataURL('image/png')
+}
+
+async function blobToCoverDataUrl(blob, width, height) {
+  if (!(width > 0 && height > 0)) return blobToDataUrl(blob)
+
+  const objectUrl = URL.createObjectURL(blob)
+  try {
+    const img = await loadImageElement(objectUrl)
+    return drawCoverToDataUrl(img, width, height)
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
+}
+
+function isSameOriginUrl(url) {
+  if (typeof window === 'undefined') return false
+
+  try {
+    return new URL(url, window.location.href).origin === window.location.origin
+  } catch {
+    return false
+  }
+}
+
+function isFirebaseStorageUrl(url) {
+  try {
+    return new URL(url).hostname.includes('firebasestorage.googleapis.com')
+  } catch {
+    return false
+  }
+}
+
+/** Rewrite Storage download URL to same-origin proxy (dev) for CORS-free fetch. */
+function toExportStorageFetchUrl(url) {
+  try {
+    const parsed = new URL(url)
+    if (!parsed.hostname.includes('firebasestorage.googleapis.com')) return url
+    return `${EXPORT_STORAGE_PROXY_PREFIX}${parsed.pathname}${parsed.search}`
+  } catch {
+    return url
+  }
+}
+
+function canFetchExportUrl(url) {
+  return isSameOriginUrl(url) || String(url).startsWith(EXPORT_STORAGE_PROXY_PREFIX)
+}
+
+async function resolveImageAsDataUrl(url, { width = 0, height = 0 } = {}) {
+  const src = String(url || '').trim()
+  if (!src) return null
+
+  const fetchUrl = isFirebaseStorageUrl(src) ? toExportStorageFetchUrl(src) : src
+
+  if (!canFetchExportUrl(fetchUrl)) return null
+
+  try {
+    const response = await fetch(fetchUrl)
+    if (!response.ok) return null
+    return await blobToCoverDataUrl(await response.blob(), width, height)
+  } catch {
+    return null
+  }
+}
+
+/** Inline export images as data URLs in the clone when we can read them without CORS fetch. */
+async function buildExportImageDataUrlMap(sourceRoot) {
+  const map = new Map()
+  if (!sourceRoot?.querySelectorAll) return map
+
+  const entries = [...sourceRoot.querySelectorAll('.extra-images img')].map((img) => {
+    const src = img.currentSrc || img.src
+    const item = img.closest('.extra-images__item')
+    return {
+      src,
+      width: item?.offsetWidth || img.offsetWidth || 0,
+      height: item?.offsetHeight || img.offsetHeight || 0
+    }
+  }).filter((entry) => entry.src)
+
+  await Promise.all(
+    entries.map(async ({ src, width, height }) => {
+      const dataUrl = await resolveImageAsDataUrl(src, { width, height })
+      if (dataUrl) map.set(src, dataUrl)
+    })
+  )
+
+  return map
+}
+
+function applyInlineImageDataUrls(root, imageDataUrlMap) {
+  if (!root?.querySelectorAll || !imageDataUrlMap?.size) return
+
+  for (const img of root.querySelectorAll('.extra-images img')) {
+    const src = img.currentSrc || img.src || img.getAttribute('src')
+    const dataUrl = imageDataUrlMap.get(src)
+    if (dataUrl) img.src = dataUrl
+  }
+}
+
+/** Keep clone img src aligned with live DOM only when not already inlined as data URLs. */
+function syncExportImageSources(clonedRoot, sourceRoot, imageDataUrlMap = new Map()) {
+  if (!clonedRoot?.querySelectorAll || !sourceRoot?.querySelectorAll) return
+
+  const sourceImgs = [...sourceRoot.querySelectorAll('.extra-images img')]
+  const clonedImgs = [...clonedRoot.querySelectorAll('.extra-images img')]
+
+  clonedImgs.forEach((cloneImg, index) => {
+    const sourceImg = sourceImgs[index]
+    const src = sourceImg?.currentSrc || sourceImg?.src
+    if (!src) return
+    if (imageDataUrlMap.has(src)) return
+    cloneImg.removeAttribute('crossorigin')
+    cloneImg.src = src
+  })
 }
 
 function injectExportCaptureStyles(doc) {
@@ -66,12 +330,15 @@ function injectExportCaptureStyles(doc) {
       display: none !important;
       content: none !important;
     }
+    .extra-images__item .image-box__img {
+      object-fit: cover !important;
+    }
   `
   doc.head.appendChild(style)
 }
 
 /** Flatten styles that html2canvas renders incorrectly (backdrop-filter, inset shadow, alpha fill). */
-export function applyExportFlatStyles(root, doc = null, { layoutWidthPx } = {}) {
+export function applyExportFlatStyles(root, doc = null, { layoutWidthPx, sourceRoot = null } = {}) {
   if (!root || typeof root.querySelectorAll !== 'function') return
 
   if (doc) injectExportCaptureStyles(doc)
@@ -107,7 +374,7 @@ export function applyExportFlatStyles(root, doc = null, { layoutWidthPx } = {}) 
   root.style.setProperty('background', '#ffffff', 'important')
   root.style.setProperty('background-color', '#ffffff', 'important')
 
-  normalizeCardInnerFrames(root, doc)
+  normalizeExtraImagesForExport(root, layoutWidthPx, sourceRoot, doc?.defaultView ? doc : document)
 }
 
 export async function captureElementAsPngBlob(element, options = {}) {
@@ -121,58 +388,109 @@ export async function captureElementAsPngBlob(element, options = {}) {
   const layoutWidthPx = Number(options.layoutWidthPx) || 0
   const html2canvasOptions = options.html2canvas || {}
 
-  const canvas = await html2canvas(element, {
+  await waitForImages(element)
+  const restoreExtraImagesLayout = snapshotExtraImagesLayout(element)
+  normalizeExtraImagesForExport(element, layoutWidthPx, element, document)
+
+  let imageDataUrlMap = new Map()
+  try {
+    imageDataUrlMap = await buildExportImageDataUrlMap(element)
+  } catch {
+    imageDataUrlMap = new Map()
+  }
+
+  const extraImageUrls = [...element.querySelectorAll('.extra-images img')]
+    .map((img) => img.currentSrc || img.src)
+    .filter(Boolean)
+  const extraImageCount = extraImageUrls.length
+  const allExtraImagesInlined =
+    extraImageCount === 0 || extraImageUrls.every((url) => imageDataUrlMap.has(url))
+
+  if (extraImageCount > 0 && !allExtraImagesInlined) {
+    throw new Error('captureElementAsPngBlob: failed to inline export images')
+  }
+
+  const mergedCanvasOptions = {
     backgroundColor: options.backgroundColor ?? '#ffffff',
     scale,
-    useCORS: true,
     logging: false,
     ...html2canvasOptions,
-    onclone: (doc, clonedNode) => {
-      if (flattenForExport) {
-        applyExportFlatStyles(clonedNode, doc, { layoutWidthPx })
-      }
-      if (typeof html2canvasOptions.onclone === 'function') {
-        html2canvasOptions.onclone(doc, clonedNode)
-      }
-    }
-  })
+    useCORS: false,
+    allowTaint: false
+  }
 
-  const blob = await new Promise((resolve) => {
-    canvas.toBlob((b) => resolve(b), 'image/png')
-  })
+  try {
+    const canvas = await html2canvas(element, {
+      ...mergedCanvasOptions,
+      onclone: (doc, clonedNode) => {
+        if (flattenForExport) {
+          applyExportFlatStyles(clonedNode, doc, { layoutWidthPx, sourceRoot: element })
+        } else {
+          normalizeExtraImagesForExport(clonedNode, layoutWidthPx, element, doc)
+        }
 
-  if (!blob) throw new Error('Failed to create PNG blob')
-  return blob
+        applyInlineImageDataUrls(clonedNode, imageDataUrlMap)
+        syncExportImageSources(clonedNode, element, imageDataUrlMap)
+
+        if (typeof html2canvasOptions.onclone === 'function') {
+          html2canvasOptions.onclone(doc, clonedNode)
+        }
+      }
+    })
+
+    const blob = await new Promise((resolve) => {
+      canvas.toBlob((b) => resolve(b), 'image/png')
+    })
+
+    if (!blob) throw new Error('Failed to create PNG blob')
+    return blob
+  } finally {
+    restoreExtraImagesLayout()
+  }
 }
 
 /**
  * @returns {'share'|'download'|'cancelled'}
  */
+async function tryWebShareImageBlob(blob, filename, shareTitle) {
+  if (!navigator.share || typeof File === 'undefined') return false
+
+  const file = new File([blob], filename, { type: 'image/png' })
+  const payload = { title: String(shareTitle || filename), files: [file] }
+
+  const canShareFiles = !navigator.canShare || navigator.canShare({ files: [file] })
+
+  if (canShareFiles) {
+    await navigator.share(payload)
+    return true
+  }
+
+  if (isIosLikeDevice()) {
+    await navigator.share(payload)
+    return true
+  }
+
+  return false
+}
+
 export async function shareOrDownloadImageBlob({ blob, filename, shareTitle } = {}) {
   if (!blob) throw new Error('shareOrDownloadImageBlob: missing blob')
 
   const safeName = String(filename || 'image.png').trim() || 'image.png'
 
-  if (Capacitor.isNativePlatform()) {
+  if (shouldUseNativeImageShare()) {
     return sharePngBlobsViaNative({
       items: [{ blob, filename: safeName }],
       shareTitle: shareTitle ?? safeName
     })
   }
 
-  const file = typeof File !== 'undefined' ? new File([blob], safeName, { type: 'image/png' }) : null
-
   try {
-    if (file && navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
-      await navigator.share({
-        title: String(shareTitle || safeName),
-        files: [file]
-      })
+    if (await tryWebShareImageBlob(blob, safeName, shareTitle)) {
       return 'share'
     }
   } catch (error) {
     if (error?.name === 'AbortError') return 'cancelled'
-    // Fall through to download.
   }
 
   const url = URL.createObjectURL(blob)
@@ -204,7 +522,7 @@ export async function shareOrDownloadImageBlobs(items = []) {
 
   if (!normalized.length) throw new Error('shareOrDownloadImageBlobs: missing blobs')
 
-  if (Capacitor.isNativePlatform()) {
+  if (shouldUseNativeImageShare()) {
     return sharePngBlobsViaNative({
       items: normalized,
       shareTitle: normalized[0]?.filename
@@ -217,13 +535,15 @@ export async function shareOrDownloadImageBlobs(items = []) {
       : null
 
   try {
-    if (files && navigator.share && (!navigator.canShare || navigator.canShare({ files }))) {
-      await navigator.share({ files })
-      return 'share'
+    if (files?.length && navigator.share) {
+      const canShareFiles = !navigator.canShare || navigator.canShare({ files })
+      if (canShareFiles || isIosLikeDevice()) {
+        await navigator.share({ files })
+        return 'share'
+      }
     }
   } catch (error) {
     if (error?.name === 'AbortError') return 'cancelled'
-    // Fall through to download.
   }
 
   // Fallback: sequential downloads (may still be blocked by browser policies).

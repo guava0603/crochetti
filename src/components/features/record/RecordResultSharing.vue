@@ -37,7 +37,7 @@
           class="extra-note-card export-healing-card"
           :aria-label="t('recordPrint.sections.extraNote')"
         >
-          <span class="card-inner-frame" aria-hidden="true" />
+          <CardInnerFrame />
           <p class="extra-note-card__body">{{ thought }}</p>
         </section>
       </template>
@@ -66,6 +66,7 @@ import {
 } from '@/constants/recordPrintCompletedTime'
 import RecordResult from '@/components/features/record/RecordResult.vue'
 import ExtraImages from '@/components/features/record/ExtraImages.vue'
+import CardInnerFrame from '@/components/shared/ui/CardInnerFrame.vue'
 import { captureElementAsPngBlob, shareOrDownloadElementAsImage, shareOrDownloadImageBlob } from '@/utils/downloadImage'
 import { measurePrintedDomainWidthPx } from '@/constants/recordResultSharingLayout'
 import { useRecordResultSharingLayoutWidth } from '@/composables/useRecordResultSharingLayoutWidth'
