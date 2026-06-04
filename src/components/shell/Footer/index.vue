@@ -78,7 +78,8 @@ watch(
   right: 0;
   width: var(--bottom-footer-dock-side-width);
   height: var(--bottom-footer-dock-side-width);
-  bottom: calc(var(--app-footer-height) + var(--bottom-footer-padding-bottom));
+  bottom: calc(var(--app-footer-height) + var(--bottom-footer-padding-bottom) + 1rem);
+  right: 1rem;
   z-index: var(--z-float);
   pointer-events: none;
 

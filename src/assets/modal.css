@@ -213,9 +213,28 @@
 
 .modal-prompt-actions {
   display: flex;
+  align-items: center;
   gap: 0.75rem;
-  justify-content: flex-end;
   margin-top: 0.5rem;
+}
+
+.modal-prompt-actions__end {
+  display: flex;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.modal-actions-split {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.modal-actions-split__end {
+  display: flex;
+  gap: 0.75rem;
+  margin-left: auto;
 }
 
 .modal-choice-list {

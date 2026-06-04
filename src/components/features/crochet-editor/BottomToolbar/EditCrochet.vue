@@ -66,37 +66,15 @@
         />
 
         <div class="edit-crochet__actions" role="toolbar" :aria-label="t('toolbar.editCrochet.actionsAria')">
-          <div class="edit-crochet__actions-start">
-            <ThinIconButton
-              src="010__arrow_anti-clockwise"
-              size="m"
-              background="transparent"
-              :disabled="!canUndo"
-              :aria-label="t('toolbar.editCrochet.undo')"
-              :title="t('toolbar.editCrochet.undo')"
-              @click="handleUndo"
-            />
-            <ThinIconButton
-              src="009__arrow_lockwise"
-              size="m"
-              background="transparent"
-              :disabled="!canRedo"
-              :aria-label="t('toolbar.editCrochet.redo')"
-              :title="t('toolbar.editCrochet.redo')"
-              @click="handleRedo"
-            />
-          </div>
-          <div class="edit-crochet__actions-end">
-            <ThinIconButton
-              src="137__previous"
-              size="m"
-              background="transparent"
-              :disabled="!canDeleteLast"
-              :aria-label="t('toolbar.editCrochet.deleteLast')"
-              :title="t('toolbar.editCrochet.deleteLast')"
-              @click="handleDeleteLast"
-            />
-          </div>
+          <ThinIconButton
+            src="137__previous"
+            size="m"
+            background="transparent"
+            :disabled="!canDeleteLast"
+            :aria-label="t('toolbar.editCrochet.deleteLast')"
+            :title="t('toolbar.editCrochet.deleteLast')"
+            @click="handleDeleteLast"
+          />
         </div>
       </div>
       </div>
@@ -117,7 +95,6 @@ import { addStitchToPatternList } from '@/utils/patternEdit.js'
 import { createBundle, createSimpleStitch } from '@/constants/crochetData.js'
 import { openConfirmation } from '@/services/ui/confirmation'
 import { resolveDisplayCount } from '@/utils/editCrochetCount'
-import { createEditCrochetHistory } from '@/utils/editCrochetHistory'
 import { removeLastPatternNode } from '@/utils/editCrochetPatternEdit'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -281,11 +258,7 @@ const pendingPosition = ref('')
 const pendingReplaceNode = ref(null)
 const pendingPattern = ref(props.currentPattern ? [...props.currentPattern] : [])
 const suppressDraftEmit = ref(false)
-const suppressHistoryPush = ref(false)
 const draftTouched = ref(false)
-const editHistory = createEditCrochetHistory()
-const canUndo = ref(false)
-const canRedo = ref(false)
 
 const canDeleteLast = computed(() => {
   if (props.selectedNodeType === 'select_range' || props.selectedNodeType === 'rope') return false
@@ -293,61 +266,28 @@ const canDeleteLast = computed(() => {
   return list.length > 0 || props.canGoParent
 })
 
-function syncHistoryFlags() {
-  canUndo.value = editHistory.canUndo()
-  canRedo.value = editHistory.canRedo()
+function shouldReplaceWholeRowOnDraftSync(patternList) {
+  const list = Array.isArray(patternList) ? patternList : []
+  const pathLen = Array.isArray(props.selectionPath) ? props.selectionPath.length : 0
+  return (
+    list.length > 1 &&
+    props.selectedNodeType === 'stitch' &&
+    pathLen === 1 &&
+    !props.virtualWholeRow
+  )
 }
 
-function captureHistoryState() {
-  return {
-    pendingPattern: pendingPattern.value,
-    pendingStitchId: pendingStitchId.value,
-    pendingPosition: pendingPosition.value,
-    pendingReplaceNode: pendingReplaceNode.value,
-    countDirty: countDirty.value,
-    rowCopyCount: displayCount.value,
-    stitchEditTab: stitchEditTab.value
-  }
-}
-
-function pushHistorySnapshot() {
-  if (suppressHistoryPush.value) return
-  editHistory.pushUndo(captureHistoryState())
-  syncHistoryFlags()
-}
-
-function applyHistorySnapshot(snap) {
-  if (!snap) return
-
-  suppressDraftEmit.value = true
-  suppressHistoryPush.value = true
-
-  pendingPattern.value = Array.isArray(snap.pendingPattern)
-    ? JSON.parse(JSON.stringify(snap.pendingPattern))
+function emitDraftPatternChange(pattern) {
+  const list = Array.isArray(pattern)
+    ? JSON.parse(JSON.stringify(pattern))
     : []
-  pendingStitchId.value = snap.pendingStitchId ?? null
-  pendingPosition.value = String(snap.pendingPosition ?? '')
-  pendingReplaceNode.value = snap.pendingReplaceNode
-    ? JSON.parse(JSON.stringify(snap.pendingReplaceNode))
-    : null
-  countDirty.value = Boolean(snap.countDirty)
-  stitchEditTab.value = snap.stitchEditTab === 'add' ? 'add' : 'change'
 
-  if (snap.countDirty) {
-    emit('row-copy-count-change', { count: Math.max(1, Number(snap.rowCopyCount) || 1) })
+  if (shouldReplaceWholeRowOnDraftSync(list)) {
+    emit('draft-pattern-change', { list, replaceWholeRow: true })
+    return
   }
 
-  draftTouched.value = true
-  nextTick(() => {
-    suppressDraftEmit.value = false
-    suppressHistoryPush.value = false
-    emit('draft-pattern-change', pendingPattern.value)
-  })
-}
-
-function clearEditHistory() {
-  editHistory.clear()
-  syncHistoryFlags()
+  emit('draft-pattern-change', list)
 }
 
 const countContext = (pendingPattern) => ({
@@ -393,7 +333,6 @@ watch(
     pendingPosition.value = ''
     pendingReplaceNode.value = null
     stitchEditTab.value = props.selectedNodeType === 'bundle' ? 'add' : 'change'
-    clearEditHistory()
   },
   { deep: true }
 )
@@ -406,7 +345,6 @@ watch(() => props.currentPattern, (newPattern) => {
   pendingReplaceNode.value = null
   stitchEditTab.value = props.selectedNodeType === 'bundle' ? 'add' : 'change'
   resetCountDirty()
-  clearEditHistory()
   nextTick(() => {
     suppressDraftEmit.value = false
   })
@@ -414,10 +352,10 @@ watch(() => props.currentPattern, (newPattern) => {
 
 watch(
   () => pendingPattern.value,
-  (next) => {
+  () => {
     if (suppressDraftEmit.value) return
     draftTouched.value = true
-    emit('draft-pattern-change', Array.isArray(next) ? next : [])
+    emitDraftPatternChange(pendingPattern.value)
   },
   { deep: true }
 )
@@ -426,27 +364,12 @@ const handleUpdateCount = (newCount) => {
   const nextCount = Math.max(1, Number(newCount) || 1)
   if (nextCount === baseDisplayCount.value) return
 
-  pushHistorySnapshot()
   countDirty.value = true
   emit('row-copy-count-change', { count: nextCount })
 }
 
-const handleUndo = () => {
-  const snap = editHistory.undo(captureHistoryState())
-  applyHistorySnapshot(snap)
-  syncHistoryFlags()
-}
-
-const handleRedo = () => {
-  const snap = editHistory.redo(captureHistoryState())
-  applyHistorySnapshot(snap)
-  syncHistoryFlags()
-}
-
 const handleDeleteLast = () => {
   if (!canDeleteLast.value) return
-
-  pushHistorySnapshot()
 
   const { nextList, becameEmpty } = removeLastPatternNode(pendingPattern.value)
 
@@ -471,8 +394,6 @@ const handleDeleteLast = () => {
 }
 
 const handleAddCrochet = (payload) => {
-  pushHistorySnapshot()
-
   const stitchId = typeof payload === 'number'
     ? payload
     : (payload?.stitchId ?? payload?.stitch_id)
@@ -565,8 +486,6 @@ const handlePositionChange = (pos) => {
   if (!supportsPosition.value) return
   if (!isStitchSelected.value) return
 
-  pushHistorySnapshot()
-
   const info = getFirstSelectedStitchInfo(pendingPattern.value)
   if (!info) return
 
@@ -606,14 +525,12 @@ const handlePositionChange = (pos) => {
 const handleAddBundle = (bundle) => {
   if (!isPatternSelected.value) return
   if (!bundle || bundle.type !== 'bundle') return
-  pushHistorySnapshot()
   pendingPattern.value = [...pendingPattern.value, bundle]
 }
 
 const handleAddRope = (rope) => {
   if (!isPatternSelected.value) return
   if (!rope || rope.type !== 'rope') return
-  pushHistorySnapshot()
   pendingPattern.value = [...pendingPattern.value, rope]
 }
 
@@ -667,7 +584,6 @@ const handleCancel = async ({ close = true, skipConfirm = false } = {}) => {
   pendingReplaceNode.value = null
   stitchEditTab.value = 'change'
   pendingPattern.value = props.currentPattern ? [...props.currentPattern] : []
-  clearEditHistory()
   nextTick(() => {
     suppressDraftEmit.value = false
   })
@@ -711,22 +627,10 @@ defineExpose({
   flex: none;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   width: 100%;
-  gap: 0.5rem;
   padding: 0.25rem 0;
   margin-top: 0.25rem;
-}
-
-.edit-crochet__actions-start,
-.edit-crochet__actions-end {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.edit-crochet__actions-end {
-  margin-left: auto;
 }
 
 .edit-columns {

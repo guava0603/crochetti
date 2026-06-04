@@ -7,10 +7,14 @@ import {
   stitchSequenceNumber
 } from '@/utils/componentCardStitch'
 
+function readSource(source) {
+  return typeof source === 'function' ? source() : unref(source)
+}
+
 export function useStitchRelatedComponents(componentSource, componentListSource, componentIndexSource) {
-  const component = computed(() => unref(componentSource))
-  const componentList = computed(() => unref(componentListSource))
-  const componentIndex = computed(() => unref(componentIndexSource))
+  const component = computed(() => readSource(componentSource))
+  const componentList = computed(() => readSource(componentListSource))
+  const componentIndex = computed(() => readSource(componentIndexSource))
 
   function syncFields() {
     ensureStitchComponentFields(component.value)
@@ -19,11 +23,11 @@ export function useStitchRelatedComponents(componentSource, componentListSource,
   watch(component, syncFields, { immediate: true, deep: true })
 
   const stitchOrderN = computed(() =>
-    stitchSequenceNumber(componentList.value, componentIndex.value)
+    stitchSequenceNumber(componentList.value, componentIndex.value, component.value)
   )
 
   const relatedComponentOptions = computed(() =>
-    buildRelatedComponentOptions(componentList.value, componentIndex.value)
+    buildRelatedComponentOptions(componentList.value, componentIndex.value, component.value)
   )
 
   const relatedComponentNames = computed(() =>

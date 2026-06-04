@@ -1,8 +1,9 @@
 <template>
-  <ModalPromptShell
+  <ModalShell
     :show="true"
     :title="displayTitle"
     max-width="400px"
+    z-level="top"
     :close-on-overlay="false"
     show-save-footer
     :saving="isAddStatusSaving"
@@ -11,40 +12,39 @@
     @save="handleSave"
   >
     <div v-if="!isAdding" class="status-select-wrap">
-        <SelectionInput
-          v-model="statusIdProxy"
-          :options="editStatusOptions"
-          :placeholder="t('statusModal.selectCategoryPlaceholder')"
+      <SelectionInput
+        v-model="statusIdProxy"
+        :options="editStatusOptions"
+        :placeholder="t('statusModal.selectCategoryPlaceholder')"
+      />
+    </div>
+
+    <div v-else class="add-custom-status-section">
+      <SelectionInput
+        id="custom-status-input"
+        v-model="addModePickProxy"
+        :options="addCustomStatusOptions"
+        :placeholder="t('statusModal.selectCategoryPlaceholder')"
+      />
+      <TextInput
+        v-if="isCreatingNewCategory"
+        v-model="customStatusDraft"
+        class="status-input--new"
+        :placeholder="t('statusModal.newCategoryPlaceholder')"
+      />
+    </div>
+
+    <div v-if="isNumericStatusId" class="status-note">
+      <label class="status-note-label">{{ t('common.notes') }}</label>
+      <div class="status-note-controls">
+        <SelectionInputCombineList
+          v-model="noteDraft"
+          :suggestions="noteSuggestions"
+          :placeholder="t('statusModal.notePlaceholder')"
         />
       </div>
-
-      <div v-else class="add-custom-status-section">
-        <SelectionInput
-          id="custom-status-input"
-          v-model="addModePickProxy"
-          :options="addCustomStatusOptions"
-          :placeholder="t('statusModal.selectCategoryPlaceholder')"
-        />
-        <input
-          v-if="isCreatingNewCategory"
-          v-model="customStatusDraft"
-          class="status-input status-input--new"
-          :placeholder="t('statusModal.newCategoryPlaceholder')"
-        />
-      </div>
-
-      <div v-if="isNumericStatusId" class="status-note">
-        <label class="status-note-label">{{ t('common.notes') }}</label>
-        <div class="status-note-controls">
-          <SelectionInputCombineList
-            v-model="noteDraft"
-            :suggestions="noteSuggestions"
-            :placeholder="t('statusModal.notePlaceholder')"
-          />
-        </div>
-      </div>
-
-  </ModalPromptShell>
+    </div>
+  </ModalShell>
 </template>
 
 <script setup>
@@ -52,7 +52,8 @@ import { computed, ref, toRefs, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SelectionInput from '@/components/shared/selection/SelectionInput.vue'
 import SelectionInputCombineList from '@/components/shared/inputs/SelectionInputCombineList.vue'
-import ModalPromptShell from '@/components/modals/shell/ModalShell/ModalPromptShell.vue'
+import ModalShell from '@/components/modals/shell/ModalShell/ModalShell.vue'
+import TextInput from '@/components/shared/inputs/TextInput.vue'
 import { getNoteSuggestionsForStatus } from '@/utils/recordStatusCatalog'
 
 const CREATE_NEW_STATUS_VALUE = '__new__'
@@ -316,7 +317,7 @@ const handleSaveNote = () => {
 
 .status-note {
   margin-top: 0.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -333,19 +334,6 @@ const handleSaveNote = () => {
   grid-template-columns: 1fr;
   gap: 0.5rem;
   align-items: center;
-}
-
-.status-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 1rem;
-}
-.status-input:focus {
-  outline: none;
-  border-color: var(--color-icon-add);
-  box-shadow: 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.1);
 }
 
 .status-input--new {

@@ -1,13 +1,13 @@
 <template>
-  <ModalPromptShell
+  <ModalShell
     :show="show"
     :title="title"
-    :message="message"
     max-width="500px"
-    padding="lg"
-    title-size="lg"
+    z-level="high"
     @close="$emit('cancel')"
   >
+    <p v-if="message" class="modal-hint">{{ message }}</p>
+
     <div v-if="existingRecords.length > 1" class="modal-form-group">
       <label :for="recordInputId">{{ t('recordSelection.selectToResume') }}</label>
       <SelectionInputCombineList
@@ -20,27 +20,31 @@
     </div>
 
     <template #footer>
-      <button type="button" class="modal-btn-cancel" @click="$emit('cancel')">
-        {{ t('common.cancel') }}
-      </button>
-      <button
-        v-if="showResumeButton"
-        type="button"
-        class="modal-btn-resume"
-        @click="$emit('resume', selectedRecordIndex)"
-      >
-        {{ t('project.resume') }}
-      </button>
-      <button
-        v-if="showStartButton"
-        type="button"
-        class="modal-btn-confirm"
-        @click="$emit('start-new')"
-      >
-        {{ startNewText }}
-      </button>
+      <div class="modal-actions-split">
+        <button type="button" class="modal-btn-cancel" @click="$emit('cancel')">
+          {{ t('common.cancel') }}
+        </button>
+        <div class="modal-actions-split__end">
+          <button
+            v-if="showResumeButton"
+            type="button"
+            class="modal-btn-resume"
+            @click="$emit('resume', selectedRecordIndex)"
+          >
+            {{ t('project.resume') }}
+          </button>
+          <button
+            v-if="showStartButton"
+            type="button"
+            class="modal-btn-confirm"
+            @click="$emit('start-new')"
+          >
+            {{ startNewText }}
+          </button>
+        </div>
+      </div>
     </template>
-  </ModalPromptShell>
+  </ModalShell>
 </template>
 
 <script setup>
@@ -48,7 +52,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { formatDateTimeNoSeconds } from '@/utils/dateTime'
 import SelectionInputCombineList from '@/components/shared/inputs/SelectionInputCombineList.vue'
-import ModalPromptShell from '@/components/modals/shell/ModalShell/ModalPromptShell.vue'
+import ModalShell from '@/components/modals/shell/ModalShell/ModalShell.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 

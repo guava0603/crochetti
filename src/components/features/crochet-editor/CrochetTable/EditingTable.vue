@@ -677,6 +677,7 @@ const handleDraftPatternChange = (payload) => {
 	const nextInnerList = Array.isArray(payload) ? payload : payload?.list
 	const countOverride = Array.isArray(payload) ? null : payload?.count
 	const selectRootPattern = !Array.isArray(payload) && Boolean(payload?.selectRootPattern)
+	const replaceWholeRow = !Array.isArray(payload) && Boolean(payload?.replaceWholeRow)
 	if (!Array.isArray(nextInnerList)) return
 
 	const rowIndex = editingRowIndex.value
@@ -685,7 +686,9 @@ const handleDraftPatternChange = (payload) => {
 			? draftRootStitchNodeList.value
 			: getActiveRowRootListForSelection()
 
-	let nextRoot = buildDraftRootList(baseRoot, activeSelectionList.value, nextInnerList, countOverride)
+	let nextRoot = replaceWholeRow
+		? JSON.parse(JSON.stringify(nextInnerList))
+		: buildDraftRootList(baseRoot, activeSelectionList.value, nextInnerList, countOverride)
 
 	// Virtual whole-row editing: reflect count immediately by drafting a root pattern node.
 	// buildDraftRootList() intentionally treats empty selection as "replace whole row list"; we override

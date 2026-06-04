@@ -71,6 +71,9 @@ function applyRouteBannerDefaults(r) {
 
   // Banner is always visible; routes only define its *type* (title/overlay/transparent).
   appBanner.setBanner({ visible: true, variant, title, overlay, transparent })
+  // #region agent log
+  fetch('http://127.0.0.1:7900/ingest/ac6ceb27-9395-4309-8246-f894ce8ce241',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7f2bc0'},body:JSON.stringify({sessionId:'7f2bc0',location:'TopBanner.vue:applyRouteBannerDefaults',message:'route banner defaults applied',data:{path:r?.fullPath||r?.path,variant,overlay,transparent,metaVariant:meta.bannerVariant},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+  // #endregion
   // Never carry back handlers across routes.
   appBanner.resetHandlers()
 }
@@ -151,58 +154,6 @@ async function handleBannerBack() {
 .app-banner--glass :deep(.top-banner__placeholder) {
   width: 60px;
   height: 60px;
-}
-
-/* Glass button styling (ProjectView only) */
-.app-banner--glass :deep(.btn-back),
-.app-banner--glass :deep(.more-menu__button) {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.8rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--glass-border);
-  outline: none;
-  -webkit-tap-highlight-color: transparent;
-
-  /* Frosted glass */
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-
-  /* Float above image */
-  box-shadow: 0 0.5rem 2rem 0 rgba(31, 38, 135, 0.15);
-
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* SVG stroke/fill color */
-  color: var(--color-icon-base);
-}
-
-.app-banner--glass :deep(.btn-back .thin-icon-button__icon),
-.app-banner--glass :deep(.more-menu__button .thin-icon-button__icon) {
-  width: 1.5rem;
-  height: 1.5rem;
-  filter: drop-shadow(0 0.125rem 0.25rem rgba(0, 0, 0, 0.1));
-}
-
-.app-banner--glass :deep(.btn-back:hover),
-.app-banner--glass :deep(.more-menu__button:hover) {
-  background: rgba(255, 255, 255, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.app-banner--glass :deep(.btn-back:active),
-.app-banner--glass :deep(.more-menu__button:active) {
-  background: var(--glass-active);
-  transform: scale(0.95) translateY(0.125rem);
-  box-shadow:
-    inset 0.25rem 0.25rem 0.5rem rgba(0, 0, 0, 0.1),
-    inset -0.125rem -0.125rem 0.375rem rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(1rem);
-  -webkit-backdrop-filter: blur(1rem);
 }
 
 .app-banner :deep(.top-banner),

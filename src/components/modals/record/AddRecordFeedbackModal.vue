@@ -41,10 +41,6 @@
                     use-parent-grid
                   />
                 </div>
-
-                <div v-if="keptImageUrls.length === 0 && newImageFiles.length === 0" class="existing-images__empty">
-                  {{ t('recordResult.noImagesYet') }}
-                </div>
               </div>
 
               <div v-if="remainingSlots <= 0" class="new-images__hint">
@@ -54,14 +50,13 @@
 
     <div class="modal-field">
       <label class="modal-label" for="record-thought">{{ t('recordResult.thoughtLabel') }}</label>
-              <LimitedTextArea
-                id="record-thought"
-                v-model="draftThought"
-                class="textarea"
-                :disabled="saving"
-                :placeholder="t('recordResult.thoughtPlaceholder')"
-                :rows="4"
-              />
+      <LimitedTextArea
+        id="record-thought"
+        v-model="draftThought"
+        :disabled="saving"
+        :placeholder="t('recordResult.thoughtPlaceholder')"
+        :rows="4"
+      />
     </div>
   </ModalShell>
 </template>
@@ -132,16 +127,6 @@ function handleSave() {
 </script>
 
 <style scoped>
-.textarea {
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  background: #fff;
-  border-radius: 10px;
-  padding: 0.6rem 0.75rem;
-  font-weight: 600;
-  color: #111827;
-  resize: vertical;
-}
-
 .existing-images__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -154,12 +139,6 @@ function handleSave() {
   aspect-ratio: 1 / 1;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
-}
-
-.existing-images__empty {
-  color: #6b7280;
-  font-weight: 600;
-  padding: 0.5rem 0;
 }
 
 .new-images__hint {

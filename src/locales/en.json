@@ -721,6 +721,10 @@
       "row": "Row",
       "crochet": "Stitch"
     },
+    "crochetScrollbar": {
+      "expand": "Expand toolbar",
+      "collapse": "Collapse toolbar"
+    },
     "editGroupRow": {
       "rangeLabel": "Rows {start} - {end}",
       "repeatCount": "Group repeat",
@@ -741,8 +745,6 @@
       "addStitch": "Add stitch",
       "changeStitch": "Change stitch",
       "actionsAria": "Pattern edit actions",
-      "undo": "Undo",
-      "redo": "Redo",
       "deleteLast": "Delete last stitch",
       "tabs": {
         "addToBundle": "Add"
@@ -1086,10 +1088,11 @@
       "searchUser": "Search user"
     },
     "moreMenu": {
-      "copyUserId": "Copy user ID",
-      "userIdCopied": "User ID copied",
-      "copyUserIdPrompt": "Copy this user ID:",
-      "copyUserIdFailed": "Failed to copy user ID. Please try again.",
+      "copyFriendCode": "Copy friend code",
+      "friendCodeCopied": "Friend code copied.",
+      "copyFriendCodePrompt": "Copy friend code:",
+      "copyFriendCodeFailed": "Failed to copy friend code. Please try again.",
+      "friendCodeUnavailable": "Friend code is not ready yet. Please try again in a moment.",
       "systemSettings": "System settings"
     },
     "systemSettings": {
@@ -1109,12 +1112,11 @@
     },
     "searchUser": {
       "title": "Find a user",
-      "message": "Enter a user ID or friend code to open their profile.",
-      "userIdLabel": "User ID / Friend code",
-      "userIdPlaceholder": "e.g. abc123... or ABC123",
+      "message": "Enter a user code to open their profile.",
+      "userIdLabel": "User code",
       "errors": {
-        "userIdRequired": "Please enter a user ID or friend code.",
-        "friendCodeNotFound": "No user found for that friend code.",
+        "userIdRequired": "Please enter a user code.",
+        "friendCodeNotFound": "No user found for that user code.",
         "searchFailed": "Search failed. Please try again."
       }
     },
@@ -1127,6 +1129,7 @@
         "quickAddProject": "Quick add a project (all {stitch})"
       },
       "selectProjectLabel": "Project",
+      "selectProjectFilterAria": "Filter projects",
       "untitledProject": "Untitled project",
       "noProjects": "No projects yet.",
       "startRecord": "Start recording",
@@ -1176,18 +1179,7 @@
       "avatarUploadFailed": "Failed to upload avatar. Please try again.",
       "privacyLabel": "Privacy",
       "privacyPublic": "Public",
-      "privacyPrivate": "Private",
-      "friendCodeLabel": "Friend code",
-      "friendCodeHint": "Share this code so others can find you.",
-      "friendCodeUnavailable": "Not available yet.",
-      "friendCodeCopyPrompt": "Copy friend code:",
-      "friendCodeCopied": "Friend code copied.",
-      "friendCodeCopyFailed": "Failed to copy friend code.",
-      "friendCodeRegenerate": "Regenerate",
-      "friendCodeRegenerateConfirmTitle": "Regenerate friend code?",
-      "friendCodeRegenerateConfirmMessage": "Your old friend code will stop working. Anyone using it won't be able to find you.",
-      "friendCodeRegenerateFailed": "Failed to regenerate friend code. Please try again.",
-      "friendCodeRegenerated": "New friend code created."
+      "privacyPrivate": "Private"
     },
     "privacy": {
       "privateNotice": "This account is private."

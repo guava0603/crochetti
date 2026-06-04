@@ -1,12 +1,12 @@
 <template>
-  <div class="text-count text-count--multiline" :class="wrapperClass">
-    <textarea
-      ref="textareaRef"
-      v-bind="textareaAttrs"
+  <div class="text-count text-count--single-line" :class="wrapperClass">
+    <input
+      ref="inputRef"
+      v-bind="inputAttrs"
       :class="controlClasses"
       :value="modelValue"
+      :type="type"
       :placeholder="placeholder"
-      :rows="rows"
       :disabled="disabled"
       @input="handleInput"
       @blur="$emit('blur', $event)"
@@ -25,11 +25,11 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref, toRefs, useAttrs, watch } from 'vue'
+import { computed, ref, toRefs, useAttrs } from 'vue'
 import { useTextCount } from '@/composables/useTextCount'
 
 defineOptions({
-  name: 'LimitedTextArea',
+  name: 'TextInput',
   inheritAttrs: false
 })
 
@@ -37,6 +37,18 @@ const props = defineProps({
   modelValue: {
     type: String,
     default: ''
+  },
+  type: {
+    type: String,
+    default: 'text'
+  },
+  placeholder: {
+    type: String,
+    default: ''
+  },
+  disabled: {
+    type: Boolean,
+    default: false
   },
   limit: {
     type: Number,
@@ -47,22 +59,6 @@ const props = defineProps({
     default: 'wordsLike',
     validator: (v) => ['wordsLike', 'chars'].includes(v)
   },
-  placeholder: {
-    type: String,
-    default: ''
-  },
-  rows: {
-    type: [Number, String],
-    default: 3
-  },
-  autosize: {
-    type: Boolean,
-    default: true
-  },
-  disabled: {
-    type: Boolean,
-    default: false
-  },
   controlClass: {
     type: String,
     default: ''
@@ -72,7 +68,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'blur', 'focus'])
 
 const attrs = useAttrs()
-const textareaRef = ref(null)
+const inputRef = ref(null)
 
 const { limit, countMode } = toRefs(props)
 const { count, showCounter, isOverLimit } = useTextCount(
@@ -80,7 +76,7 @@ const { count, showCounter, isOverLimit } = useTextCount(
   () => ({ limit: limit.value, countMode: countMode.value })
 )
 
-const textareaAttrs = computed(() => {
+const inputAttrs = computed(() => {
   const out = { ...attrs }
   delete out.class
   return out
@@ -94,50 +90,13 @@ const controlClasses = computed(() => {
   return ['text-input__control', extra, withCounter].filter(Boolean)
 })
 
-function resizeToContent(el) {
-  if (!props.autosize) return
-  const target = el || textareaRef.value
-  if (!target) return
-
-  target.style.height = 'auto'
-  target.style.height = `${target.scrollHeight}px`
-}
-
 function handleInput(e) {
-  const next = e?.target?.value ?? ''
-  emit('update:modelValue', next)
-  resizeToContent(e?.target)
+  emit('update:modelValue', e?.target?.value ?? '')
 }
 
-onMounted(() => {
-  void nextTick(() => resizeToContent())
-})
+function focus() {
+  inputRef.value?.focus?.()
+}
 
-watch(
-  () => props.modelValue,
-  () => {
-    void nextTick(() => resizeToContent())
-  }
-)
-
-watch(
-  () => props.rows,
-  () => {
-    void nextTick(() => resizeToContent())
-  }
-)
-
-defineExpose({ textareaRef, count, isOverLimit, showCounter })
+defineExpose({ focus, inputRef, count, isOverLimit, showCounter })
 </script>
-
-<style scoped>
-.text-count--multiline {
-  width: 100%;
-}
-
-.text-count--multiline :deep(textarea.text-input__control) {
-  resize: none;
-  overflow: hidden;
-  line-height: 1.5;
-}
-</style>

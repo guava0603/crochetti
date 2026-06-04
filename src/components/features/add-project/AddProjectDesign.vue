@@ -21,6 +21,7 @@
         <CarouselWithDot
           ref="carouselEl"
           :items="projectData.component_list"
+          :item-key="(item) => item?.id"
           :aria-label="$t('addProject.design.componentsAria')"
           :get-dot-variant="(item) => (item?.type === 'stitch' ? 'outline' : 'solid')"
           fit-height-to-active-item
@@ -89,6 +90,7 @@ import {
   isStitchType,
   normalizeComponentType
 } from '@/utils/componentTypes'
+import { ensureComponentNotesArray } from '@/utils/componentCardNotes'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -233,11 +235,7 @@ function ensureComponentIdsAndStitchFieldsInPlace(componentList) {
 
     if (c.type === 'stitch') {
       if (!Array.isArray(c.related_component_ids)) c.related_component_ids = []
-
-      if (!Array.isArray(c.notes)) c.notes = []
-      c.notes = c.notes
-        .filter((n) => n != null)
-        .map((n) => (typeof n === 'string' ? n : String(n?.description ?? '')))
+      ensureComponentNotesArray(c)
     }
   }
 }

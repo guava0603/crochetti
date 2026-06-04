@@ -9,7 +9,7 @@
       class="more-menu__button"
       src="082__setting_cog"
       size="l"
-      background="transparent"
+      :background="resolvedBackground"
       :disabled="disabled"
       :aria-expanded="open"
       aria-haspopup="menu"
@@ -82,9 +82,14 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import ThinIconButton from '@/components/shared/buttons/ThinIconButton.vue'
+import { useBannerThinIconBackground } from '@/composables/appBanner'
 import { resolveSettingsIconUrl } from '@/utils/settingsIcon'
 
 const props = defineProps({
+  background: {
+    type: String,
+    default: ''
+  },
   disabled: { type: Boolean, default: false },
   type: {
     type: String,
@@ -103,6 +108,8 @@ const props = defineProps({
 })
 
 const type = computed(() => props.type)
+
+const resolvedBackground = useBannerThinIconBackground(() => props.background)
 
 const emit = defineEmits(['select'])
 

@@ -16,7 +16,7 @@
       <ThinIconButton
         class="translate-toggle__trigger"
         src="064__telephone directory"
-        size="m"
+        size="s"
         background="transparent"
         :class="{ 'is-disabled': disabled }"
         :disabled="disabled"

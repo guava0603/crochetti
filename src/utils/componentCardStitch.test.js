@@ -3,6 +3,7 @@ import {
   buildRelatedComponentOptions,
   filterRelatedComponentIds,
   relatedComponentDisplayNames,
+  resolveComponentIndexInList,
   stitchSequenceNumber
 } from './componentCardStitch'
 
@@ -34,6 +35,28 @@ describe('componentCardStitch', () => {
   it('buildRelatedComponentOptions returns no options for the first component', () => {
     const list = [{ type: 'stitch', id: 's1', name: 'Seam' }]
     expect(buildRelatedComponentOptions(list, 0)).toEqual([])
+  })
+
+  it('buildRelatedComponentOptions resolves index from component when explicit index is -1', () => {
+    const list = [
+      { type: 'component-crochet', id: 'a', name: 'A' },
+      { type: 'component-crochet', id: 'b', name: 'B' },
+      { type: 'stitch', id: 's1', name: 'Seam' }
+    ]
+    const stitch = list[2]
+    expect(buildRelatedComponentOptions(list, -1, stitch)).toEqual([
+      { value: 'a', label: 'A' },
+      { value: 'b', label: 'B' }
+    ])
+  })
+
+  it('resolveComponentIndexInList prefers id match over stale explicit index', () => {
+    const list = [
+      { type: 'component-crochet', id: 'a', name: 'A' },
+      { type: 'stitch', id: 's1', name: 'Seam' }
+    ]
+    const stitch = list[1]
+    expect(resolveComponentIndexInList(list, stitch, 0)).toBe(1)
   })
 
   it('filterRelatedComponentIds drops ids not in allowed set', () => {

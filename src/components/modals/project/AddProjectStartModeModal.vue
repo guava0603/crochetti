@@ -51,7 +51,14 @@
 
     <template v-else>
       <p class="copy-hint">{{ pickerHintText }}</p>
-      <div class="copy-picker">
+      <SelectableScrollList
+        v-if="mode === 'draft' && draftPickerItems.length"
+        v-model="selectedDraftId"
+        :options="draftPickerItems"
+        :disabled="loading"
+        :aria-label="t('addProject.draft.hint')"
+      />
+      <div v-else class="copy-picker">
         <SelectionInputCombineList
           v-model="selectedProjectText"
           :disabled="loading || projectSuggestions.length === 0"
@@ -70,6 +77,7 @@ import { useI18n } from 'vue-i18n'
 import { auth } from '@/firebaseConfig'
 import ModalShell from '@/components/modals/shell/ModalShell/ModalShell.vue'
 import SelectionInputCombineList from '@/components/shared/inputs/SelectionInputCombineList.vue'
+import SelectableScrollList from '@/components/shared/selection/SelectableScrollList.vue'
 import { fetchProjectSummariesByIds, fetchUserDraftSummaries } from '@/services/firestore/projects'
 import { fetchUserProfile, fetchUserProjectSummaries, fetchUsers } from '@/services/firestore/user'
 import { filterNonDraftProjects } from '@/utils/projectDraft'
@@ -92,6 +100,7 @@ const step = ref(1)
 const mode = ref('new') // 'new' | 'copy' | 'draft'
 
 const selectedProjectText = ref('')
+const selectedDraftId = ref('')
 const createdProjectSummaries = ref([])
 const savedProjectSummaries = ref([])
 const draftProjectSummaries = ref([])
@@ -112,12 +121,14 @@ function handleCancel() {
   step.value = 1
   mode.value = 'new'
   selectedProjectText.value = ''
+  selectedDraftId.value = ''
   emit('cancel')
 }
 
 function handleBack() {
   step.value = 1
   selectedProjectText.value = ''
+  selectedDraftId.value = ''
 }
 
 const combinedProjectSummaries = computed(() => {
@@ -172,6 +183,22 @@ function labelForSummary(p) {
   return { label: `[自創] ${name}`, id }
 }
 
+const draftPickerItems = computed(() => {
+  const list = Array.isArray(draftProjectSummaries.value) ? draftProjectSummaries.value : []
+  const raw = list
+    .map((p) => labelForSummary({ ...p, __kind: 'draft' }))
+    .filter(Boolean)
+
+  const used = new Map()
+  return raw.map((item) => {
+    const base = String(item.label || '').trim()
+    const count = (used.get(base) || 0) + 1
+    used.set(base, count)
+    const label = count === 1 ? base : `${base} ·${count}`
+    return { id: String(item.id || '').trim(), label }
+  }).filter((item) => item.id && item.label)
+})
+
 const projectSuggestions = computed(() => {
   const list = Array.isArray(combinedProjectSummaries.value) ? combinedProjectSummaries.value : []
   const raw = list.map(labelForSummary).filter(Boolean)
@@ -211,6 +238,9 @@ const selectedProjectId = computed(() => {
 
 const saveDisabled = computed(() => {
   if (step.value === 1) return !mode.value
+  if (mode.value === 'draft') {
+    return !String(selectedDraftId.value || '').trim() || loading.value
+  }
   return !selectedProjectId.value || loading.value
 })
 
@@ -225,12 +255,14 @@ function handleNext() {
 
 function handleConfirm() {
   if (step.value !== 2) return
-  const id = String(selectedProjectId.value || '').trim()
-  if (!id) return
   if (mode.value === 'draft') {
+    const id = String(selectedDraftId.value || '').trim()
+    if (!id) return
     emit('draft', id)
     return
   }
+  const id = String(selectedProjectId.value || '').trim()
+  if (!id) return
   emit('copy', id)
 }
 
@@ -301,6 +333,7 @@ watch(
   () => mode.value,
   () => {
     selectedProjectText.value = ''
+    selectedDraftId.value = ''
   }
 )
 

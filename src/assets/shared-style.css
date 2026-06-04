@@ -82,3 +82,93 @@
   width: 0;
   height: 0;
 }
+
+/* Scrollable list container: hidden scrollbar, configurable min-height (--scroll-list-max-height). */
+.scroll-list {
+  max-height: var(--scroll-list-max-height, 25vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scroll-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* TextInput, LimitedTextArea, + project wizard native fields. */
+.text-input__control,
+.project-wizard-layout input[type='text'],
+.project-wizard-layout input[type='number'],
+textarea.text-input__control,
+.project-wizard-layout textarea.text-input__control {
+  display: block;
+  width: 100%;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border-edit-project, var(--color-border));
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--color-font-dark);
+}
+
+.text-input__control:focus,
+.project-wizard-layout input[type='text']:focus,
+.project-wizard-layout input[type='number']:focus,
+textarea.text-input__control:focus,
+.project-wizard-layout textarea.text-input__control:focus {
+  outline: none;
+  border-color: var(--color-icon-add);
+  box-shadow: 0 0 0 3px rgb(var(--color-icon-add-rgb) / 0.18);
+}
+
+.text-input__control:disabled,
+.project-wizard-layout input[type='text']:disabled,
+.project-wizard-layout input[type='number']:disabled,
+textarea.text-input__control:disabled,
+.project-wizard-layout textarea.text-input__control:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Shared character/word counter (TextInput, LimitedTextArea). */
+.text-count {
+  position: relative;
+  width: 100%;
+}
+
+.text-count__control--with-counter {
+  padding-right: 3.75rem;
+}
+
+.text-count__counter {
+  position: absolute;
+  right: 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-font-invisible);
+  opacity: 0.85;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.text-count__counter--error {
+  color: #b91c1c;
+  opacity: 0.95;
+}
+
+.text-count--multiline .text-count__counter {
+  bottom: 0.6rem;
+}
+
+.text-count--single-line .text-count__counter {
+  top: 50%;
+  transform: translateY(-50%);
+}

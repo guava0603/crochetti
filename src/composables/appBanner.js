@@ -1,4 +1,4 @@
-import { inject, provide, reactive, readonly } from 'vue'
+import { computed, inject, provide, reactive, readonly, toValue } from 'vue'
 
 const APP_BANNER_KEY = Symbol('APP_BANNER')
 
@@ -53,4 +53,26 @@ export function provideAppBanner() {
 
 export function useAppBanner() {
   return inject(APP_BANNER_KEY, null)
+}
+
+/**
+ * ThinIconButton background for banner controls (back, more menu).
+ * Reads global banner variant so teleported menus still get glass styling.
+ *
+ * @param {import('vue').MaybeRefOrGetter<string>} [explicitBackground]
+ */
+export function useBannerThinIconBackground(explicitBackground = '') {
+  const appBanner = useAppBanner()
+
+  return computed(() => {
+    const explicit = String(toValue(explicitBackground) || '').trim()
+    if (explicit) return explicit
+
+    const variant = String(appBanner?.state?.variant || 'default')
+    const resolved = variant === 'glass' ? 'glass' : 'transparent'
+    // #region agent log
+    fetch('http://127.0.0.1:7900/ingest/ac6ceb27-9395-4309-8246-f894ce8ce241',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7f2bc0'},body:JSON.stringify({sessionId:'7f2bc0',runId:'post-fix',location:'appBanner.js:useBannerThinIconBackground',message:'resolved banner icon background',data:{hasAppBanner:!!appBanner,variant,resolved,explicit},timestamp:Date.now(),hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
+    return resolved
+  })
 }

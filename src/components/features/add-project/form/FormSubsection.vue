@@ -16,15 +16,16 @@
     </FormSubsectionInputContent>
 
     <FormSubsectionInputContent v-else-if="resolvedKind === 'text'">
-      <input
+      <TextInput
         :id="forId || undefined"
+        :model-value="textValue"
         :type="inputType"
         :placeholder="resolvedPlaceholder"
-        :required="required"
         :disabled="disabled"
-        v-bind="inputAttrs"
-        :value="textValue"
-        @input="onTextInput"
+        :limit="textLimit"
+        :count-mode="textCountMode"
+        v-bind="resolvedTextInputAttrs"
+        @update:modelValue="(v) => emit('update:modelValue', v)"
       />
     </FormSubsectionInputContent>
 
@@ -35,7 +36,9 @@
         :placeholder="resolvedPlaceholder"
         :rows="rows"
         :disabled="disabled"
-        v-bind="inputAttrs"
+        :limit="textLimit"
+        :count-mode="textCountMode"
+        v-bind="resolvedTextInputAttrs"
         @update:modelValue="(v) => emit('update:modelValue', v)"
       />
     </FormSubsectionInputContent>
@@ -122,10 +125,14 @@ import { useI18n } from 'vue-i18n'
 import FormSubsectionInputContent from '@/components/features/add-project/form/FormSubsectionInputContent.vue'
 import ImageUploader from '@/components/shared/inputs/ImageUploader.vue'
 import LimitedTextArea from '@/components/shared/inputs/LimitedTextArea.vue'
+import TextInput from '@/components/shared/inputs/TextInput.vue'
 import MultipleSelectionList from '@/components/shared/selection/MultipleSelectionList.vue'
 import ImageBox from '@/components/shared/image/ImageBox.vue'
 
-defineOptions({ name: 'FormSubsection' })
+defineOptions({
+  name: 'FormSubsection',
+  components: { TextInput }
+})
 
 const props = defineProps({
   wrapperClass: { type: String, default: 'form-group' },
@@ -151,6 +158,12 @@ const props = defineProps({
   disabled: { type: Boolean, default: false },
 
   inputAttrs: { type: Object, default: () => ({}) },
+  textLimit: { type: Number, default: null },
+  textCountMode: {
+    type: String,
+    default: 'wordsLike',
+    validator: (v) => ['wordsLike', 'chars'].includes(v)
+  },
 
   // images
   existingImages: { type: Array, default: () => [] },
@@ -158,7 +171,7 @@ const props = defineProps({
 
   // notes
   notesRows: { type: Number, default: 2 },
-  notesInputClass: { type: String, default: 'list-item-input textarea-soft' },
+  notesInputClass: { type: String, default: 'list-item-input' },
 
   // multi-select
   options: { type: Array, default: () => [] },
@@ -197,9 +210,10 @@ const showHeaderComputed = computed(() => {
 
 const textValue = computed(() => String(props.modelValue ?? ''))
 
-function onTextInput(e) {
-  emit('update:modelValue', e?.target?.value ?? '')
-}
+const resolvedTextInputAttrs = computed(() => ({
+  ...(props.inputAttrs || {}),
+  ...(props.required ? { required: true } : {})
+}))
 
 const resolvedMaxImages = computed(() => {
   const n = Math.floor(Number(props.maxImages))

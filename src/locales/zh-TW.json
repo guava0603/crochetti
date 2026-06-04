@@ -721,6 +721,10 @@
       "row": "行",
       "crochet": "針法"
     },
+    "crochetScrollbar": {
+      "expand": "展開工具列",
+      "collapse": "收合工具列"
+    },
     "editGroupRow": {
       "rangeLabel": "第 {start} 行 - 第 {end} 行",
       "repeatCount": "組數",
@@ -740,8 +744,6 @@
       "addStitch": "新增針法",
       "changeStitch": "更換針法",
       "actionsAria": "編輯針目操作",
-      "undo": "復原",
-      "redo": "重做",
       "deleteLast": "刪除最後一針",
       "tabs": {
         "addToBundle": "加針"
@@ -1087,10 +1089,11 @@
       "searchUser": "搜尋使用者"
     },
     "moreMenu": {
-      "copyUserId": "複製個人ID",
-      "userIdCopied": "已複製個人ID",
-      "copyUserIdPrompt": "複製這個個人ID：",
-      "copyUserIdFailed": "複製個人ID失敗，請再試一次。",
+      "copyFriendCode": "複製好友代碼",
+      "friendCodeCopied": "已複製好友代碼。",
+      "copyFriendCodePrompt": "請複製好友代碼：",
+      "copyFriendCodeFailed": "複製好友代碼失敗，請再試一次。",
+      "friendCodeUnavailable": "好友代碼尚未準備好，請稍後再試。",
       "systemSettings": "更改系統設定"
     },
     "systemSettings": {
@@ -1110,12 +1113,11 @@
     },
     "searchUser": {
       "title": "搜尋使用者",
-      "message": "輸入使用者 ID 或好友代碼以開啟個人頁面。",
-      "userIdLabel": "使用者 ID / 好友代碼",
-      "userIdPlaceholder": "例如：abc123... 或 ABC123",
+      "message": "輸入使用者代碼以開啟個人頁面。",
+      "userIdLabel": "使用者代碼",
       "errors": {
-        "userIdRequired": "請輸入使用者 ID 或好友代碼。",
-        "friendCodeNotFound": "找不到此好友代碼對應的使用者。",
+        "userIdRequired": "請輸入使用者代碼。",
+        "friendCodeNotFound": "找不到此使用者代碼對應的使用者。",
         "searchFailed": "搜尋失敗，請稍後再試。"
       }
     },
@@ -1123,11 +1125,12 @@
       "title": "開始一筆紀錄",
       "message": "請選擇要如何開始新的作品紀錄。",
       "actions": {
-        "selectProject": "從舊設計稿開始",
+        "selectProject": "選擇已有的設計稿",
         "addProject": "新增設計稿",
         "quickAddProject": "快速開始（僅填針數與行數）"
       },
       "selectProjectLabel": "設計稿",
+      "selectProjectFilterAria": "設計稿篩選",
       "componentFallbackName": "部位 {n}",
       "untitledProject": "未命名設計稿",
       "noProjects": "目前尚無設計稿。",
@@ -1178,18 +1181,7 @@
       "avatarUploadFailed": "上傳大頭貼失敗，請再試一次。",
       "privacyLabel": "隱私設定",
       "privacyPublic": "公開",
-      "privacyPrivate": "不公開",
-      "friendCodeLabel": "好友代碼",
-      "friendCodeHint": "分享此代碼讓其他人可以找到你。",
-      "friendCodeUnavailable": "尚未產生",
-      "friendCodeCopyPrompt": "請複製好友代碼：",
-      "friendCodeCopied": "已複製好友代碼。",
-      "friendCodeCopyFailed": "複製好友代碼失敗。",
-      "friendCodeRegenerate": "重新產生",
-      "friendCodeRegenerateConfirmTitle": "重新產生好友代碼？",
-      "friendCodeRegenerateConfirmMessage": "舊的好友代碼會失效，其他人將無法再用舊代碼找到你。",
-      "friendCodeRegenerateFailed": "重新產生好友代碼失敗，請再試一次。",
-      "friendCodeRegenerated": "已產生新的好友代碼。"
+      "privacyPrivate": "不公開"
     },
     "privacy": {
       "privateNotice": "此帳號不公開"

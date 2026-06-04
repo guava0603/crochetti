@@ -19,27 +19,29 @@
         {{ cancelText }}
       </button>
 
-      <template v-if="Array.isArray(choices) && choices.length">
+      <div class="modal-prompt-actions__end">
+        <template v-if="Array.isArray(choices) && choices.length">
+          <button
+            v-for="choice in choices"
+            :key="choice?.id"
+            type="button"
+            :class="choice?.class || 'modal-btn-confirm'"
+            :disabled="loading"
+            @click="$emit('choose', choice?.id)"
+          >
+            {{ choice?.label }}
+          </button>
+        </template>
         <button
-          v-for="choice in choices"
-          :key="choice?.id"
+          v-else
           type="button"
-          :class="choice?.class || 'modal-btn-confirm'"
+          :class="confirmClass"
           :disabled="loading"
-          @click="$emit('choose', choice?.id)"
+          @click="$emit('confirm')"
         >
-          {{ choice?.label }}
+          {{ loading ? loadingText : confirmText }}
         </button>
-      </template>
-      <button
-        v-else
-        type="button"
-        :class="confirmClass"
-        :disabled="loading"
-        @click="$emit('confirm')"
-      >
-        {{ loading ? loadingText : confirmText }}
-      </button>
+      </div>
     </template>
   </ModalPromptShell>
 </template>

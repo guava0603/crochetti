@@ -108,6 +108,7 @@ import { signOut } from 'firebase/auth'
 import { openConfirmation } from '@/services/ui/confirmation'
 import { openError, openNotice } from '@/services/ui/notice'
 import { openToast } from '@/services/ui/toast'
+import { friendCodeUtils, getOrCreateCurrentUserFriendCode } from '@/services/firestore/friendCode'
 
 import { useAchievementStore } from '@/stores/achievementStore'
 import { AVATAR_IDS, avatarIdFromValue } from '@/constants/avatarPresets'
@@ -238,24 +239,51 @@ function openSystemSettings() {
   showSystemSettings.value = true
 }
 
-const handleCopyMyUserId = async () => {
-  const uid = currentUser.value?.uid
-  const id = uid != null ? String(uid).trim() : ''
-  if (!id) return
+const myFriendCode = computed(() => {
+  const raw = profile.value?.friend_code ?? profile.value?.friendCode ?? ''
+  return friendCodeUtils.normalizeCode(raw)
+})
+
+async function resolveFriendCodeForCopy() {
+  let code = myFriendCode.value
+  if (friendCodeUtils.isLikelyFriendCode(code)) return code
+
+  try {
+    const created = await getOrCreateCurrentUserFriendCode(profile.value || {})
+    code = friendCodeUtils.normalizeCode(created)
+  } catch (error) {
+    console.error('Error creating friend code:', error)
+  }
+
+  return friendCodeUtils.isLikelyFriendCode(code) ? code : ''
+}
+
+const handleCopyFriendCode = async () => {
+  if (!currentUser.value?.uid) return
+
+  const code = await resolveFriendCodeForCopy()
+  if (!code) {
+    openError({
+      title: t('common.error'),
+      message: t('user.moreMenu.friendCodeUnavailable'),
+      confirmText: t('common.ok')
+    })
+    return
+  }
 
   try {
     if (navigator.clipboard?.writeText && window.isSecureContext) {
-      await navigator.clipboard.writeText(id)
-      openToast({ message: t('user.moreMenu.userIdCopied') })
+      await navigator.clipboard.writeText(code)
+      openToast({ message: t('user.moreMenu.friendCodeCopied') })
       return
     }
 
-    window.prompt(t('user.moreMenu.copyUserIdPrompt'), id)
+    window.prompt(t('user.moreMenu.copyFriendCodePrompt'), code)
   } catch (error) {
-    console.error('Error copying user id:', error)
+    console.error('Error copying friend code:', error)
     openError({
       title: t('common.error'),
-      message: t('user.moreMenu.copyUserIdFailed'),
+      message: t('user.moreMenu.copyFriendCodeFailed'),
       confirmText: t('common.ok')
     })
   }
@@ -514,10 +542,10 @@ const settingsMenuSections = computed(() => [
         onSelect: openSystemSettings
       },
       {
-        action: 'copy-user-id',
-        label: t('user.moreMenu.copyUserId'),
+        action: 'copy-friend-code',
+        label: t('user.moreMenu.copyFriendCode'),
         iconSrc: '069__hyperlink',
-        onSelect: handleCopyMyUserId
+        onSelect: handleCopyFriendCode
       }
     ]
   },

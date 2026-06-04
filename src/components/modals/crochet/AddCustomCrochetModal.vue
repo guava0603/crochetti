@@ -12,10 +12,8 @@
     <div class="add-custom-crochet-form">
       <div class="field">
         <label>{{ t('toolbar.addCrochet.bundleWizard.nameLabel') }}</label>
-        <input
+        <TextInput
           v-model="name"
-          type="text"
-          class="input"
           :placeholder="t('toolbar.addCrochet.bundleWizard.namePlaceholder')"
         />
       </div>
@@ -24,7 +22,6 @@
         <label>{{ t('toolbar.addCrochet.bundleWizard.descriptionLabel') }}</label>
         <LimitedTextArea
           v-model="description"
-          class="textarea-soft"
           :rows="3"
           :placeholder="t('toolbar.addCrochet.bundleWizard.descriptionPlaceholder')"
         />
@@ -50,6 +47,7 @@ import { useI18n } from 'vue-i18n'
 import ModalShell from '@/components/modals/shell/ModalShell/ModalShell.vue'
 import InputNumber from '@/components/shared/inputs/InputNumber.vue'
 import LimitedTextArea from '@/components/shared/inputs/LimitedTextArea.vue'
+import TextInput from '@/components/shared/inputs/TextInput.vue'
 
 defineOptions({ name: 'AddCustomCrochetModal' })
 
@@ -118,17 +116,6 @@ function handleSave() {
   font-weight: 800;
   margin-bottom: 0.5rem;
   color: #374151;
-}
-
-.input {
-  width: 100%;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 0.75rem;
-  font-size: 0.95rem;
-  font-weight: 650;
-  color: #111827;
-  background: #fff;
 }
 
 .stats {

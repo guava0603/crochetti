@@ -4,7 +4,8 @@
     :type="rootTag === 'button' ? 'button' : undefined"
     class="thin-icon-button"
     :class="rootClasses"
-    :disabled="isDisabled"
+    :disabled="rootTag === 'button' ? isDisabled : undefined"
+    :aria-disabled="rootTag !== 'button' && isDisabled ? 'true' : undefined"
     :aria-label="ariaLabel || undefined"
     :title="title || ariaLabel || undefined"
     v-bind="extraAttrs"
@@ -22,7 +23,7 @@
 </template>
 
 <script setup>
-import { computed, useAttrs } from 'vue'
+import { computed, useAttrs, watch } from 'vue'
 import { resolveSettingsIconUrl } from '@/utils/settingsIcon'
 
 defineOptions({ inheritAttrs: false })
@@ -30,9 +31,11 @@ defineOptions({ inheritAttrs: false })
 const attrs = useAttrs()
 
 const extraAttrs = computed(() => {
-  const { class: _class, style: _style, ...rest } = attrs
+  const { class: _class, style: _style, disabled: _disabled, ...rest } = attrs
   return rest
 })
+
+const externalClass = computed(() => attrs.class)
 
 const props = defineProps({
   /** Settings icon id or path, e.g. `010__arrow_anti-clockwise` or `assets/image/settings/010__arrow_anti-clockwise.svg` */
@@ -48,12 +51,12 @@ const props = defineProps({
   size: {
     type: String,
     default: 'm',
-    validator: (v) => ['s', 'm', 'l'].includes(v)
+    validator: (v) => ['s', 'm', 'l', 'xl'].includes(v)
   },
   background: {
     type: String,
     default: 'transparent',
-    validator: (v) => ['transparent', 'soft', 'accent'].includes(v)
+    validator: (v) => ['transparent', 'soft', 'accent', 'glass'].includes(v)
   },
   round: {
     type: String,
@@ -91,14 +94,29 @@ const resolvedSrc = computed(() => resolveSettingsIconUrl(props.src || props.ico
 
 const rootTag = computed(() => (props.rootTag === 'div' ? 'div' : 'button'))
 
-const rootClasses = computed(() => ({
-  'thin-icon-button--disabled': isDisabled.value,
-  'thin-icon-button--inverted': props.invertIcon,
-  [`thin-icon-button--${props.size}`]: true,
-  [`thin-icon-button--bg-${props.background}`]: true,
-  'thin-icon-button--round-full': props.round === 'full',
-  'thin-icon-button--root-div': props.rootTag === 'div'
-}))
+const rootClasses = computed(() => [
+  externalClass.value,
+  {
+    'thin-icon-button--disabled': isDisabled.value,
+    'thin-icon-button--inverted': props.invertIcon,
+    [`thin-icon-button--${props.size}`]: true,
+    [`thin-icon-button--bg-${props.background}`]: true,
+    'thin-icon-button--round-full': props.round === 'full',
+    'thin-icon-button--root-div': props.rootTag === 'div'
+  }
+])
+
+// #region agent log
+watch(
+  () => [props.background, externalClass.value],
+  ([bg, cls]) => {
+    const clsStr = Array.isArray(cls) ? cls.join(' ') : String(cls || '')
+    if (!clsStr.includes('btn-back') && !clsStr.includes('more-menu__button')) return
+    fetch('http://127.0.0.1:7900/ingest/ac6ceb27-9395-4309-8246-f894ce8ce241',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7f2bc0'},body:JSON.stringify({sessionId:'7f2bc0',runId:'post-fix',location:'ThinIconButton.vue:watch',message:'banner thin icon button props',data:{background:bg,externalClass:clsStr,bgClass:`thin-icon-button--bg-${bg}`},timestamp:Date.now(),hypothesisId:'F'})}).catch(()=>{})
+  },
+  { immediate: true }
+)
+// #endregion
 
 function handleClick(e) {
   if (isDisabled.value) {
@@ -154,6 +172,36 @@ function handleClick(e) {
   filter: brightness(0.96);
 }
 
+.thin-icon-button--bg-glass {
+  border: 1px solid var(--glass-border);
+  outline: none;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 0.5rem 2rem 0 rgba(31, 38, 135, 0.15);
+  color: var(--color-icon-base);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.thin-icon-button--bg-glass:hover:not(.thin-icon-button--disabled) {
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.thin-icon-button--bg-glass:active:not(.thin-icon-button--disabled) {
+  background: var(--glass-active);
+  transform: scale(0.95) translateY(0.125rem);
+  box-shadow:
+    inset 0.25rem 0.25rem 0.5rem rgba(0, 0, 0, 0.1),
+    inset -0.125rem -0.125rem 0.375rem rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(1rem);
+  -webkit-backdrop-filter: blur(1rem);
+}
+
+.thin-icon-button--bg-glass .thin-icon-button__icon {
+  filter: drop-shadow(0 0.125rem 0.25rem rgba(0, 0, 0, 0.1));
+}
+
 .thin-icon-button--round-full {
   border-radius: 999px;
 }
@@ -186,14 +234,34 @@ function handleClick(e) {
   outline-offset: 0.1875rem;
 }
 
-.thin-icon-button--l.thin-icon-button--disabled,
-.thin-icon-button--l[disabled] {
+.thin-icon-button--l.thin-icon-button--disabled {
+  opacity: 0.6;
+}
+
+/* FAB-sized control (bottom-floating-right). */
+.thin-icon-button--xl {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.thin-icon-button--xl.thin-icon-button--bg-transparent:hover:not(.thin-icon-button--disabled) {
+  background: rgba(243, 244, 246, 0.8);
+}
+
+.thin-icon-button--xl:focus-visible {
+  outline-offset: 0.1875rem;
+}
+
+.thin-icon-button--xl.thin-icon-button--disabled {
   opacity: 0.6;
 }
 
 .thin-icon-button--round-full.thin-icon-button--s,
 .thin-icon-button--round-full.thin-icon-button--m,
-.thin-icon-button--round-full.thin-icon-button--l {
+.thin-icon-button--round-full.thin-icon-button--l,
+.thin-icon-button--round-full.thin-icon-button--xl {
   border-radius: 999px;
 }
 
@@ -206,8 +274,7 @@ function handleClick(e) {
   outline-offset: 0.125rem;
 }
 
-.thin-icon-button--disabled,
-.thin-icon-button[disabled] {
+.thin-icon-button--disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
@@ -229,6 +296,12 @@ function handleClick(e) {
   width: auto;
   height: auto;
   transform: scale(1.5);
+}
+
+.thin-icon-button--xl .thin-icon-button__icon {
+  width: auto;
+  height: auto;
+  transform: scale(2.5);
 }
 
 .thin-icon-button--inverted .thin-icon-button__icon {

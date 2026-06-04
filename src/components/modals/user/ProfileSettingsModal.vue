@@ -15,13 +15,11 @@
   >
     <div class="modal-field">
       <label class="modal-label" for="profile-name">{{ computedNameLabel }}</label>
-              <input
-                id="profile-name"
-                v-model="draftName"
-                class="input"
-                type="text"
-                autocomplete="name"
-              />
+      <TextInput
+        id="profile-name"
+        v-model="draftName"
+        autocomplete="name"
+      />
             </div>
 
             <div class="modal-field">
@@ -68,37 +66,6 @@
                 :aria-label="t('user.profileSettingsModal.privacyLabel')"
                 :disabled="saving"
               />
-            </div>
-
-            <div class="modal-field">
-              <label class="modal-label">{{ t('user.profileSettingsModal.friendCodeLabel') }}</label>
-              <div class="friend-code-row">
-                <div
-                  class="friend-code-row__value"
-                  :class="{ 'friend-code-row__value--placeholder': !hasFriendCode }"
-                >
-                  {{ friendCodeDisplay }}
-                </div>
-
-                <button
-                  class="btn-secondary friend-code-row__btn"
-                  type="button"
-                  :disabled="saving || linking || friendCodeBusy || !hasFriendCode"
-                  @click="copyFriendCode"
-                >
-                  {{ t('common.copy') }}
-                </button>
-
-                <button
-                  class="btn-secondary friend-code-row__btn"
-                  type="button"
-                  :disabled="saving || linking || friendCodeBusy"
-                  @click="handleRegenerateFriendCode"
-                >
-                  {{ t('user.profileSettingsModal.friendCodeRegenerate') }}
-                </button>
-              </div>
-              <div class="friend-code-row__hint">{{ t('user.profileSettingsModal.friendCodeHint') }}</div>
             </div>
 
             <div class="connected-accounts" aria-label="Connected accounts">
@@ -164,10 +131,10 @@ import SelectionButtonGroup from '@/components/shared/selection/ButtonGroup.vue'
 import AvatarCircle from '@/components/shared/image/AvatarCircle.vue'
 import AvatarPickerModal from '@/components/modals/user/AvatarPickerModal.vue'
 import ModalShell from '@/components/modals/shell/ModalShell/ModalShell.vue'
+import TextInput from '@/components/shared/inputs/TextInput.vue'
 import { openConfirmation } from '@/services/ui/confirmation'
 import { openError } from '@/services/ui/error'
 import { openToast } from '@/services/ui/toast'
-import { friendCodeUtils, regenerateCurrentUserFriendCode } from '@/services/firestore/friendCode'
 import {
   AVATAR_FILES,
   AVATAR_IDS,
@@ -244,7 +211,6 @@ function saveAvatarPicker(next) {
 }
 
 const linking = ref(false)
-const friendCodeRegenerating = ref(false)
 const providerInfo = ref([])
 const providerIds = ref([])
 const isAnonymous = ref(false)
@@ -324,84 +290,6 @@ const computedAvatarLabel = computed(() => props.avatarLabel || t('user.profileS
 const computedCancelText = computed(() => props.cancelText || t('common.cancel'))
 const computedSaveText = computed(() => props.saveText || t('common.save'))
 const computedSavingText = computed(() => props.savingText || t('common.saving'))
-
-const friendCode = computed(() => {
-  const raw = props.profile?.friend_code ?? props.profile?.friendCode ?? ''
-  return friendCodeUtils.normalizeCode(raw)
-})
-
-const hasFriendCode = computed(() => friendCodeUtils.isLikelyFriendCode(friendCode.value))
-const friendCodeBusy = computed(() => friendCodeRegenerating.value)
-
-const friendCodeDisplay = computed(() => {
-  if (hasFriendCode.value) return friendCode.value
-  return t('user.profileSettingsModal.friendCodeUnavailable')
-})
-
-async function copyFriendCode() {
-  if (!hasFriendCode.value) return
-  const text = friendCode.value
-  if (!text) return
-
-  try {
-    if (navigator.clipboard?.writeText && window.isSecureContext) {
-      await navigator.clipboard.writeText(text)
-      openToast({ message: t('user.profileSettingsModal.friendCodeCopied') })
-      return
-    }
-
-    window.prompt(t('user.profileSettingsModal.friendCodeCopyPrompt'), text)
-  } catch (error) {
-    console.error('Error copying friend code:', error)
-    openError({
-      title: t('common.error'),
-      message: t('user.profileSettingsModal.friendCodeCopyFailed'),
-      confirmText: t('common.ok')
-    })
-  }
-}
-
-async function handleRegenerateFriendCode() {
-  if (props.saving || linking.value || friendCodeRegenerating.value) return
-
-  const ok = await openConfirmation({
-    type: {
-      id: 'deleteItem',
-      params: {
-        title: t('user.profileSettingsModal.friendCodeRegenerateConfirmTitle'),
-        message: t('user.profileSettingsModal.friendCodeRegenerateConfirmMessage'),
-        confirmText: t('confirmation.actions.yes'),
-        cancelText: t('confirmation.actions.no')
-      }
-    }
-  })
-  if (!ok) return
-
-  friendCodeRegenerating.value = true
-  try {
-    const next = await regenerateCurrentUserFriendCode(props.profile || {})
-    const normalized = friendCodeUtils.normalizeCode(next)
-    if (!friendCodeUtils.isLikelyFriendCode(normalized)) {
-      openError({
-        title: t('common.error'),
-        message: t('user.profileSettingsModal.friendCodeRegenerateFailed'),
-        confirmText: t('common.ok')
-      })
-      return
-    }
-
-    openToast({ message: t('user.profileSettingsModal.friendCodeRegenerated') })
-  } catch (err) {
-    console.error('Regenerate friend code failed:', err)
-    openError({
-      title: t('common.error'),
-      message: t('user.profileSettingsModal.friendCodeRegenerateFailed'),
-      confirmText: t('common.ok')
-    })
-  } finally {
-    friendCodeRegenerating.value = false
-  }
-}
 
 const initialName = computed(() => String(props.profile?.name || '').trim())
 
@@ -577,15 +465,6 @@ function handleSave() {
 </script>
 
 <style scoped>
-.input {
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  background: #fff;
-  border-radius: 10px;
-  padding: 0.6rem 0.75rem;
-  font-weight: 700;
-  color: #111827;
-}
-
 .profile-avatar-uploader {
   width: 100%;
 }
@@ -622,39 +501,6 @@ function handleSave() {
 .avatar-row__edit:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-}
-
-.friend-code-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.friend-code-row__value {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  background: #fff;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  font-variant-numeric: tabular-nums;
-}
-
-.friend-code-row__value--placeholder {
-  font-weight: 600;
-  letter-spacing: normal;
-  color: #6b7280;
-}
-
-.friend-code-row__btn {
-  padding: 0.5rem 0.9rem;
-}
-
-.friend-code-row__hint {
-  margin-top: 0.35rem;
-  color: #6b7280;
-  line-height: 1.4;
 }
 
 .connected-accounts {

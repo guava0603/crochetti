@@ -6,7 +6,7 @@
     }"
     :src="iconSrc"
     size="l"
-    background="transparent"
+    :background="resolvedBackground"
     :disabled="disabled"
     :invert-icon="invertIcon"
     :aria-label="ariaLabel"
@@ -16,14 +16,20 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import ThinIconButton from '@/components/shared/buttons/ThinIconButton.vue'
+import { useBannerThinIconBackground } from '@/composables/appBanner'
 
-defineProps({
+const props = defineProps({
   iconSrc: { type: String, default: '' },
   ariaLabel: { type: String, default: '' },
   title: { type: String, default: '' },
   disabled: { type: Boolean, default: false },
   invertIcon: { type: Boolean, default: false },
+  background: {
+    type: String,
+    default: ''
+  },
   size: {
     type: String,
     default: 'md',
@@ -32,4 +38,6 @@ defineProps({
 })
 
 defineEmits(['click'])
+
+const resolvedBackground = useBannerThinIconBackground(() => props.background)
 </script>

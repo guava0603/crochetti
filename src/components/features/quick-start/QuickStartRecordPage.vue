@@ -8,56 +8,48 @@
   >
     <template #step-fallback>
       <form class="quick-start" @submit.prevent="onSubmit">
-        <div class="form-group">
-          <div class="label-wrapper">
-            <label>{{ t('addProject.info.projectNameLabel') }}</label>
-            <span class="required-badge">{{ t('common.required') }}</span>
-          </div>
-          <input v-model="draft.name" type="text" :disabled="loading" required />
-        </div>
+        <FormSubsection
+          kind="text"
+          :title="t('addProject.info.projectNameLabel')"
+          for-id="projectName"
+          v-model="projectName"
+          :placeholder="t('addProject.info.projectNamePlaceholder')"
+          :disabled="loading"
+          required
+        />
 
-        <div class="form-group">
-          <label>{{ t('addProject.info.descriptionLabel') }}</label>
-          <input v-model="draft.description" type="text" :disabled="loading" />
-        </div>
+        <FormSubsection
+          kind="textarea"
+          :title="t('addProject.info.descriptionLabel')"
+          for-id="projectDescription"
+          v-model="projectDescription"
+          :placeholder="t('addProject.info.descriptionPlaceholder')"
+          :rows="3"
+          :disabled="loading"
+        />
 
-        <div class="form-group">
-          <div class="label-wrapper">
-            <label>{{ t('user.addRecord.quick.groupsTitle') }}</label>
-            <span class="required-badge">{{ t('common.required') }}</span>
-          </div>
-
+        <FormSubsection kind="slot" :title="t('user.addRecord.quick.groupsTitle')" required>
           <div class="quick-groups">
             <div v-if="draft.groups.length" class="quick-groups__list">
               <div v-for="(g, i) in draft.groups" :key="i" class="quick-group-row">
-                <input
-                  v-model.number="g.crochetCount"
-                  class="quick-group-row__input"
-                  type="number"
-                  inputmode="numeric"
-                  min="1"
-                  max="9999"
-                  step="1"
-                  :placeholder="t('user.addRecord.quick.crochetCountShort')"
-                  :aria-label="t('user.addRecord.quick.crochetCount', { stitch: t('crochet.stitches.singleCrochet') })"
+                <InputNumber
+                  :model-value="groupCrochetCount(g)"
+                  :min="1"
+                  :max="9999"
                   :disabled="loading"
-                  @blur="() => clampGroup(i)"
+                  :aria-label="t('user.addRecord.quick.crochetCount', { stitch: t('crochet.stitches.singleCrochet') })"
+                  @update:model-value="(v) => updateGroupField(i, 'crochetCount', v)"
                 />
 
                 <span class="quick-group-row__mul" aria-hidden="true">針 ×</span>
 
-                <input
-                  v-model.number="g.rowCount"
-                  class="quick-group-row__input"
-                  type="number"
-                  inputmode="numeric"
-                  min="1"
-                  max="999"
-                  step="1"
-                  :placeholder="t('user.addRecord.quick.rowCountShort')"
-                  :aria-label="t('user.addRecord.quick.rowCount')"
+                <InputNumber
+                  :model-value="groupRowCount(g)"
+                  :min="1"
+                  :max="999"
                   :disabled="loading"
-                  @blur="() => clampGroup(i)"
+                  :aria-label="t('user.addRecord.quick.rowCount')"
+                  @update:model-value="(v) => updateGroupField(i, 'rowCount', v)"
                 />
 
                 <span class="quick-group-row__unit" aria-hidden="true">行</span>
@@ -78,7 +70,7 @@
               {{ t('user.addRecord.quick.addGroup') }}
             </button>
           </div>
-        </div>
+        </FormSubsection>
 
       </form>
 
@@ -93,6 +85,8 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import ProjectWizardLayout from '@/components/features/project/ProjectWizardLayout.vue'
+import FormSubsection from '@/components/features/add-project/form/FormSubsection.vue'
+import InputNumber from '@/components/shared/inputs/InputNumber.vue'
 import { useFooterContext } from '@/composables/footerContext'
 
 import { auth } from '@/firebaseConfig'
@@ -117,6 +111,20 @@ const draft = ref({
   groups: []
 })
 
+const projectName = computed({
+  get: () => draft.value.name,
+  set: (value) => {
+    draft.value.name = String(value ?? '')
+  }
+})
+
+const projectDescription = computed({
+  get: () => draft.value.description,
+  set: (value) => {
+    draft.value.description = String(value ?? '')
+  }
+})
+
 const pageTitle = computed(() => t('user.addRecord.actions.quickAddProject', { stitch: t('crochet.stitches.singleCrochet') }))
 
 const isDirty = computed(() => {
@@ -125,29 +133,6 @@ const isDirty = computed(() => {
   const groups = Array.isArray(draft.value?.groups) ? draft.value.groups : []
   return hasName || hasDesc || groups.length > 0
 })
-
-watch(
-  () => [loading.value],
-  () => {
-    footer.setActions({
-      ariaLabel: t('user.addRecord.quick.submitBarAria'),
-      justify: 'space-between',
-      secondary: {
-        label: t('common.cancel'),
-        disabled: loading.value,
-        onClick: () => router.back()
-      },
-      primary: {
-        label: loading.value ? t('common.loading') : t('user.addRecord.quick.createAndStart'),
-        disabled: loading.value,
-        onClick: onSubmit
-      }
-    })
-  },
-  { immediate: true }
-)
-
-onBeforeUnmount(() => footer.clearActions())
 
 const clampNullableInt = (value, { min = 1, max = Infinity } = {}) => {
   if (value == null || value === '') return null
@@ -189,14 +174,21 @@ const addGroup = () => {
   draft.value.groups = groups
 }
 
-const clampGroup = (index) => {
+function groupCrochetCount(g) {
+  const { crochetCount } = normalizeGroup(g)
+  return Number.isFinite(crochetCount) ? crochetCount : 1
+}
+
+function groupRowCount(g) {
+  const { rowCount } = normalizeGroup(g)
+  return Number.isFinite(rowCount) ? rowCount : 1
+}
+
+function updateGroupField(index, field, value) {
   const groups = Array.isArray(draft.value.groups) ? draft.value.groups : []
   const g = groups[index]
   if (!g) return
-
-  const normalized = normalizeGroup(g)
-  g.crochetCount = normalized.crochetCount
-  g.rowCount = normalized.rowCount
+  g[field] = value
 }
 
 const totalRows = computed(() => {
@@ -303,11 +295,34 @@ const onSubmit = async () => {
     loading.value = false
   }
 }
+
+watch(
+  () => [loading.value],
+  () => {
+    footer.setActions({
+      ariaLabel: t('user.addRecord.quick.submitBarAria'),
+      justify: 'space-between',
+      secondary: {
+        label: t('common.cancel'),
+        disabled: loading.value,
+        onClick: () => router.back()
+      },
+      primary: {
+        label: loading.value ? t('common.loading') : t('user.addRecord.quick.createAndStart'),
+        disabled: loading.value,
+        onClick: onSubmit
+      }
+    })
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => footer.clearActions())
 </script>
 
 <style scoped>
 .quick-start {
-  max-width: 45rem;
+  max-width: 600px;
   margin: 0 auto;
 }
 
@@ -329,8 +344,8 @@ const onSubmit = async () => {
 }
 
 .quick-group-row {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr auto;
+  display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.75rem;
@@ -342,41 +357,9 @@ const onSubmit = async () => {
   color: rgba(90, 82, 75, 0.8);
 }
 
-.quick-group-row__input {
-  margin: 0;
-}
-
 .hint {
   margin-top: 0.75rem;
   color: #6b7280;
   font-size: 0.9rem;
-}
-
-.btn-secondary {
-  background: white;
-  color: #374151;
-  border: 0.0625rem solid #d1d5db;
-  padding: 0.75rem 1.1rem;
-  border-radius: 0.75rem;
-  font-size: 0.95rem;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: var(--color-icon-add);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.1rem;
-  border-radius: 0.75rem;
-  font-size: 0.95rem;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.btn-secondary:disabled,
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 </style>

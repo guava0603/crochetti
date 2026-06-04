@@ -90,7 +90,7 @@ async function handleLastPage() {
         {
           id: 'discard',
           label: t('confirmation.saveProjectDraft.discard'),
-          class: 'modal-btn-cancel'
+          class: 'modal-btn-confirm-delete'
         },
         {
           id: 'save',
@@ -254,9 +254,7 @@ onBeforeUnmount(() => {
   font-size: 0.875rem;
 }
 
-:deep(input[type='text']),
-:deep(input[type='number']),
-:deep(textarea),
+:deep(.text-input__control),
 :deep(select) {
   width: 100%;
   padding: 0.75rem;
@@ -268,15 +266,11 @@ onBeforeUnmount(() => {
   color: var(--color-font-dark);
 }
 
-:deep(.project-wizard-layout textarea) {
-  border-color: var(--color-border-edit-project);
-}
-
 :deep(input[type='checkbox']) {
   margin-right: 0.5rem;
 }
 
-:deep(input:focus),
+:deep(.text-input__control:focus),
 :deep(select:focus) {
   outline: none;
   border-color: var(--color-icon-add);

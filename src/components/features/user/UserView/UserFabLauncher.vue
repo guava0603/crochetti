@@ -13,6 +13,7 @@
   <AddRecordFromUserModal
     :show="showAddRecordModal"
     :projects="projects"
+    :saved-projects="savedProjects"
     :loading="addRecordLoading"
     @cancel="showAddRecordModal = false"
     @add-project="handleGoAddProject"
@@ -61,6 +62,10 @@ const props = defineProps({
     default: false
   },
   projects: {
+    type: Array,
+    default: () => []
+  },
+  savedProjects: {
     type: Array,
     default: () => []
   }
@@ -182,7 +187,11 @@ const handleStartRecordFromProject = async (projectId) => {
 
   addRecordLoading.value = true
   try {
-    const local = props.projects.find((p) => String(p.id) === String(projectId))
+    const allProjects = [
+      ...(Array.isArray(props.projects) ? props.projects : []),
+      ...(Array.isArray(props.savedProjects) ? props.savedProjects : [])
+    ]
+    const local = allProjects.find((p) => String(p.id) === String(projectId))
     const project = local?.component_list
       ? local
       : ({

@@ -13,4 +13,13 @@ describe('componentCardNotes', () => {
     ensureComponentNotesArray(component)
     expect(component.notes).toEqual(['x', 'y'])
   })
+
+  it('ensureComponentNotesArray keeps array reference when already normalized', () => {
+    const notes = []
+    const component = { notes }
+    ensureComponentNotesArray(component)
+    expect(component.notes).toBe(notes)
+    ensureComponentNotesArray(component)
+    expect(component.notes).toBe(notes)
+  })
 })

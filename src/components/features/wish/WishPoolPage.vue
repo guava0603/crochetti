@@ -63,6 +63,7 @@ import { useI18n } from 'vue-i18n'
 import { openError, openNotice } from '@/services/ui/notice'
 import { useFooterContext } from '@/composables/footerContext'
 import LimitedTextArea from '@/components/shared/inputs/LimitedTextArea.vue'
+import { useTextCount } from '@/composables/useTextCount'
 import { countWordsLike } from '@/utils/textCount'
 
 defineOptions({ name: 'WishPoolViewMain' })
@@ -93,8 +94,10 @@ const description = ref('')
 const allowContact = ref(false)
 const email = ref('')
 
-const wordCount = computed(() => countWordsLike(description.value))
-const isOverLimit = computed(() => wordCount.value > WORD_LIMIT)
+const { isOverLimit } = useTextCount(
+  description,
+  () => ({ limit: WORD_LIMIT, countMode: 'wordsLike' })
+)
 
 const canSubmit = computed(() => {
   if (loading.value) return false

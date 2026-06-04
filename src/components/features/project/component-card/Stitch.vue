@@ -58,6 +58,8 @@ const props = defineProps({
 })
 
 const component = computed(() => props.component)
+const componentList = computed(() => props.componentList)
+const componentIndex = computed(() => props.componentIndex)
 const isEditing = computed(() => props.isEditing)
 const visibilityResolved = useComponentCardVisibility(
   () => props.visibility,
@@ -70,11 +72,7 @@ const {
   relatedComponentNames,
   relatedComponentIdsModel,
   ensureStitchComponentFields
-} = useStitchRelatedComponents(
-  () => props.component,
-  () => props.componentList,
-  () => props.componentIndex
-)
+} = useStitchRelatedComponents(component, componentList, componentIndex)
 
 watch(
   () => props.isEditing,

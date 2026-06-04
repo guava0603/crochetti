@@ -42,7 +42,13 @@ const router = createRouter({
       path: '/project/:project_id',
       name: 'project',
       component: () => import('../views/ProjectView.vue'),
-      meta: { bannerOverlay: true, bannerTransparent: true, requiresAuth: true, footer: 'bar' },
+      meta: {
+        bannerOverlay: true,
+        bannerTransparent: true,
+        bannerVariant: 'glass',
+        requiresAuth: true,
+        footer: 'bar'
+      },
     },
     {
       path: '/project/:project_id/download-design',

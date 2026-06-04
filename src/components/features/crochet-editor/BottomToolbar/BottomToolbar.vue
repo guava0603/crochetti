@@ -7,9 +7,20 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { provide, ref } from 'vue'
 
 const isExpanded = ref(true)
+
+provide('crochetScrollbarExpanded', isExpanded)
+
+function toggleExpanded() {
+  isExpanded.value = !isExpanded.value
+}
+
+defineExpose({
+  isExpanded,
+  toggleExpanded
+})
 </script>
 
 <style scoped>
@@ -27,32 +38,5 @@ const isExpanded = ref(true)
   /* Must be above floating docks/FABs. */
   z-index: calc(var(--z-bottom-toolbar) + 1);
   height: fit-content;
-}
-
-.expand-button {
-  position: absolute;
-  top: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: white;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1rem;
-  color: var(--color-icon-add);
-  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
-  z-index: calc(var(--z-bottom-toolbar) + 2);
-}
-
-.expand-button:hover {
-  background: var(--color-icon-add);
-  color: white;
-  border-color: var(--color-icon-add);
 }
 </style>

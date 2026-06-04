@@ -37,7 +37,7 @@ const CONFIRMATION_PRESETS = {
   saveProjectDraft: () => ({
     title: t('confirmation.saveProjectDraft.title'),
     message: t('confirmation.saveProjectDraft.message'),
-    cancelText: ''
+    cancelText: t('confirmation.actions.cancel')
   }),
 
   addProjectChooseComponentType: () => ({

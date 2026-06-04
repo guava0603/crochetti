@@ -202,9 +202,9 @@ button::-moz-focus-inner {
   cursor: not-allowed;
 }
 
-/* Project textareas: base styles are global (components should not restyle borders/colors). */
-.project-wizard-layout textarea,
-.project-view textarea,
+/* Legacy project textareas (notes, etc.). Unified fields use .text-input__control in shared-style.css. */
+.project-wizard-layout textarea:not(.text-input__control),
+.project-view textarea:not(.text-input__control),
 .textarea-soft {
   width: 100%;
   padding: 0.75rem;
@@ -217,8 +217,8 @@ button::-moz-focus-inner {
   resize: vertical;
 }
 
-.project-wizard-layout textarea:focus,
-.project-view textarea:focus,
+.project-wizard-layout textarea:not(.text-input__control):focus,
+.project-view textarea:not(.text-input__control):focus,
 .textarea-soft:focus {
   outline: none;
   border-color: var(--color-icon-add);

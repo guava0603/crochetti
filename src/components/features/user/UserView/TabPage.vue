@@ -85,6 +85,7 @@
     v-if="isMyPage"
     :is-my-page="isMyPage"
     :projects="userProjects"
+    :saved-projects="savedProjects"
     @project-created="(p) => emit('project-created', p)"
     @open-user="(id) => emit('open-user', id)"
   />

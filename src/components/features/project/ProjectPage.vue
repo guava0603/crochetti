@@ -590,6 +590,9 @@ onMounted(async () => {
       showBack: true,
       onBack: null
     })
+    // #region agent log
+    fetch('http://127.0.0.1:7900/ingest/ac6ceb27-9395-4309-8246-f894ce8ce241',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7f2bc0'},body:JSON.stringify({sessionId:'7f2bc0',location:'ProjectPage.vue:onMounted',message:'project page setBanner glass',data:{variant:appBanner.state?.variant,overlay:appBanner.state?.overlay},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
   }
 
   loading.value = true

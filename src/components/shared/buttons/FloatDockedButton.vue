@@ -2,8 +2,8 @@
   <ThinIconButton
     class="float-docked-button"
     :src="imageSrc"
-    root-tag="div"
-    size="l"
+    root-tag="button"
+    size="xl"
     background="accent"
     round="full"
     :invert-icon="invertIcon"
@@ -37,9 +37,3 @@ function handleClick(e) {
 }
 </script>
 
-<style scoped>
-.float-docked-button.is-disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-</style>

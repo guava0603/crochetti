@@ -22,9 +22,37 @@ export function ensureStitchComponentFields(component) {
   ensureComponentNotesArray(component)
 }
 
-export function stitchSequenceNumber(componentList, componentIndex) {
+/** Index of `component` in `componentList`, preferring a valid explicit index when it matches. */
+export function resolveComponentIndexInList(componentList, component, explicitIndex) {
   const list = Array.isArray(componentList) ? componentList : []
-  const idx = Number.isFinite(Number(componentIndex)) ? Number(componentIndex) : -1
+  const n = Number(explicitIndex)
+
+  if (Number.isFinite(n) && n >= 0 && n < list.length) {
+    if (!component || typeof component !== 'object') return n
+    const at = list[n]
+    if (at === component) return n
+    const cid = toText(component?.id)
+    const aid = toText(at?.id)
+    if (cid && aid && cid === aid) return n
+  }
+
+  if (component && typeof component === 'object') {
+    const cid = toText(component.id)
+    if (cid) {
+      const byId = list.findIndex((c) => toText(c?.id) === cid)
+      if (byId >= 0) return byId
+    }
+    const byRef = list.indexOf(component)
+    if (byRef >= 0) return byRef
+  }
+
+  if (Number.isFinite(n) && n >= 0 && n < list.length) return n
+  return -1
+}
+
+export function stitchSequenceNumber(componentList, componentIndex, component = null) {
+  const list = Array.isArray(componentList) ? componentList : []
+  const idx = resolveComponentIndexInList(list, component, componentIndex)
   if (!list.length || idx < 0) return 1
 
   const max = Math.min(list.length - 1, idx)
@@ -50,13 +78,13 @@ export function buildRelatedComponentIdLabelMap(componentList) {
   return map
 }
 
-export function buildRelatedComponentOptions(componentList, componentIndex) {
+export function buildRelatedComponentOptions(componentList, componentIndex, component = null) {
   const list = Array.isArray(componentList) ? componentList : []
-  const idx = Number.isFinite(Number(componentIndex)) ? Number(componentIndex) : list.length
-  const max = Math.min(list.length, Math.max(0, idx))
+  const idx = resolveComponentIndexInList(list, component, componentIndex)
+  if (idx <= 0) return []
 
   return list
-    .slice(0, max)
+    .slice(0, idx)
     .map((c, i) => ({ c, i }))
     .filter(({ c }) => c && toText(c?.id))
     .map(({ c, i }) => ({

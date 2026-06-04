@@ -1,6 +1,6 @@
 <template>
   <FormSubsection
-    v-if="visible && isEditing && relatedComponentOptions.length > 0"
+    v-if="isEditing && relatedComponentOptions.length > 0"
     wrapper-class="subsection"
     kind="multi-select"
     :title="t('addProject.design.relatedComponentsLabel')"
@@ -11,7 +11,7 @@
   />
 
   <FormSubsection
-    v-else-if="visible && relatedComponentNames.length"
+    v-else-if="relatedComponentNames.length"
     wrapper-class="view-section view-section--related"
     kind="slot"
     :show-header="false"
@@ -31,14 +31,10 @@ defineOptions({
   name: 'ComponentCardRelatedComponentsSection'
 })
 
-defineProps({
+const props = defineProps({
   isEditing: {
     type: Boolean,
     default: false
-  },
-  visible: {
-    type: Boolean,
-    default: true
   },
   relatedComponentOptions: {
     type: Array,

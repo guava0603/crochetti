@@ -70,6 +70,7 @@
   --color-warning: #EB4C4C;
 
   --color-border: var(--vt-c-divider-light-2);
+  --color-border-edit-project: var(--color-border);
   --color-border-hover: var(--vt-c-divider-light-1);
 
   --color-heading: var(--vt-c-text-light-1);
