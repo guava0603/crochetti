@@ -25,10 +25,8 @@
   />
 
   <ComponentCardCountSection
+    :component="component"
     :is-editing="isEditing"
-    :count-draft="countDraft"
-    @update:count-draft="handleUpdateCountDraft"
-    @commit-count="commitCountDraft"
   />
 </template>
 
@@ -41,8 +39,6 @@ import ComponentCardMaterialsSection from './ComponentCardMaterialsSection.vue'
 import ComponentCardCountSection from './ComponentCardCountSection.vue'
 import { useComponentCardVisibility } from '@/composables/useComponentCardVisibility'
 import { useComponentCardMaterials } from '@/composables/useComponentCardMaterials'
-import { useComponentCardCount } from '@/composables/useComponentCardCount'
-
 const { t } = useI18n({ useScope: 'global' })
 
 defineOptions({
@@ -91,8 +87,6 @@ const {
   () => props.component,
   () => props.materials
 )
-
-const { countDraft, handleUpdateCountDraft, commitCountDraft } = useComponentCardCount(() => props.component)
 
 function ensureRowTableFields() {
   if (!component.value || typeof component.value !== 'object') return

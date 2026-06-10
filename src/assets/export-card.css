@@ -83,8 +83,8 @@
   border-radius: 10px;
 }
 
-.record-result-view--static .export-healing-card,
-.record-result-sharing--static .export-healing-card {
+.record-result-sharing:not([class*='print-style--']) .record-result-view--static .export-healing-card,
+.record-result-sharing--static:not([class*='print-style--']) .export-healing-card {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   background: #f5ebda !important;

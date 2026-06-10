@@ -94,6 +94,14 @@ const props = defineProps({
   gap: {
     type: Number,
     default: 6
+  },
+  barColor: {
+    type: String,
+    default: ''
+  },
+  barTrackColor: {
+    type: String,
+    default: ''
   }
 })
 
@@ -178,7 +186,8 @@ const cssVars = computed(() => ({
   '--chart-height': `${Math.max(16, Number(props.height) || 48)}px`,
   '--bar-width': `${Math.max(2, Number(props.barWidth) || 8)}px`,
   '--bar-gap': `${Math.max(0, Number(props.gap) || 6)}px`,
-  '--bar-color': BAR_COLOR,
+  '--bar-color': String(props.barColor || '').trim() || BAR_COLOR,
+  '--bar-track-color': String(props.barTrackColor || '').trim() || 'rgba(17, 24, 39, 0.12)',
   '--bar-transition-ms': useRafTween.value ? '0ms' : `${Math.max(0, Number(props.animationMs) || 0)}ms`
 }))
 
@@ -290,7 +299,7 @@ watch(
 .bar-chart__bar {
   width: var(--bar-width);
   height: 100%;
-  background: rgba(17, 24, 39, 0.12);
+  background: var(--bar-track-color, rgba(17, 24, 39, 0.12));
   border-radius: 999px;
   position: relative;
   overflow: hidden;
@@ -325,7 +334,7 @@ watch(
 .bar-chart__row-track {
   width: 100%;
   height: var(--bar-width);
-  background: rgba(17, 24, 39, 0.12);
+  background: var(--bar-track-color, rgba(17, 24, 39, 0.12));
   border-radius: 999px;
   position: relative;
   overflow: hidden;

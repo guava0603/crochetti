@@ -173,30 +173,38 @@ function withLayoutCaptureOptions(el, captureOptions = {}) {
   }
 }
 
+let captureInFlight = null
+
 async function captureAsPngBlob(captureOptions = {}) {
-  if (isCapturing.value) return null
+  if (captureInFlight) return captureInFlight
 
   const el = captureRootRef.value
   if (!el) return null
 
-  isCapturing.value = true
-  try {
-    await nextTick()
-    refreshLayoutWidth()
-    await nextTick()
-    if (document.fonts?.ready) {
-      await document.fonts.ready
-    }
+  captureInFlight = (async () => {
+    isCapturing.value = true
+    try {
+      await nextTick()
+      refreshLayoutWidth()
+      await nextTick()
+      if (document.fonts?.ready) {
+        await document.fonts.ready
+      }
 
-    return await captureElementAsPngBlob(el, withLayoutCaptureOptions(el, captureOptions))
+      return await captureElementAsPngBlob(el, withLayoutCaptureOptions(el, captureOptions))
+    } finally {
+      isCapturing.value = false
+    }
+  })()
+
+  try {
+    return await captureInFlight
   } finally {
-    isCapturing.value = false
+    captureInFlight = null
   }
 }
 
 const shareOrDownload = async (captureOptions = {}) => {
-  if (isCapturing.value) return
-
   const fallbackFilename = `${sanitizeFileName(projectName.value)}.png`
   const filename = String(captureOptions?.filename || '').trim() || fallbackFilename
   const shareTitle = String(captureOptions?.shareTitle || '').trim() || projectName.value || filename

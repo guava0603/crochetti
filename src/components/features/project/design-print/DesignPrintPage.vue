@@ -24,31 +24,45 @@
         {{ t('project.noPermission') }}
       </div>
 
-      <div v-else-if="projectData" class="print-live-html">
-        <template v-if="componentMode === COMPONENT_MODES.separate && componentList.length > 1">
-          <div class="print-multi">
-            <DesignPrintContent
-              v-for="(c, idx) in componentList"
-              :key="idx"
-              :ref="(el) => setContentRef(el, idx)"
-              show-printed-domain-border
-              :show-project-sections="false"
-              remove-printed-area-style
-              :project-data="projectData"
-              :components="[c]"
-              :section-visibility="sectionVisibility"
-              :extra-images-settings="extraImagesSettings"
-            />
-          </div>
-        </template>
-        <DesignPrintContent
-          v-else
-          ref="contentRef"
-          show-printed-domain-border
-          :project-data="projectData"
-          :section-visibility="sectionVisibility"
-          :extra-images-settings="extraImagesSettings"
-        />
+      <div v-else-if="projectData" class="printed-image-preview">
+        <div class="printed-image-preview__display">
+          <img
+            v-for="(url, idx) in previewUrls"
+            :key="url"
+            class="printed-image-preview__image"
+            :src="url"
+            :alt="previewImageAlt(idx)"
+          />
+          <p v-if="!previewUrls.length && previewLoading" class="printed-image-preview__status">
+            {{ t('designPrint.previewLoading') }}
+          </p>
+        </div>
+        <div class="printed-image-preview__source" aria-hidden="true">
+          <template v-if="componentMode === COMPONENT_MODES.separate && componentList.length > 1">
+            <div class="print-multi">
+              <DesignPrintContent
+                v-for="(c, idx) in componentList"
+                :key="idx"
+                :ref="(el) => setContentRef(el, idx)"
+                show-printed-domain-border
+                :show-project-sections="false"
+                remove-printed-area-style
+                :project-data="projectData"
+                :components="[c]"
+                :section-visibility="sectionVisibility"
+                :extra-images-settings="extraImagesSettings"
+              />
+            </div>
+          </template>
+          <DesignPrintContent
+            v-else
+            ref="contentRef"
+            show-printed-domain-border
+            :project-data="projectData"
+            :section-visibility="sectionVisibility"
+            :extra-images-settings="extraImagesSettings"
+          />
+        </div>
       </div>
 
       <p v-else class="print-not-found">{{ t('project.notFound') }}</p>
@@ -69,6 +83,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { usePrintedImagePreview } from '@/composables/usePrintedImagePreview'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
@@ -129,6 +144,34 @@ const printSettings = ref(
   loadStoredDesignPrintSettings(projectId.value, availableSectionKeys.value, sourceImageUrls.value)
 )
 
+function getCaptureTargets() {
+  if (componentMode.value === COMPONENT_MODES.separate && componentList.value.length > 1) {
+    return contentRefs.value.filter(Boolean)
+  }
+  return contentRef.value
+}
+
+const { previewUrls, previewLoading, scheduleRefresh } = usePrintedImagePreview(
+  getCaptureTargets,
+  () => [
+    props.projectData,
+    props.loading,
+    contentRef.value,
+    contentRefs.value,
+    printSettings.value,
+    componentMode.value,
+    componentList.value.length
+  ]
+)
+
+function previewImageAlt(index) {
+  if (componentMode.value === COMPONENT_MODES.separate && componentList.value.length > 1) {
+    const name = String(componentList.value[index]?.name || '').trim()
+    if (name) return t('designPrint.previewAltNamed', { name })
+  }
+  return t('designPrint.previewAlt')
+}
+
 const sectionVisibility = computed({
   get: () => printSettings.value.sectionVisibility,
   set: (value) => {
@@ -167,6 +210,15 @@ watch([availableSectionKeys, sourceImageUrls], () => {
   reloadPrintSettings()
 })
 
+watch(
+  () => props.loading,
+  (loading, wasLoading) => {
+    if (wasLoading && !loading && props.projectData) {
+      scheduleRefresh()
+    }
+  }
+)
+
 const bannerTitle = computed(() => t('designPrint.title'))
 
 watch(
@@ -201,6 +253,8 @@ function applySettings(payload) {
     availableSectionKeys.value,
     sourceImageUrls.value
   )
+
+  scheduleRefresh()
 }
 
 async function shareImage() {
@@ -275,16 +329,6 @@ onUnmounted(() => {
   gap: 0.35rem;
 }
 
-.print-live-html {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  margin-inline: auto;
-  box-sizing: border-box;
-  display: flex;
-  justify-content: center;
-}
-
 .print-multi {
   width: 100%;
   display: flex;
@@ -308,3 +352,5 @@ onUnmounted(() => {
 }
 
 </style>
+
+<style src="@/assets/printed-image-preview.css"></style>

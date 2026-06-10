@@ -944,7 +944,10 @@
   "designPrint": {
     "title": "Export design",
     "exportOptionsTitle": "Export options",
-    "exportAsMultiplePhotos": "Export as multiple photos"
+    "exportAsMultiplePhotos": "Export as multiple photos",
+    "previewAlt": "Design export preview",
+    "previewAltNamed": "Design export preview: {name}",
+    "previewLoading": "Generating preview…"
   },
   "print": {
     "editSettings": "Edit display sections",
@@ -954,6 +957,19 @@
   "recordPrint": {
     "title": "Export image",
     "openPrintPage": "Print / export image",
+    "previewAlt": "Record export preview",
+    "previewLoading": "Generating preview…",
+    "previewSection": "Export preview",
+    "stylePickerLabel": "Export style",
+    "styles": {
+      "standard": "Standard",
+      "spring": "Spring",
+      "simple": "Simple",
+      "modern": "Modern",
+      "classic": "Classic",
+      "ocean": "Ocean",
+      "dusk": "Dusk"
+    },
     "sections": {
       "projectTitle": "Project title",
       "completedTime": "Completed time",

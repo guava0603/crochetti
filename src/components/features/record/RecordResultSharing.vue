@@ -2,12 +2,19 @@
   <div
     ref="captureRootRef"
     class="record-result-sharing"
-    :class="{
-      'is-capturing': isCapturing,
-      'printed-domain': showPrintedDomainBorder,
-      'record-result-sharing--static': disableAnimations
-    }"
+    :class="[
+      printStyle.themeClass,
+      printStyle.architectureClass,
+      {
+        'is-capturing': isCapturing,
+        'printed-domain': showPrintedDomainBorder,
+        'record-result-sharing--static': disableAnimations
+      }
+    ]"
+    :style="printStyle.cssVars"
   >
+    <OceanPrintBackdrop v-if="printStyle.id === 'ocean'" />
+
     <h1
       v-if="projectTitle && isSectionVisible('projectTitle')"
       class="sharing-meta__title"
@@ -17,6 +24,7 @@
 
     <RecordResult
       layout="sharing"
+      :print-theme="printStyle"
       :current-user="currentUser"
       :profile="profile"
       :section-visibility="sectionVisibilityNormalized"
@@ -67,9 +75,11 @@ import {
 import RecordResult from '@/components/features/record/RecordResult.vue'
 import ExtraImages from '@/components/features/record/ExtraImages.vue'
 import CardInnerFrame from '@/components/shared/ui/CardInnerFrame.vue'
+import OceanPrintBackdrop from '@/components/features/record/record-print/OceanPrintBackdrop.vue'
 import { captureElementAsPngBlob, shareOrDownloadElementAsImage, shareOrDownloadImageBlob } from '@/utils/downloadImage'
 import { measurePrintedDomainWidthPx } from '@/constants/recordResultSharingLayout'
 import { useRecordResultSharingLayoutWidth } from '@/composables/useRecordResultSharingLayoutWidth'
+import { getRecordPrintStyle } from '@/constants/recordPrintStyles'
 
 const captureRootRef = ref(null)
 const { layoutWidthPx, refreshLayoutWidth } = useRecordResultSharingLayoutWidth(captureRootRef)
@@ -96,6 +106,10 @@ const props = defineProps({
   disableAnimations: {
     type: Boolean,
     default: false
+  },
+  printStyleId: {
+    type: String,
+    default: undefined
   }
 })
 
@@ -106,6 +120,8 @@ const recordCtx = useRecordContext()
 const currentRecord = recordCtx?.recordData || ref(null)
 
 const isCapturing = ref(false)
+
+const printStyle = computed(() => getRecordPrintStyle(props.printStyleId))
 
 const recordId = computed(() => String(route.params.record_id || '').trim())
 
@@ -150,40 +166,53 @@ function withLayoutCaptureOptions(el, captureOptions = {}) {
   }
 }
 
+let captureInFlight = null
+
 async function captureAsPngBlob(captureOptions = {}) {
-  if (isCapturing.value) return null
+  if (captureInFlight) return captureInFlight
 
   const el = captureRootRef.value
   if (!el) return null
 
-  isCapturing.value = true
-  try {
-    await nextTick()
-    refreshLayoutWidth()
-    await nextTick()
-    if (document.fonts?.ready) {
-      await document.fonts.ready
-    }
+  captureInFlight = (async () => {
+    isCapturing.value = true
+    try {
+      await nextTick()
+      refreshLayoutWidth()
+      await nextTick()
+      if (document.fonts?.ready) {
+        await document.fonts.ready
+      }
 
-    return await captureElementAsPngBlob(el, withLayoutCaptureOptions(el, captureOptions))
+      return await captureElementAsPngBlob(el, withLayoutCaptureOptions(el, captureOptions))
+    } finally {
+      isCapturing.value = false
+    }
+  })()
+
+  try {
+    return await captureInFlight
   } finally {
-    isCapturing.value = false
+    captureInFlight = null
   }
 }
 
 const shareOrDownload = async (captureOptions = {}) => {
-  if (isCapturing.value) return
-
   const safeId = recordId.value.replace(/[^a-zA-Z0-9_-]+/g, '-') || 'record'
   const filename = `record-result-sharing-${safeId}.png`
   const shareTitle = t('record.shareCompletedResultImage')
 
   const el = captureRootRef.value
   const resolvedCaptureOptions = el ? withLayoutCaptureOptions(el, captureOptions) : captureOptions
-  const blob = await captureAsPngBlob(captureOptions)
+  const resolvedOptions = {
+    flattenForExport: true,
+    backgroundColor: printStyle.value.captureBackground,
+    ...captureOptions
+  }
+  const blob = await captureAsPngBlob(resolvedOptions)
   if (!blob) {
     if (!el) return
-    await shareOrDownloadElementAsImage(el, { filename, shareTitle, ...resolvedCaptureOptions })
+    await shareOrDownloadElementAsImage(el, { filename, shareTitle, ...resolvedCaptureOptions, ...resolvedOptions })
     return
   }
 
@@ -192,6 +221,7 @@ const shareOrDownload = async (captureOptions = {}) => {
 
 defineExpose({
   shareOrDownload,
+  captureAsPngBlob,
   layoutWidthPx
 })
 </script>

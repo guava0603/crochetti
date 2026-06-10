@@ -942,7 +942,10 @@
   "designPrint": {
     "title": "輸出織圖",
     "exportOptionsTitle": "輸出選項",
-    "exportAsMultiplePhotos": "輸出為多張照片"
+    "exportAsMultiplePhotos": "輸出為多張照片",
+    "previewAlt": "織圖輸出預覽",
+    "previewAltNamed": "織圖輸出預覽：{name}",
+    "previewLoading": "正在產生預覽…"
   },
   "print": {
     "editSettings": "編輯顯示區塊",
@@ -952,6 +955,19 @@
   "recordPrint": {
     "title": "輸出圖片",
     "openPrintPage": "列印／匯出圖片",
+    "previewAlt": "紀錄輸出預覽",
+    "previewLoading": "正在產生預覽…",
+    "previewSection": "輸出預覽",
+    "stylePickerLabel": "輸出風格",
+    "styles": {
+      "standard": "標準",
+      "spring": "春日",
+      "simple": "簡約",
+      "modern": "現代",
+      "classic": "經典",
+      "ocean": "海洋",
+      "dusk": "黃昏"
+    },
     "sections": {
       "projectTitle": "設計名稱",
       "completedTime": "完成時間",

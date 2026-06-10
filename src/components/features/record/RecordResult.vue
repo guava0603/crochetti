@@ -35,13 +35,13 @@
           <div class="top-badge" aria-hidden="true">
             <div class="top-badge__circle" />
             <ProgressRing
+              v-bind="sharingRingProps"
               class="top-badge__ring"
               :value="topGroupPercent"
               :size="188"
               :stroke="14"
               :show-percent-number="false"
               :animate-on-mount="chartAnimateOnMount"
-              track-color="rgba(17, 24, 39, 0.08)"
             />
             <div class="top-badge__content">
               <div class="top-badge__title">{{ rankedGroups[0].label }}</div>
@@ -52,6 +52,7 @@
             <div class="metric">
               <div class="metric-note-chart-wrap">
                 <BarChart
+                  v-bind="sharingBarProps"
                   class="metric-note-chart"
                   :values="topGroupNotePercents"
                   :titles="topGroupNoteTitles"
@@ -86,6 +87,7 @@
                 >
                   <div class="rest-card-start">
                     <ProgressRing
+                      v-bind="sharingRingProps"
                       class="rest-card-ring"
                       :value="getGroupPercent(g)"
                       :size="40"
@@ -101,6 +103,7 @@
                 <div v-if="hasRestDetails(g) && isRestExpanded(g.key)" class="rest-card-details" @click.stop>
                   <BarChart
                     v-if="getGroupNoteLines(g).length"
+                    v-bind="sharingBarProps"
                     class="rest-card-details-chart"
                     orientation="horizontal"
                     :show-labels="true"
@@ -135,6 +138,7 @@
                   >
                     <div class="rest-card-start">
                       <ProgressRing
+                        v-bind="sharingRingProps"
                         class="rest-card-ring"
                         :value="getGroupPercent(g)"
                         :size="40"
@@ -150,6 +154,7 @@
                   <div v-if="hasRestDetails(g) && isRestExpanded(g.key)" class="rest-card-details" @click.stop>
                     <BarChart
                       v-if="getGroupNoteLines(g).length"
+                      v-bind="sharingBarProps"
                       class="rest-card-details-chart"
                       orientation="horizontal"
                       :show-labels="true"
@@ -202,10 +207,37 @@ const props = defineProps({
   disableAnimations: {
     type: Boolean,
     default: false
+  },
+  printTheme: {
+    type: Object,
+    default: null
   }
 })
 
 const isSharingLayout = computed(() => props.layout === 'sharing')
+
+const sharingChart = computed(() =>
+  isSharingLayout.value && props.printTheme?.chart ? props.printTheme.chart : null
+)
+
+const sharingRingProps = computed(() => {
+  const chart = sharingChart.value
+  if (!chart) return {}
+  return {
+    trackColor: chart.ringTrack,
+    lightColor: chart.ringLight,
+    darkColor: chart.ringDark
+  }
+})
+
+const sharingBarProps = computed(() => {
+  const chart = sharingChart.value
+  if (!chart) return {}
+  return {
+    barColor: chart.barFill,
+    barTrackColor: chart.barTrack
+  }
+})
 
 const chartAnimateOnMount = computed(() => !props.disableAnimations)
 
@@ -949,7 +981,7 @@ onUnmounted(() => {
 
 .record-result-view--static :deep(.bar-chart__fill),
 .record-result-view--static :deep(.bar-chart__row-fill) {
-  background: rgb(224 157 127);
+  background: var(--print-bar-fill, rgb(224 157 127));
 }
 
 .record-result-view--static :deep(.bar-chart__fill),

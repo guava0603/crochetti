@@ -1,5 +1,9 @@
 import { normalizeExtraImagesSettings, normalizeSourceImageUrls } from '@/constants/recordPrintExtraImages'
 import { normalizeCompletedTimeSettings } from '@/constants/recordPrintCompletedTime'
+import {
+  DEFAULT_RECORD_PRINT_STYLE_ID,
+  normalizeRecordPrintStyleId
+} from '@/constants/recordPrintStyles'
 
 export const RECORD_RESULT_SHARING_SECTION_KEYS = [
   'projectTitle',
@@ -52,7 +56,8 @@ export function loadStoredPrintSettings(recordId, availableKeys, sourceImageUrls
       return {
         sectionVisibility: filterVisibilityByAvailable(baseVisibility, availableKeys),
         extraImages: baseExtraImages,
-        completedTime: baseCompletedTime
+        completedTime: baseCompletedTime,
+        printStyle: DEFAULT_RECORD_PRINT_STYLE_ID
       }
     }
 
@@ -86,7 +91,8 @@ export function saveStoredPrintSettings(recordId, settings, availableKeys, sourc
         availableKeys
       ),
       extraImages: normalizeExtraImagesSettings(settings?.extraImages, sourceImageUrls),
-      completedTime: normalizeCompletedTimeSettings(settings?.completedTime)
+      completedTime: normalizeCompletedTimeSettings(settings?.completedTime),
+      printStyle: normalizeRecordPrintStyleId(settings?.printStyle)
     }
     localStorage.setItem(`corchetti.recordPrint.${id}`, JSON.stringify(payload))
   } catch {

@@ -337,9 +337,44 @@ function injectExportCaptureStyles(doc) {
   doc.head.appendChild(style)
 }
 
+function readResolvedExportColors(sourceRoot, doc, { backgroundColor } = {}) {
+  const view = doc?.defaultView || (typeof window !== 'undefined' ? window : null)
+  const sampleCard = sourceRoot?.querySelector?.('.export-healing-card')
+
+  let domainBg = String(backgroundColor || '').trim()
+  const hasThemedBackdrop = Boolean(sourceRoot?.querySelector?.('.ocean-print-backdrop'))
+  if (!domainBg && sourceRoot && view) {
+    domainBg = view.getComputedStyle(sourceRoot).backgroundColor || ''
+  }
+  if (hasThemedBackdrop) {
+    domainBg = '#bae6fd'
+  } else if (!domainBg || domainBg === 'transparent' || domainBg === 'rgba(0, 0, 0, 0)') {
+    domainBg = '#ffffff'
+  }
+
+  let cardBg = EXPORT_CARD_BG
+  let cardShadow = '0 12px 26px rgba(0, 0, 0, 0.1)'
+  if (sampleCard && view) {
+    const cardStyle = view.getComputedStyle(sampleCard)
+    const resolvedBg = cardStyle.backgroundColor
+    if (resolvedBg && resolvedBg !== 'transparent' && resolvedBg !== 'rgba(0, 0, 0, 0)') {
+      cardBg = resolvedBg
+    }
+    const resolvedShadow = cardStyle.boxShadow
+    if (resolvedShadow && resolvedShadow !== 'none') {
+      cardShadow = resolvedShadow
+    }
+  }
+
+  return { domainBg, cardBg, cardShadow }
+}
+
 /** Flatten styles that html2canvas renders incorrectly (backdrop-filter, inset shadow, alpha fill). */
-export function applyExportFlatStyles(root, doc = null, { layoutWidthPx, sourceRoot = null } = {}) {
+export function applyExportFlatStyles(root, doc = null, options = {}) {
   if (!root || typeof root.querySelectorAll !== 'function') return
+
+  const { layoutWidthPx, sourceRoot = null, backgroundColor } = options
+  const { domainBg, cardBg, cardShadow } = readResolvedExportColors(sourceRoot, doc, { backgroundColor })
 
   if (doc) injectExportCaptureStyles(doc)
 
@@ -352,11 +387,11 @@ export function applyExportFlatStyles(root, doc = null, { layoutWidthPx, sourceR
   const cardSelector = '.export-healing-card'
   const nodes = root.querySelectorAll(cardSelector)
   for (const el of nodes) {
-    el.style.setProperty('background', EXPORT_CARD_BG, 'important')
-    el.style.setProperty('background-color', EXPORT_CARD_BG, 'important')
+    el.style.setProperty('background', cardBg, 'important')
+    el.style.setProperty('background-color', cardBg, 'important')
     el.style.setProperty('backdrop-filter', 'none', 'important')
     el.style.setProperty('-webkit-backdrop-filter', 'none', 'important')
-    el.style.setProperty('box-shadow', '0 12px 26px rgba(0, 0, 0, 0.1)', 'important')
+    el.style.setProperty('box-shadow', cardShadow, 'important')
   }
 
   for (const el of root.querySelectorAll('.export-healing-card.rest-card, .export-healing-card.extra-note-card')) {
@@ -364,15 +399,15 @@ export function applyExportFlatStyles(root, doc = null, { layoutWidthPx, sourceR
   }
 
   if (root.matches?.(cardSelector)) {
-    root.style.setProperty('background', EXPORT_CARD_BG, 'important')
-    root.style.setProperty('background-color', EXPORT_CARD_BG, 'important')
+    root.style.setProperty('background', cardBg, 'important')
+    root.style.setProperty('background-color', cardBg, 'important')
     root.style.setProperty('backdrop-filter', 'none', 'important')
     root.style.setProperty('-webkit-backdrop-filter', 'none', 'important')
-    root.style.setProperty('box-shadow', '0 12px 26px rgba(0, 0, 0, 0.1)', 'important')
+    root.style.setProperty('box-shadow', cardShadow, 'important')
   }
 
-  root.style.setProperty('background', '#ffffff', 'important')
-  root.style.setProperty('background-color', '#ffffff', 'important')
+  root.style.setProperty('background', domainBg, 'important')
+  root.style.setProperty('background-color', domainBg, 'important')
 
   normalizeExtraImagesForExport(root, layoutWidthPx, sourceRoot, doc?.defaultView ? doc : document)
 }
@@ -424,7 +459,11 @@ export async function captureElementAsPngBlob(element, options = {}) {
       ...mergedCanvasOptions,
       onclone: (doc, clonedNode) => {
         if (flattenForExport) {
-          applyExportFlatStyles(clonedNode, doc, { layoutWidthPx, sourceRoot: element })
+          applyExportFlatStyles(clonedNode, doc, {
+            layoutWidthPx,
+            sourceRoot: element,
+            backgroundColor: options.backgroundColor
+          })
         } else {
           normalizeExtraImagesForExport(clonedNode, layoutWidthPx, element, doc)
         }
