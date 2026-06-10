@@ -9,6 +9,7 @@
       >
         <div
           class="modal-container"
+          :class="{ 'modal-container--overflow-visible': overflowVisible }"
           :style="containerStyle"
           role="dialog"
           aria-modal="true"
@@ -28,7 +29,7 @@
             </button>
           </div>
 
-          <div class="modal-body" :class="bodyClass">
+          <div class="modal-body" :class="[bodyClass, { 'modal-body--overflow-visible': overflowVisible }]">
             <slot />
           </div>
 
@@ -71,6 +72,8 @@ const props = defineProps({
   },
   closeOnOverlay: { type: Boolean, default: true },
   showClose: { type: Boolean, default: true },
+  /** Let dropdown menus inside the modal escape body/container clipping. */
+  overflowVisible: { type: Boolean, default: false },
   bodyClass: { type: [String, Array, Object], default: '' },
   showSaveFooter: { type: Boolean, default: false },
   step: { type: Number, default: null },

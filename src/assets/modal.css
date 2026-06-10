@@ -74,6 +74,16 @@
   min-height: 0;
 }
 
+/* Opt-in: let dropdown menus escape the modal instead of being clipped at the footer line. */
+.modal-container--overflow-visible {
+  overflow: visible;
+}
+
+.modal-body--overflow-visible {
+  overflow-y: visible;
+  overflow-x: visible;
+}
+
 .modal-hint {
   margin: 0 0 1rem;
   font-size: 0.85rem;
@@ -87,6 +97,8 @@
   gap: 0.75rem;
   padding: 0.5rem 1.25rem 0.7rem;
   border-top: 1px solid #e5e7eb;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
   background: #fff;
 }
 

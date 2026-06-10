@@ -4,6 +4,7 @@
     :title="displayTitle"
     max-width="400px"
     z-level="top"
+    overflow-visible
     :close-on-overlay="false"
     show-save-footer
     :saving="isAddStatusSaving"
@@ -20,16 +21,9 @@
     </div>
 
     <div v-else class="add-custom-status-section">
-      <SelectionInput
-        id="custom-status-input"
-        v-model="addModePickProxy"
-        :options="addCustomStatusOptions"
-        :placeholder="t('statusModal.selectCategoryPlaceholder')"
-      />
       <TextInput
-        v-if="isCreatingNewCategory"
+        id="custom-status-input"
         v-model="customStatusDraft"
-        class="status-input--new"
         :placeholder="t('statusModal.newCategoryPlaceholder')"
       />
     </div>
@@ -56,8 +50,6 @@ import ModalShell from '@/components/modals/shell/ModalShell/ModalShell.vue'
 import TextInput from '@/components/shared/inputs/TextInput.vue'
 import { getNoteSuggestionsForStatus } from '@/utils/recordStatusCatalog'
 
-const CREATE_NEW_STATUS_VALUE = '__new__'
-
 const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps({
@@ -68,7 +60,7 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  /** Full user catalog (add-custom picker + note suggestions). */
+  /** Full user catalog (kept for API compatibility with callers). */
   userStatusCatalog: {
     type: Array,
     default: () => []
@@ -97,7 +89,6 @@ const {
   modalStatusId,
   originalStatuses,
   recordLinkedStatuses,
-  userStatusCatalog,
   userStatusNotes,
   modalStatusNote,
   addStatusNote,
@@ -114,13 +105,6 @@ const statusIdProxy = computed({
     if (typeof handleModalStatusChange.value === 'function') {
       handleModalStatusChange.value({ target: { value } })
     }
-  }
-})
-
-const addModePickProxy = computed({
-  get: () => addModePickId.value,
-  set: (value) => {
-    addModePickId.value = value
   }
 })
 
@@ -144,33 +128,10 @@ const editStatusOptions = computed(() => {
   return out
 })
 
-const addCustomStatusOptions = computed(() => {
-  const out = []
-
-  for (const s of originalStatuses.value || []) {
-    const label = s?.nameKey ? t(s.nameKey) : (s?.name ?? '')
-    out.push({ value: s.id, label })
-  }
-
-  const catalog = Array.isArray(userStatusCatalog.value) ? userStatusCatalog.value : []
-  if (catalog.length > 0) {
-    out.push({ kind: 'group', label: t('statusModal.customGroupLabel') })
-    for (const s of catalog) {
-      out.push({ value: s.id, label: s.name })
-    }
-  }
-
-  out.push({ value: CREATE_NEW_STATUS_VALUE, label: t('statusModal.createNewCategoryOption') })
-  return out
-})
-
 const customStatusDraft = ref('')
-const addModePickId = ref('')
 const isAddStatusSaving = ref(false)
 
 const isAdding = computed(() => String(modalStatusId.value) === '__add_custom__')
-
-const isCreatingNewCategory = computed(() => String(addModePickId.value) === CREATE_NEW_STATUS_VALUE)
 
 const displayTitle = computed(() => {
   return isAdding.value ? t('statusModal.titleAddCustom') : t('statusModal.titleEdit')
@@ -178,9 +139,7 @@ const displayTitle = computed(() => {
 
 const canSaveAddMode = computed(() => {
   if (!isAdding.value) return true
-  const pick = String(addModePickId.value || '')
-  if (pick === CREATE_NEW_STATUS_VALUE) return Boolean(customStatusDraft.value.trim())
-  return pick !== '' && Number.isFinite(Number(pick))
+  return Boolean(customStatusDraft.value.trim())
 })
 
 const addCustomStatus = async () => {
@@ -188,21 +147,10 @@ const addCustomStatus = async () => {
 
   isAddStatusSaving.value = true
   try {
-    const pickRaw = addModePickId.value
-
-    if (String(pickRaw) === CREATE_NEW_STATUS_VALUE) {
-      const name = customStatusDraft.value.trim()
-      if (!name) return
-      const result = await confirmAddCustomStatus.value({ name })
-      applyConfirmResult(result)
-      return
-    }
-
-    const pickId = Number(pickRaw)
-    if (Number.isFinite(pickId)) {
-      const result = await confirmAddCustomStatus.value({ statusId: pickId })
-      applyConfirmResult(result)
-    }
+    const name = customStatusDraft.value.trim()
+    if (!name) return
+    const result = await confirmAddCustomStatus.value({ name })
+    applyConfirmResult(result)
   } finally {
     isAddStatusSaving.value = false
   }
@@ -211,7 +159,6 @@ const addCustomStatus = async () => {
 function applyConfirmResult(result) {
   const newId = (result && typeof result === 'object' && 'id' in result) ? result.id : result
   customStatusDraft.value = ''
-  addModePickId.value = ''
 
   if (newId != null && typeof handleModalStatusChange.value === 'function') {
     handleModalStatusChange.value({ target: { value: newId } })
@@ -221,7 +168,6 @@ function applyConfirmResult(result) {
 const handleCancel = () => {
   if (isAdding.value) {
     customStatusDraft.value = ''
-    addModePickId.value = ''
     if (typeof cancelAddCustomStatus.value === 'function') {
       cancelAddCustomStatus.value()
       return
@@ -247,13 +193,6 @@ watch(modalStatusId, (next, prev) => {
   }
 
   if (isAdding.value) {
-    addModePickId.value = ''
-    customStatusDraft.value = ''
-  }
-})
-
-watch(addModePickId, (pick) => {
-  if (String(pick) !== CREATE_NEW_STATUS_VALUE) {
     customStatusDraft.value = ''
   }
 })
@@ -336,7 +275,4 @@ const handleSaveNote = () => {
   align-items: center;
 }
 
-.status-input--new {
-  margin-top: 0.75rem;
-}
 </style>

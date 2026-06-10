@@ -15,7 +15,12 @@
       <span class="selection-input__trigger-text">
         {{ displayLabel }}
       </span>
-      <span class="selection-input__caret" aria-hidden="true">▾</span>
+      <img
+        class="selection-input__caret"
+        :src="caretIconUrl"
+        alt=""
+        aria-hidden="true"
+      />
     </div>
 
     <div v-if="open" class="selection-input__menu dropdown-modal" role="listbox" @mousedown.prevent>
@@ -43,6 +48,9 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { resolveSettingsIconUrl } from '@/utils/settingsIcon'
+
+const caretIconUrl = resolveSettingsIconUrl('004__arrow_down')
 
 const props = defineProps({
   modelValue: { type: [String, Number], default: '' },
@@ -179,10 +187,13 @@ onUnmounted(() => {
   color: inherit;
 }
 
+/* The SVG glyph sits inside a 40x40 viewBox with padding, so render it large. */
 .selection-input__caret {
-  color: #6b7280;
-  font-size: 0.9rem;
   flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: none;
+  pointer-events: none;
 }
 
 .selection-input__menu {
@@ -190,7 +201,7 @@ onUnmounted(() => {
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  z-index: 20;
+  z-index: var(--z-dropdown-menu, 601);
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 10px;

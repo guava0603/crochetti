@@ -14,7 +14,8 @@
             'is-docked': true,
             'is-recording': isRecording,
             'is-compact': compact,
-            'is-completed-record': isLatestRecordCompleted
+            'is-completed-record': isLatestRecordCompleted,
+            'is-clickable': overlayClickable
           }
         ]"
         @click="handleOverlayClick"
@@ -216,7 +217,9 @@ const context = computed(() => {
   }
 })
 
-const overlayClickable = computed(() => !isRecordPage.value)
+// Only navigable when there is a current working (non-completed) record.
+const hasWorkingRecord = computed(() => Boolean(recordId.value) && !isLatestRecordCompleted.value)
+const overlayClickable = computed(() => !isRecordPage.value && hasWorkingRecord.value)
 const compact = computed(() => !isRecordPage.value)
 
 const isRecording = computed(() => Boolean(context.value?.recording?.isRecording))
@@ -461,7 +464,7 @@ const actions = {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1.25rem calc(1.25rem + var(--bottom-footer-padding-bottom));
+  padding: 2rem 1.25rem var(--bottom-footer-padding-bottom);
 }
 
 /* Recording mode: make it taller and stack time above status. */
@@ -498,6 +501,14 @@ const actions = {
   display: grid;
   place-items: center;
   padding: 0;
+}
+
+.top-overlay-box.is-clickable {
+  cursor: pointer;
+}
+
+.top-overlay-box:not(.is-clickable) {
+  cursor: default;
 }
 
 .completed-record-logo {
