@@ -64,13 +64,14 @@ function onRightClick() {
   align-items: flex-end;
   justify-content: flex-start;
   position: relative;
-  padding: 0 calc(var(--bottom-footer-padding-bottom) / 2);
 }
 
+/* The box grows by the safe-area inset and pads it away at the bottom,
+   so the icon stays centered in the 4rem square above the home indicator. */
 .app-footer__side {
   flex: 0 0 var(--bottom-footer-dock-side-width);
   width: var(--bottom-footer-dock-side-width);
-  height: var(--bottom-footer-dock-side-width);
+  height: calc(var(--bottom-footer-dock-side-width) + var(--bottom-footer-padding-bottom));
   display: flex;
   align-items: center;
   justify-content: center;
