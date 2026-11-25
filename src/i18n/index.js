@@ -21,7 +21,11 @@ function normalizeLocale(raw) {
 
 function detectInitialLocale() {
   const fromStorage = normalizeLocale(localStorage.getItem(STORAGE_KEY))
-  if (fromStorage) return fromStorage
+  if (fromStorage) {
+    const stored = String(localStorage.getItem(STORAGE_KEY) || '')
+    if (stored && stored !== fromStorage) setStoredLocale(fromStorage)
+    return fromStorage
+  }
 
   const nav = normalizeLocale(navigator.language)
   if (nav) return nav
@@ -37,16 +41,28 @@ export function getStoredLocale() {
   return normalizeLocale(localStorage.getItem(STORAGE_KEY))
 }
 
+const initialLocale = detectInitialLocale()
+
 export const i18n = createI18n({
   legacy: false,
   globalInjection: true,
-  locale: detectInitialLocale(),
-  fallbackLocale: 'en',
+  locale: initialLocale,
+  fallbackLocale: {
+    'zh-TW': ['zh', 'en'],
+    zh: ['zh-TW', 'en'],
+    en: []
+  },
   messages: {
     en,
-    'zh-TW': zhTW
+    'zh-TW': zhTW,
+    // Intlify language-fallback resolves `zh` from `zh-TW`; alias avoids missing-key warnings.
+    zh: zhTW
   }
 })
+
+if (normalizeLocale(i18n.global.locale.value) !== i18n.global.locale.value) {
+  i18n.global.locale.value = initialLocale
+}
 
 export function setI18nLocale(locale) {
   const normalized = normalizeLocale(locale)

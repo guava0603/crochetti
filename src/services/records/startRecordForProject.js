@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from '@lukeed/uuid'
 
+import { DEFAULT_STATUS_ID } from '@/constants/status'
 import { normalizeComponentListForRecord } from '@/utils/componentInstances'
 import { addRecordToProjectOngoing } from '@/services/firestore/projects'
 import { setUserRecord } from '@/services/firestore/records'
@@ -25,6 +26,8 @@ export function buildNewRecordForProject({
     component_list: normalizeComponentListForRecord(list),
     time_slots: [],
     self_defined_status: [],
+    pending_status_id: DEFAULT_STATUS_ID,
+    pending_status_note: '',
     // Use client timestamp for immediate achievement evaluation.
     created_at: nowIso,
     // Used to determine whether "更新專案" should be enabled.

@@ -3,12 +3,13 @@
 </template>
 
 <script setup>
-import AddProjectView from '@/components/AddProjectView/index.vue'
-import { createProject, updateProject } from '@/services/firestore/projects'
+import AddProjectView from '@/components/features/add-project/AddProjectPage.vue'
+import { createProject, fetchUserDraftSummaries, updateProject } from '@/services/firestore/projects'
 
 const apiHandlers = {
   createProject,
-  updateProject
+  updateProject,
+  fetchUserDraftSummaries
 }
 
 function handleApi({ name, args, resolve, reject }) {

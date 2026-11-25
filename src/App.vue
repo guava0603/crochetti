@@ -23,16 +23,16 @@
 
 <script setup>
 import { computed } from 'vue'
-import GlobalConfirmationModal from '@/components/modals/GlobalConfirmationModal.vue'
-import GlobalHelpModal from '@/components/modals/GlobalHelpModal.vue'
-import AchievementToastHost from '@/components/ui/AchievementToastHost.vue'
-import ToastHost from '@/components/ui/ToastHost.vue'
-import ErrorHost from '@/components/ui/ErrorHost.vue'
-import TopBanner from '@/components/layout/TopBanner.vue'
+import GlobalConfirmationModal from '@/components/modals/global/GlobalConfirmationModal.vue'
+import GlobalHelpModal from '@/components/modals/global/GlobalHelpModal.vue'
+import AchievementToastHost from '@/components/shared/ui/AchievementToastHost.vue'
+import ToastHost from '@/components/shared/ui/ToastHost.vue'
+import ErrorHost from '@/components/shared/ui/ErrorHost.vue'
+import TopBanner from '@/components/shell/layout/TopBanner.vue'
 import { RouterView, useRoute } from 'vue-router'
 import { provideAppBanner } from '@/composables/appBanner'
 import { provideFooterContext } from '@/composables/footerContext'
-import Footer from '@/components/Footer/index.vue'
+import Footer from '@/components/shell/Footer/index.vue'
 
 const route = useRoute()
 provideAppBanner()
@@ -53,8 +53,12 @@ const footerType = computed(() => {
   - Fixed banner/footer heights so page body is stable even if a route doesn't render its own.
 */
 .app-shell {
-  --safe-top: env(safe-area-inset-top);
-  --safe-bottom: env(safe-area-inset-bottom);
+  /* Use shared safe-area tokens everywhere. */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  /* Back-compat aliases used by some components. */
+  --safe-top: var(--safe-area-top);
+  --safe-bottom: var(--safe-area-bottom);
 
   /* App shell fixed regions */
   --app-banner-height: 4rem;

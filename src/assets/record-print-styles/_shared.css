@@ -1,0 +1,106 @@
+/**
+ * Print export themes: tokens on `.record-result-sharing.print-style--*`.
+ */
+
+.record-result-sharing[class*='print-style--'] {
+  background: var(--print-domain-bg, #fff);
+  color: var(--print-summary-color, #111827);
+}
+
+.record-result-sharing[class*='print-style--'].printed-domain {
+  background: var(--print-domain-bg, #fff) !important;
+  border-color: transparent;
+}
+
+.record-result-sharing[class*='print-style--'] .sharing-meta__title {
+  color: var(--print-title-color, #111827);
+}
+
+.record-result-sharing[class*='print-style--'] .sharing-meta__completed {
+  color: var(--print-completed-color, #6b7280);
+  opacity: 0.9;
+}
+
+.record-result-sharing[class*='print-style--'] .result-title {
+  color: var(--print-result-title-color, #111827);
+}
+
+.record-result-sharing[class*='print-style--'] .summary-line,
+.record-result-sharing[class*='print-style--'] .summary-line > span {
+  color: var(--print-summary-color, #6b7280);
+}
+
+.record-result-sharing[class*='print-style--'] .summary-highlight {
+  color: var(--print-summary-highlight, #111827);
+}
+
+.record-result-sharing[class*='print-style--'] .top-badge__title {
+  color: var(--print-badge-title-color, #111827);
+}
+
+.record-result-sharing[class*='print-style--'] .top-badge__sub {
+  color: var(--print-badge-sub-color, rgba(17, 24, 39, 0.55));
+}
+
+.record-result-sharing[class*='print-style--'] .top-badge__circle {
+  background: var(--print-badge-circle-bg, #fff);
+}
+
+.record-result-sharing[class*='print-style--'] .rest-card-title {
+  color: var(--print-rest-title-color, #111827);
+}
+
+.record-result-sharing[class*='print-style--'] .rest-card-sub {
+  color: var(--print-rest-sub-color, #6b7280);
+}
+
+.record-result-sharing[class*='print-style--'] .extra-note-card__body {
+  color: var(--print-note-color, #111827);
+}
+
+.record-result-sharing[class*='print-style--'] .export-healing-card {
+  background: var(--export-card-bg, #f5ebda) !important;
+  background-color: var(--export-card-bg, #f5ebda) !important;
+  border-color: var(--export-card-border, rgba(122, 90, 58, 0.85)) !important;
+  box-shadow: var(--export-card-shadow, 0 0.75rem 1.625rem rgba(0, 0, 0, 0.1)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.record-result-sharing[class*='print-style--'] .export-healing-card .card-inner-frame {
+  border: var(--export-inner-border, 0.09375rem dashed rgba(122, 90, 58, 0.38));
+}
+
+.record-result-sharing[class*='print-style--'] .top-card.export-healing-card {
+  border-radius: var(--export-top-radius, 1rem);
+}
+
+.record-result-sharing[class*='print-style--'] .top-card.export-healing-card .card-inner-frame {
+  border-radius: var(--export-top-radius, 1rem);
+}
+
+.record-result-sharing[class*='print-style--'] .rest-card.export-healing-card,
+.record-result-sharing[class*='print-style--'] .rest-card.export-healing-card .card-inner-frame,
+.record-result-sharing[class*='print-style--'] .extra-note-card.export-healing-card,
+.record-result-sharing[class*='print-style--'] .extra-note-card.export-healing-card .card-inner-frame {
+  border-radius: var(--export-rest-radius, 14px);
+}
+
+/* Bar charts (horizontal + vertical) */
+.record-result-sharing[class*='print-style--'] .bar-chart__fill,
+.record-result-sharing[class*='print-style--'] .bar-chart__row-fill {
+  background: var(--print-bar-fill, #e09d7f) !important;
+}
+
+.record-result-sharing[class*='print-style--'] .bar-chart__bar,
+.record-result-sharing[class*='print-style--'] .bar-chart__row-track {
+  background: var(--print-bar-track, rgba(17, 24, 39, 0.12)) !important;
+}
+
+.record-result-sharing[class*='print-style--'] .bar-chart__row-title {
+  color: var(--print-bar-label-color, rgba(17, 24, 39, 0.82));
+}
+
+.record-result-sharing[class*='print-style--'] .bar-chart__row-value {
+  color: var(--print-rest-sub-color, #6b7280);
+}

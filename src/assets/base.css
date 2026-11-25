@@ -63,12 +63,14 @@
   --color-warm-highlight-green-light: #C5D89D;
   --color-font-invisible: rgba(17, 24, 39, 0.58);
   --color-highlight-yellow: #FFD150;
+  --color-warm-brown-transparent: rgba(90, 82, 75, 0.75);
 
   /* Warning / destructive */
   --color-warning-rgb: 255 70 70;
   --color-warning: #EB4C4C;
 
   --color-border: var(--vt-c-divider-light-2);
+  --color-border-edit-project: var(--color-border);
   --color-border-hover: var(--vt-c-divider-light-1);
 
   --color-heading: var(--vt-c-text-light-1);
@@ -126,13 +128,13 @@
   --z-toast: 2000;
   --z-toast-high: 2100;
 
-  --padding-bottom-record-options: 12rem;
+  --padding-bottom-record-options: 5rem;
   --radius-card: 0.75rem;
 }
 
 html.is-app {
   --safe-area-top: env(safe-area-inset-top, 0px);
-  --safe-area-bottom: calc(env(safe-area-inset-bottom, 0px) / 3);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @supports (height: 100svh) {

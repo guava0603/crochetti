@@ -26,6 +26,7 @@ export function buildStitchLookup(selfDefinedStitches) {
     if (id === null) continue
 
     const name = String(s.name || '').trim()
+    const displayLabel = String(s.display_label || '').trim()
     const symbolJp = String(s.symbol_jp || '').trim()
     const textZh = String(s.text_zh || '').trim()
     const description = String(s.description || '').trim()
@@ -38,8 +39,9 @@ export function buildStitchLookup(selfDefinedStitches) {
       description,
       // Self-defined stitches may provide their own display strings.
       // Fallback to raw name when not provided.
-      symbol_jp: symbolJp || name,
-      text_zh: textZh || name,
+      symbol_jp: symbolJp || displayLabel || name,
+      text_zh: textZh || displayLabel || name,
+      display_label: displayLabel || undefined,
       consume: Number.isFinite(consume) ? consume : 1,
       generate: Number.isFinite(generate) ? generate : 0
     }

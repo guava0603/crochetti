@@ -1,0 +1,30 @@
+---
+description: Edit-crochet keypad model (sections, cursor, highlight, ×n)
+globs: src/utils/keypadEdit.js,src/components/features/crochet-editor/BottomToolbar/EditCrochet.vue,src/components/features/crochet-editor/BottomToolbar/KeypadPreview.vue,src/components/features/crochet-editor/BottomToolbar/KeypadPreviewNode.vue
+alwaysApply: false
+---
+
+# Edit-crochet keypad (authoritative spec)
+
+The keypad owns a draft of the **whole row** plus a cursor `containerPath` (indices into nested
+`pattern` / `bundle` nodes; `[]` = row root). All edits go through pure helpers in
+`src/utils/keypadEdit.js`; EditCrochet emits `{ list, replaceWholeRow: true }` on every change.
+
+## Sections
+- **Stitch** — always shown. Appends to the current container.
+- **Pattern** (`重複花樣`) — appends an empty pattern ×1 and moves into it.
+  Shown at the root, or inside a pattern **that already has children** (rule 1). Hidden in a bundle.
+- **Same stitch** (`在同一針目裡`) — appends an empty bundle (consume 1) and moves into it.
+  Inside a bundle only the Stitch section is shown.
+
+## Input display
+- Shows the whole row; the current pattern/bundle has the yellow highlight, the rest is normal.
+- The current **pattern** always shows `× n` (InputNumber) right after it. Root and bundles have no ×.
+- Clicking any node selects the **deepest pattern containing it**; outside any pattern nothing happens.
+
+## Navigation
+- Last-page button: go to parent; hidden at the root. Leaving an empty container removes it.
+- Delete-last: pops the last child; on an empty container removes it and goes to the parent.
+- Save prunes empty patterns/bundles (`pruneEmptyContainers`).
+
+The root is never a pattern. There is no "change stitch" / "add to bundle" selection mode.

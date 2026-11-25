@@ -12,9 +12,7 @@ import {
 export function useRecordResultSharingLayoutWidth(captureRootRef) {
   const layoutWidthPx = ref(0)
 
-  const layoutWidthCss = computed(() =>
-    layoutWidthPx.value > 0 ? `${layoutWidthPx.value}px` : RECORD_RESULT_SHARING_WIDTH_CSS
-  )
+  const layoutWidthCss = computed(() => RECORD_RESULT_SHARING_WIDTH_CSS)
 
   function refreshLayoutWidth() {
     const root = captureRootRef?.value

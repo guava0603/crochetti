@@ -9,10 +9,14 @@
 </template>
 
 <script setup>
+/**
+ * Route shell for design PNG export. Printable UI lives in DesignPrintContent —
+ * avoid ::before / ::after there (use real elements; see export-card.css).
+ */
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import DesignPrintViewMain from '@/components/projects/DesignPrintView/index.vue'
+import DesignPrintViewMain from '@/components/features/project/design-print/DesignPrintPage.vue'
 import { fetchProject } from '@/services/firestore/projects'
 import { useCurrentUserProfile } from '@/composables/useCurrentUserProfile'
 

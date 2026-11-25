@@ -11,6 +11,8 @@
     "home": "Home",
     "confirm": "Confirm",
     "search": "Search",
+    "noSearchResults": "No matches",
+    "clearSearch": "Clear search",
     "ok": "OK",
     "remove": "Remove",
     "notice": "Notice",
@@ -19,6 +21,7 @@
     "action": "Action",
     "actions": "Actions",
     "copy": "Copy",
+    "add": "Add",
     "delete": "Delete",
     "rows": "Rows",
     "notes": "Notes",
@@ -39,6 +42,7 @@
     "timeUnitHour": "h",
     "timeUnitDay": "d",
     "required": "Required",
+    "optional": "Optional",
     "discardChangesConfirm": "You have unsaved changes. Discard them?"
   },
   "help": {
@@ -67,94 +71,6 @@
         }
       }
     },
-    "editCrochetBasics": {
-      "aria": "Edit-crochet tutorial",
-      "pageIntro": {
-        "title": "How to edit stitches (Edit Crochet)",
-        "items": {
-          "openEditor": "Tap any Stitch cell → opens the editor",
-          "changeOrAdd": "Use the top tabs: Change stitch / Add to bundle"
-        }
-      },
-      "pageChangeStitch": {
-        "title": "Change stitch",
-        "body": "Use this when you want to replace a selected stitch segment with another stitch.",
-        "items": {
-          "pickStitch": "Pick a stitch from the list and watch the preview update",
-          "positionOptional": "Some stitches support a position (e.g. X/T/F/E)",
-          "bundlePattern": "When selecting a pattern/bundle, the preview shows nested structure",
-          "goParent": "Use Go Parent to jump back up one level"
-        }
-      },
-      "pageAddToBundle": {
-        "title": "Add to bundle",
-        "body": "Use bundles for multiple stitches in the same spot (e.g. increases, popcorn).",
-        "items": {
-          "switchTab": "Switch to the Add to bundle tab",
-          "addSeveral": "Add multiple stitches; they will be grouped into one bundle",
-          "countMultiplier": "Use the × count to repeat a pattern multiple times",
-          "useForShaping": "Great for shaping: increases/decreases and special clusters"
-        }
-      },
-      "pageBasicStitches": {
-        "title": "Basic stitches",
-        "body": "The common foundation stitches: single/half-double/double/treble (symbols: X/T/F/E).",
-        "items": {
-          "x": "X: single crochet",
-          "t": "T: half double crochet",
-          "f": "F: double crochet",
-          "e": "E: treble crochet"
-        }
-      },
-      "pageDecorativeStitches": {
-        "title": "Decorative / utility",
-        "body": "Small utility stitches used for joins, turning, spacing, and shaping (may not increase stitch count).",
-        "items": {
-          "sl": "引抜: slip stitch (joins/moves)",
-          "ch": "鎖: chain (turning/spacing)",
-          "skip": "休: skip 1 stitch (consume 1, generate 0)",
-          "turning": "^: turning chain (context-dependent)"
-        }
-      },
-      "pageIncrease": {
-        "title": "Increase",
-        "body": "An increase makes 2 stitches into the same spot (stitch count goes up).",
-        "items": {
-          "v": "Common symbols: V / TV / FV / EV (consume 1 → generate 2)",
-          "colorHint": "Use the Total color hints to validate shaping",
-          "useWithPosition": "Can also be combined with FL/BL/FP/BP when needed"
-        }
-      },
-      "pageDecrease": {
-        "title": "Decrease",
-        "body": "A decrease combines 2 stitches into 1 (stitch count goes down).",
-        "items": {
-          "panel": "Use the Decrease button on the right after selecting X/T/F/E",
-          "mapping": "Mapping: X→A, T→TA, F→FA, E→EA",
-          "bpfa": "If BP (back post) is selected with F-decrease, it displays as BPFA",
-          "stats": "Decrease is always consume 2, generate 1"
-        }
-      },
-      "pageCustom": {
-        "title": "Custom",
-        "body": "When built-in stitches aren't enough, create a custom bundle and save it as a button.",
-        "items": {
-          "when": "Good for popcorn, shells, and special stitch groups",
-          "consumeGenerate": "Set consume/generate so Total calculation stays correct",
-          "name": "Give it a clear name so you can find it later"
-        }
-      },
-      "pageWorkflowTips": {
-        "title": "Workflow tips",
-        "body": "Suggested approach: draft all rows first, then fine-tune row by row.",
-        "items": {
-          "oneRowAtATime": "Edit one row at a time to avoid confusion",
-          "checkTotal": "Use Total color hints to validate shaping",
-          "adjustEarlier": "If a row looks off, re-check the previous rows",
-          "okToSubmit": "Colors are hints only: you can still submit the design"
-        }
-      }
-    },
     "editCrochetHowTo": {
       "aria": "Edit Crochet - How-to",
       "back": "Back",
@@ -162,25 +78,30 @@
         "title": "Edit Crochet",
         "body": "Pick a topic:",
         "items": {
-          "addBundle": "Add a stitch group",
-          "deleteBundle": "Delete a stitch group",
-          "increase": "Increase",
+          "addBundle": "Add stitches",
+          "repeatPattern": "Repeat pattern",
+          "increase": "Increase (into the same stitch)",
+          "deleteBundle": "Delete stitches",
           "decrease": "Decrease",
           "position": "Stitch positions",
           "custom": "Custom stitch"
         }
       },
       "pageAddBundle": {
-        "title": "[Add a stitch group]",
-        "body": "Tap the buttons on the left to generate stitches.\nNeed more stitches? Tap again.\nAfter saving, stitches are auto-formatted into a readable counted form.\nYou can also adjust the input count directly while typing stitches."
+        "title": "[Add stitches]",
+        "body": "Tap a button in the Stitches section to add it to the end of the input.\nNeed more stitches? Tap again.\nThe input shows the whole row.\nAfter saving, stitches are auto-formatted into a readable counted form."
+      },
+      "pageRepeatPattern": {
+        "title": "[Repeat pattern]",
+        "body": "Tap “Repeat pattern” and a yellow box appears in the input.\nStitches you tap next go into that pattern.\nThe “× number” next to the yellow box is the repeat count — tap it to change it.\nWhen done, tap the back button left of the input to return one level up.\nWant to change a pattern? Tap any stitch of it in the input.\nWhile a pattern is still empty, you can’t start another pattern inside it."
       },
       "pageDeleteBundle": {
-        "title": "[Delete a stitch group]",
-        "body": "Open the row you want to edit.\nTap into the nested levels step by step.\nSelect the part you want to remove, then tap Delete (bottom-left).\nDon’t forget to save!"
+        "title": "[Delete stitches]",
+        "body": "Open the row you want to edit.\nThe delete button right of the input removes the last item of the current box.\nTo delete inside a pattern, tap that pattern in the input first, then delete.\nPressing delete on an empty box removes the box and goes up one level.\nDon’t forget to save!"
       },
       "pageIncrease": {
-        "title": "[Increase]",
-        "body": "An increase is treated as: multiple stitches into the same stitch.\nFirst, enter the base stitch.\nTap into that stitch (its count will be 1).\nUse the top switch to choose Increase.\nAdd the same stitch again.\nAfter saving, it auto-converts to the increase symbol.\nYou can also mix different stitches.\nAfter going back up one level, you can still adjust the increase count."
+        "title": "[Increase (into the same stitch)]",
+        "body": "An increase is treated as: multiple stitches into the same stitch.\nTap “Into the same stitch” and a yellow ( ) box appears in the input.\nTap the stitches that go into that one stitch, e.g. X, X.\nOnly the Stitches section is shown while you are inside.\nWhen done, tap the back button left of the input.\nAfter saving, it auto-converts to the increase symbol."
       },
       "pageDecrease": {
         "title": "[Decrease]",
@@ -485,6 +406,12 @@
       "message": "You have unsaved changes. Discard them and go back?",
       "confirmText": "Discard"
     },
+    "saveProjectDraft": {
+      "title": "Save as draft",
+      "message": "You have unsaved changes.",
+      "discard": "Discard",
+      "save": "Save"
+    },
     "addProjectChooseComponentType": {
       "title": "Add",
       "message": "What would you like to add?"
@@ -695,6 +622,7 @@
       "crochetLang": "Crochet display",
       "crochetLangSymbolJp": "JP symbols",
       "crochetLangSymbolUk": "UK symbols",
+      "crochetLangCustom": "Custom",
       "crochetLangTextZh": "Text",
       "crochetLangIcon": "Icons",
       "copyRow": "Copy row",
@@ -713,6 +641,10 @@
       "row": "Row",
       "crochet": "Stitch"
     },
+    "crochetScrollbar": {
+      "expand": "Expand toolbar",
+      "collapse": "Collapse toolbar"
+    },
     "editGroupRow": {
       "rangeLabel": "Rows {start} - {end}",
       "repeatCount": "Group repeat",
@@ -730,10 +662,13 @@
     },
     "editCrochet": {
       "count": "Count",
-      "addStitch": "Add stitch",
-      "changeStitch": "Change stitch",
-      "tabs": {
-        "addToBundle": "Add"
+      "deleteLast": "Delete last stitch",
+      "repeatPattern": "Repeat pattern",
+      "sameStitch": "Into the same stitch",
+      "sections": {
+        "stitch": "Stitches",
+        "pattern": "Pattern",
+        "bundle": "Same stitch"
       }
     }
   },
@@ -777,6 +712,7 @@
       "title": "Materials",
       "yarn": "Yarn",
       "hook": "Hook",
+      "castOn": "Cast-on",
       "needle": "Needles",
       "yarnType": "Type",
       "yarnAmount": "Amount",
@@ -888,7 +824,7 @@
     "centeredPosition": "Row {row}, stitch {stitch}",
     "selectedPosition": "Row {row}, stitch {stitch}",
     "componentFallbackName": "Component {n}",
-    "syncProject": "Sync Project",
+    "syncProject": "Sync design",
     "syncing": "Syncing…",
     "syncNoChangesNotice": "Nothing to sync — your record is already up to date.",
     "syncSuccessNotice": "Project synced.",
@@ -929,7 +865,10 @@
   "designPrint": {
     "title": "Export design",
     "exportOptionsTitle": "Export options",
-    "exportAsMultiplePhotos": "Export as multiple photos"
+    "exportAsMultiplePhotos": "Export as multiple photos",
+    "previewAlt": "Design export preview",
+    "previewAltNamed": "Design export preview: {name}",
+    "previewLoading": "Generating preview…"
   },
   "print": {
     "editSettings": "Edit display sections",
@@ -939,13 +878,40 @@
   "recordPrint": {
     "title": "Export image",
     "openPrintPage": "Print / export image",
+    "previewAlt": "Record export preview",
+    "previewLoading": "Generating preview…",
+    "previewSection": "Export preview",
+    "stylePickerLabel": "Export style",
+    "styles": {
+      "standard": "Standard",
+      "spring": "Spring",
+      "simple": "Simple",
+      "modern": "Modern",
+      "classic": "Classic",
+      "ocean": "Ocean",
+      "dusk": "Dusk"
+    },
     "sections": {
       "projectTitle": "Project title",
       "completedTime": "Completed time",
       "extraImages": "Feedback photos",
-      "textInfo": "Text info",
+      "textInfo": "Text-only info",
       "moreStatus": "Other statuses",
       "extraNote": "Feedback note"
+    },
+    "completedTime": {
+      "precisionLabel": "Time precision",
+      "precisionSliderLabel": "Completed time precision",
+      "previewLabel": "Preview: {time}",
+      "previewEmpty": "No completed time",
+      "units": {
+        "year": "Year",
+        "month": "Month",
+        "day": "Day",
+        "hour": "Hour",
+        "minute": "Min",
+        "second": "Sec"
+      }
     },
     "extraImages": {
       "title": "Photo layout",
@@ -953,14 +919,12 @@
       "orderLabel": "Display order",
       "spacingLabel": "Image spacing",
       "roundedCornersLabel": "Rounded corners",
+      "aspectPreviewLabel": "Current ratio {ratio}",
+      "aspectSliderLabel": "Box aspect ratio",
+      "rotateAspectLabel": "Rotate ratio (1:x ↔ x:1)",
       "orders": {
         "horizontal": "Horizontal",
         "vertical": "Vertical"
-      },
-      "sizes": {
-        "5_4": "5:4",
-        "3_2": "3:2",
-        "1_1": "1:1"
       }
     }
   },
@@ -1048,6 +1012,7 @@
     "followFailed": "Failed to follow. Please try again.",
     "unfollowFailed": "Failed to unfollow. Please try again.",
     "tabs": {
+      "createdDesigns": "Created",
       "savedDesigns": "Saved designs"
     },
     "loading": "Loading user data...",
@@ -1060,16 +1025,22 @@
       "searchUser": "Search user"
     },
     "moreMenu": {
-      "copyUserId": "Copy user ID",
-      "userIdCopied": "User ID copied",
-      "copyUserIdPrompt": "Copy this user ID:",
-      "copyUserIdFailed": "Failed to copy user ID. Please try again.",
+      "copyFriendCode": "Copy friend code",
+      "friendCodeCopied": "Friend code copied.",
+      "copyFriendCodePrompt": "Copy friend code:",
+      "copyFriendCodeFailed": "Failed to copy friend code. Please try again.",
+      "friendCodeUnavailable": "Friend code is not ready yet. Please try again in a moment.",
       "systemSettings": "System settings"
     },
     "systemSettings": {
       "title": "System settings",
       "languageLabel": "Language",
       "crochetDisplayLabel": "Stitch display",
+      "customDisplayButton": "Custom display",
+      "customDisplayModal": {
+        "title": "Custom stitch display",
+        "hint": "Set how each stitch appears when you choose Custom display. Leave a field blank to use the default text label."
+      },
       "langZhTw": "Traditional Chinese",
       "langEn": "English",
       "crochetSymbolJp": "JP symbols",
@@ -1078,12 +1049,11 @@
     },
     "searchUser": {
       "title": "Find a user",
-      "message": "Enter a user ID or friend code to open their profile.",
-      "userIdLabel": "User ID / Friend code",
-      "userIdPlaceholder": "e.g. abc123... or ABC123",
+      "message": "Enter a user code to open their profile.",
+      "userIdLabel": "User code",
       "errors": {
-        "userIdRequired": "Please enter a user ID or friend code.",
-        "friendCodeNotFound": "No user found for that friend code.",
+        "userIdRequired": "Please enter a user code.",
+        "friendCodeNotFound": "No user found for that user code.",
         "searchFailed": "Search failed. Please try again."
       }
     },
@@ -1093,9 +1063,11 @@
       "actions": {
         "selectProject": "Select an existing project",
         "addProject": "Add a project",
-        "quickAddProject": "Quick add a project (all {stitch})"
+        "quickAddProject": "Quick start"
       },
       "selectProjectLabel": "Project",
+      "selectProjectFilterAria": "Filter projects",
+      "searchProjectsPlaceholder": "Search designs",
       "untitledProject": "Untitled project",
       "noProjects": "No projects yet.",
       "startRecord": "Start recording",
@@ -1114,7 +1086,6 @@
         "errors": {
           "rowCount": "Row count must be at least 1.",
           "crochetCount": "Stitches per row must be at least 1.",
-          "groupsRequired": "Please add at least one row group.",
           "groupIncomplete": "Please complete the last row group before continuing."
         }
       },
@@ -1145,18 +1116,7 @@
       "avatarUploadFailed": "Failed to upload avatar. Please try again.",
       "privacyLabel": "Privacy",
       "privacyPublic": "Public",
-      "privacyPrivate": "Private",
-      "friendCodeLabel": "Friend code",
-      "friendCodeHint": "Share this code so others can find you.",
-      "friendCodeUnavailable": "Not available yet.",
-      "friendCodeCopyPrompt": "Copy friend code:",
-      "friendCodeCopied": "Friend code copied.",
-      "friendCodeCopyFailed": "Failed to copy friend code.",
-      "friendCodeRegenerate": "Regenerate",
-      "friendCodeRegenerateConfirmTitle": "Regenerate friend code?",
-      "friendCodeRegenerateConfirmMessage": "Your old friend code will stop working. Anyone using it won't be able to find you.",
-      "friendCodeRegenerateFailed": "Failed to regenerate friend code. Please try again.",
-      "friendCodeRegenerated": "New friend code created."
+      "privacyPrivate": "Private"
     },
     "privacy": {
       "privateNotice": "This account is private."
@@ -1169,7 +1129,19 @@
   "addProject": {
     "startMode": {
       "new": "Start new",
-      "copy": "Copy from existing"
+      "copy": "Copy from existing",
+      "draft": "Draft"
+    },
+    "saveToDraft": "Save draft",
+    "savingDraft": "Saving…",
+    "draft": {
+      "defaultName": "Untitled draft",
+      "hint": "Choose a draft to continue editing.",
+      "selectPlaceholder": "Search drafts…",
+      "listLabel": "[Draft] {name}",
+      "savedTitle": "Draft saved",
+      "savedMessage": "You can continue later from Draft.",
+      "savedToast": "Draft saved"
     },
     "copy": {
       "title": "Copy from existing",
@@ -1193,7 +1165,8 @@
     },
     "errors": {
       "loginRequired": "You must be logged in to create a project",
-      "createFailed": "Failed to create project: {message}"
+      "createFailed": "Failed to create project: {message}",
+      "draftSaveFailed": "Failed to save draft: {message}"
     },
     "info": {
       "projectNameLabel": "Project Name",
@@ -1229,11 +1202,10 @@
       "addKnittingComponent": "Add knitting component",
       "addStitch": "Add stitch",
       "relatedComponentsLabel": "Related components",
-      "relatedComponentsPlaceholder": "Select a component",
+      "relatedComponentsPlaceholder": "Select earlier parts (multiple)",
       "hookSelectPlaceholder": "Select hook…",
       "needleSelectPlaceholder": "Select needles…",
       "yarnSelectPlaceholder": "Select yarn…",
-      "yarnAmountPlaceholder": "Amount (optional)…",
       "stitchNotesPlaceholder": "Enter notes",
       "creating": "Creating...",
       "createProject": "Create Project",
@@ -1343,7 +1315,7 @@
     "wordCount": "{n}/{max} words",
     "allowContact": "I agree to let the developer contact me by email",
     "emailLabel": "Email (optional)",
-    "emailPlaceholder": "name@example.com",
+    "emailPlaceholder": "name{'@'}example.com",
     "emailHint": "Only used for contacting you. It will not be public.",
     "submit": "Submit",
     "submitting": "Submitting…",

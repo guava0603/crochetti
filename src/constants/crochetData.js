@@ -3,6 +3,7 @@
 import { calculateConsumeGenerateCore } from '@/utils/crochetStatsCore.js'
 import { i18n } from '@/i18n'
 import { normalizeRopeChainCount } from '@/utils/ropeChainCount'
+import { getBuiltinCustomDisplayText, getSelfDefinedCustomDisplayText } from '@/utils/userCrochetDisplay'
 
 const CROCHET_TEXT_ZH_LOCALE = 'zh-TW'
 
@@ -261,7 +262,8 @@ export const CROCHET_LANG = Object.freeze({
   symbol_jp: 0,
   text_zh: 1,
   icon: 2,
-  symbol_uk: 3
+  symbol_uk: 3,
+  custom: 4
 })
 
 // Position modifiers for stitches (only some stitches support these, e.g. X/T/F/E).
@@ -303,7 +305,8 @@ export const CROCHET_LANG_FIELD_BY_ID = Object.freeze({
   1: 'nameKey',
   // icon mode uses UI components for icons; string fallbacks should be Chinese text.
   2: 'nameKey',
-  3: 'symbol_uk'
+  3: 'symbol_uk',
+  4: 'custom'
 })
 
 const shouldTranslatePositionPrefix = (crochetLang) => {
@@ -312,7 +315,14 @@ const shouldTranslatePositionPrefix = (crochetLang) => {
 
 export const getStitchDisplayText = (stitch, crochetLang = CROCHET_LANG.symbol_jp) => {
   if (!stitch) return ''
-  const field = CROCHET_LANG_FIELD_BY_ID?.[Number(crochetLang)] || 'symbol_jp'
+  const lang = Number(crochetLang)
+
+  if (lang === CROCHET_LANG.custom) {
+    if (stitch?.nameKey) return getBuiltinCustomDisplayText(stitch)
+    return getSelfDefinedCustomDisplayText(stitch)
+  }
+
+  const field = CROCHET_LANG_FIELD_BY_ID?.[lang] || 'symbol_jp'
 
   // Keep crochet display language independent from UI locale.
   // - symbol_jp: use symbol.

@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
 import { getRecordPreferredStatus, setRecordPendingStatus } from '@/utils/recordStatus'
+import { DEFAULT_STATUS_ID } from '@/constants/status'
 
 describe('getRecordPreferredStatus', () => {
-  it('returns idle status for missing or invalid records', () => {
-    expect(getRecordPreferredStatus(null)).toEqual({ statusId: 0, statusNote: '' })
-    expect(getRecordPreferredStatus(undefined)).toEqual({ statusId: 0, statusNote: '' })
-    expect(getRecordPreferredStatus('not-an-object')).toEqual({ statusId: 0, statusNote: '' })
+  it('returns focus status for missing or invalid records', () => {
+    expect(getRecordPreferredStatus(null)).toEqual({ statusId: DEFAULT_STATUS_ID, statusNote: '' })
+    expect(getRecordPreferredStatus(undefined)).toEqual({ statusId: DEFAULT_STATUS_ID, statusNote: '' })
+    expect(getRecordPreferredStatus('not-an-object')).toEqual({ statusId: DEFAULT_STATUS_ID, statusNote: '' })
   })
 
   it('returns pending status when a new record has no time slots yet', () => {
@@ -61,14 +62,34 @@ describe('getRecordPreferredStatus', () => {
     })
   })
 
-  it('falls back to idle when no slot or pending status exists', () => {
+  it('falls back to focus when no slot or pending status exists', () => {
     expect(getRecordPreferredStatus({ time_slots: [] })).toEqual({
-      statusId: 0,
+      statusId: DEFAULT_STATUS_ID,
       statusNote: ''
     })
   })
 
-  it('normalizes invalid pending status ids to idle', () => {
+  it('maps legacy idle status id to focus', () => {
+    expect(getRecordPreferredStatus({ time_slots: [], pending_status_id: 0 })).toEqual({
+      statusId: DEFAULT_STATUS_ID,
+      statusNote: ''
+    })
+  })
+
+  it('preserves user-defined custom status ids', () => {
+    const record = {
+      pending_status_id: 100,
+      pending_status_note: 'my category',
+      time_slots: []
+    }
+
+    expect(getRecordPreferredStatus(record)).toEqual({
+      statusId: 100,
+      statusNote: 'my category'
+    })
+  })
+
+  it('normalizes invalid pending status ids to focus', () => {
     const record = {
       time_slots: [],
       pending_status_id: 'not-a-number',
@@ -76,7 +97,7 @@ describe('getRecordPreferredStatus', () => {
     }
 
     expect(getRecordPreferredStatus(record)).toEqual({
-      statusId: 0,
+      statusId: DEFAULT_STATUS_ID,
       statusNote: 'spaced note'
     })
   })
@@ -92,13 +113,22 @@ describe('setRecordPendingStatus', () => {
     expect(record.pending_status_note).toBe('listening')
   })
 
-  it('normalizes invalid status ids to idle', () => {
+  it('normalizes invalid status ids to focus', () => {
     const record = {}
 
     setRecordPendingStatus(record, { statusId: Number.NaN, statusNote: 'note' })
 
-    expect(record.pending_status_id).toBe(0)
+    expect(record.pending_status_id).toBe(DEFAULT_STATUS_ID)
     expect(record.pending_status_note).toBe('note')
+  })
+
+  it('maps legacy removed status ids to focus', () => {
+    const record = {}
+
+    setRecordPendingStatus(record, { statusId: 4, statusNote: 'x' })
+
+    expect(record.pending_status_id).toBe(DEFAULT_STATUS_ID)
+    expect(record.pending_status_note).toBe('x')
   })
 
   it('ignores invalid record targets', () => {
@@ -130,7 +160,7 @@ describe('first recording session status flow', () => {
     expect(record.time_slots).toHaveLength(1)
     expect(record.time_slots[0].status_id).toBe(3)
     expect(record.time_slots[0].status_note).toBe('focus block')
-    expect(record.time_slots[0].status_id).not.toBe(0)
+    expect(record.time_slots[0].status_id).toBe(DEFAULT_STATUS_ID)
   })
 
   it('carries forward the last slot status when resuming after a pause', () => {

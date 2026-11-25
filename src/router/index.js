@@ -42,7 +42,13 @@ const router = createRouter({
       path: '/project/:project_id',
       name: 'project',
       component: () => import('../views/ProjectView.vue'),
-      meta: { bannerOverlay: true, bannerTransparent: true, requiresAuth: true, footer: 'bar' },
+      meta: {
+        bannerOverlay: true,
+        bannerTransparent: true,
+        bannerVariant: 'glass',
+        requiresAuth: true,
+        footer: 'bar'
+      },
     },
     {
       path: '/project/:project_id/download-design',
@@ -60,12 +66,6 @@ const router = createRouter({
       path: '/add-project',
       name: 'add-project',
       component: () => import('../views/AddProjectView.vue'),
-      meta: { bannerTitleKey: 'addProject.bannerTitle', requiresAuth: true, footer: 'action' },
-    },
-    {
-      path: '/add-project/copy',
-      name: 'add-project-copy',
-      component: () => import('../views/AddProjectCopyView.vue'),
       meta: { bannerTitleKey: 'addProject.bannerTitle', requiresAuth: true, footer: 'action' },
     },
     {

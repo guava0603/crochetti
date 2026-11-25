@@ -129,6 +129,32 @@ export function normalizeComponentYarnSelection(rawSelection, yarnMetaList) {
   return out
 }
 
+/** Component-level display: yarn types only (no amounts). */
+export function componentYarnDisplayLines(yarnSelection, yarnMetaList) {
+  const ids = normalizeComponentYarnSelection(yarnSelection, yarnMetaList)
+  const idMap = yarnMetaIdMap(yarnMetaList)
+
+  const out = []
+  const seen = new Set()
+
+  for (const rawId of ids) {
+    const id = toText(rawId)
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+
+    const meta = idMap.get(id)
+    const type = toText(meta?.type)
+    if (type) {
+      out.push(type)
+      continue
+    }
+
+    out.push(id)
+  }
+
+  return out
+}
+
 export function yarnDisplayLines(yarnSelection, yarnMetaList) {
   const ids = Array.isArray(yarnSelection) ? yarnSelection : []
   const idMap = yarnMetaIdMap(yarnMetaList)
@@ -156,6 +182,14 @@ export function yarnDisplayLines(yarnSelection, yarnMetaList) {
   }
 
   return out
+}
+
+/** Remove deprecated per-component yarn amounts (project-level amounts only). */
+export function stripComponentYarnAmountMetadata(metadata) {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return metadata
+  if (!Object.prototype.hasOwnProperty.call(metadata, 'yarn_amount_by_id')) return metadata
+  const { yarn_amount_by_id: _removed, ...rest } = metadata
+  return rest
 }
 
 export function yarnMetaUsageCount(componentList, yarnMeta) {
@@ -205,17 +239,9 @@ export function removeYarnMetaFromComponents(componentList, yarnMeta) {
 
     if (next.length === prev.length) return c
 
-    const nextMeta = c.metadata && typeof c.metadata === 'object'
-      ? { ...c.metadata, yarn: next }
-      : c.metadata
-
-    if (id && nextMeta && typeof nextMeta === 'object' && !Array.isArray(nextMeta)) {
-      const prevAmountMap = nextMeta.yarn_amount_by_id
-      if (prevAmountMap && typeof prevAmountMap === 'object' && !Array.isArray(prevAmountMap)) {
-        const { [id]: _removed, ...rest } = prevAmountMap
-        nextMeta.yarn_amount_by_id = rest
-      }
-    }
+    const nextMeta = stripComponentYarnAmountMetadata(
+      c.metadata && typeof c.metadata === 'object' ? { ...c.metadata, yarn: next } : { yarn: next }
+    )
 
     return { ...c, yarn: next, metadata: nextMeta }
   })

@@ -1,0 +1,219 @@
+<template>
+  <div class="wish-pool-view">
+    <div class="page-content wish-pool-view__page">
+      <div class="wish-pool-view__inner">
+        <p class="wish-pool-view__hint">{{ $t('wishPool.hint') }}</p>
+
+        <form class="wish-pool-form" @submit.prevent="handleSubmit">
+          <section class="subsection" aria-label="wish description">
+            <div class="subsection-body">
+              <LimitedTextArea
+                v-model="description"
+                :placeholder="$t('wishPool.descriptionPlaceholder')"
+                :rows="10"
+                :disabled="loading"
+                :limit="WORD_LIMIT"
+                count-mode="wordsLike"
+              />
+            </div>
+          </section>
+
+          <section class="subsection" aria-label="contact preference">
+            <div class="subsection-body">
+              <label class="contact-opt-in">
+                <input v-model="allowContact" type="checkbox" :disabled="loading" />
+                <span>{{ $t('wishPool.allowContact') }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section v-if="allowContact" class="subsection" aria-label="contact email">
+            <div class="subsection-header">
+              <h5>{{ $t('wishPool.emailLabel') }}</h5>
+            </div>
+            <div class="subsection-body">
+              <TextInput
+                v-model="email"
+                type="email"
+                inputmode="email"
+                autocomplete="email"
+                :placeholder="$t('wishPool.emailPlaceholder')"
+                :disabled="loading"
+              />
+              <span class="field__meta">{{ $t('wishPool.emailHint') }}</span>
+            </div>
+          </section>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { openError, openNotice } from '@/services/ui/notice'
+import { useFooterContext } from '@/composables/footerContext'
+import LimitedTextArea from '@/components/shared/inputs/LimitedTextArea.vue'
+import TextInput from '@/components/shared/inputs/TextInput.vue'
+import { useTextCount } from '@/composables/useTextCount'
+import { countWordsLike } from '@/utils/textCount'
+
+defineOptions({ name: 'WishPoolViewMain' })
+
+const props = defineProps({
+  currentUser: { type: Object, default: null },
+  profile: { type: Object, default: null },
+  // keep profile for potential future personalization
+})
+
+const currentUser = computed(() => props.currentUser)
+
+const emit = defineEmits(['api'])
+
+function callApi(name, ...args) {
+  return new Promise((resolve, reject) => {
+    emit('api', { name, args, resolve, reject })
+  })
+}
+
+const { t } = useI18n({ useScope: 'global' })
+const footer = useFooterContext()
+
+const WORD_LIMIT = 1000
+
+const loading = ref(false)
+const description = ref('')
+const allowContact = ref(false)
+const email = ref('')
+
+const { isOverLimit } = useTextCount(
+  description,
+  () => ({ limit: WORD_LIMIT, countMode: 'wordsLike' })
+)
+
+const canSubmit = computed(() => {
+  if (loading.value) return false
+  if (!String(description.value || '').trim()) return false
+  if (isOverLimit.value) return false
+
+  if (!allowContact.value) return true
+  const e = String(email.value || '').trim()
+  return Boolean(e)
+})
+
+watch(
+  () => [loading.value, canSubmit.value],
+  () => {
+    footer.setActions({
+      ariaLabel: t('wishPool.submitBarAria'),
+      justify: 'flex-end',
+      primary: {
+        label: loading.value ? t('wishPool.submitting') : t('wishPool.submit'),
+        disabled: loading.value || !canSubmit.value,
+        onClick: handleSubmit
+      }
+    })
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => footer.clearActions())
+
+
+
+async function handleSubmit() {
+  if (!canSubmit.value) return
+
+  const user = currentUser.value
+  if (!user) return
+
+  loading.value = true
+  try {
+    await callApi('createWish', {
+      description: description.value,
+      userId: user.uid,
+      email: allowContact.value ? email.value : ''
+    })
+
+    description.value = ''
+    allowContact.value = false
+    email.value = ''
+
+    await openNotice({
+      title: t('common.notice'),
+      message: t('wishPool.success'),
+      confirmText: t('common.ok')
+    })
+  } catch (err) {
+    console.error('Wish submission failed:', err)
+    await openError({
+      title: t('common.error'),
+      message: t('wishPool.errors.submitFailed'),
+      confirmText: t('common.ok')
+    })
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<style scoped>
+.wish-pool-view {
+  width: 100%;
+}
+
+.wish-pool-view__page {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+
+.wish-pool-view__inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+.wish-pool-view__hint {
+  margin: 0 0 1rem;
+  color: var(--color-font-invisible);
+  font-weight: 700;
+}
+
+.wish-pool-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.subsection {
+  border-radius: 16px;
+  border-bottom: 1px solid gba(0, 0, 0, 0.14);
+  padding-bottom: .5rem;
+  margin-bottom: .5rem;
+}
+
+.subsection-body {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.field__meta {
+  font-size: 0.9rem;
+  color: var(--color-font-invisible);
+  font-weight: 700;
+}
+
+.field__meta--error {
+  color: #b91c1c;
+}
+
+.contact-opt-in {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 800;
+  color: var(--color-font-dark);
+  user-select: none;
+}
+</style>

@@ -38,7 +38,8 @@ export function formatDateTime(value, options = {}) {
     day = '2-digit',
     hour = '2-digit',
     minute = '2-digit',
-    second = undefined
+    second = undefined,
+    hour12
   } = options || {}
 
   const fmtOptions = {
@@ -47,7 +48,8 @@ export function formatDateTime(value, options = {}) {
     day,
     hour,
     minute,
-    ...(second ? { second } : {})
+    ...(second ? { second } : {}),
+    ...(hour12 !== undefined ? { hour12 } : {})
   }
 
   try {

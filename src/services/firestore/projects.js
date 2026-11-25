@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore'
 
 import { normalizeEmptyNotesForSaveInPlace } from '@/utils/normalizeEmptyNotesForSave'
+import { filterNonDraftProjects } from '@/utils/projectDraft'
 
 function normalizeEmptyNotesForSave(componentList) {
   const list = Array.isArray(componentList) ? componentList : []
@@ -127,6 +128,7 @@ function normalizeProjectSummary(id, data) {
     description: d?.description || '',
     authorId: d?.authorId || '',
     is_public: Boolean(d?.is_public),
+    is_draft: Boolean(d?.is_draft),
     image: images[0] || image || null,
     created_at: d?.created_at ?? null,
     updated_at: d?.updated_at ?? null,
@@ -158,5 +160,19 @@ export async function fetchProjectSummariesByIds(projectIds) {
 
   // Preserve incoming ID order.
   const byId = new Map(results.map((p) => [String(p.id), p]))
-  return ids.map((id) => byId.get(String(id))).filter(Boolean)
+  return filterNonDraftProjects(ids.map((id) => byId.get(String(id))).filter(Boolean))
+}
+
+export async function fetchUserDraftSummaries({ userId }) {
+  if (!userId) throw new Error('fetchUserDraftSummaries: missing userId')
+
+  const projectsRef = collection(db, 'projects')
+  const q = query(
+    projectsRef,
+    where('authorId', '==', String(userId)),
+    where('is_draft', '==', true)
+  )
+
+  const querySnapshot = await getDocs(q)
+  return querySnapshot.docs.map((d) => normalizeProjectSummary(d.id, d.data()))
 }

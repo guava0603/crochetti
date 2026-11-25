@@ -2,21 +2,14 @@ import {
   RECORD_RESULT_SHARING_SECTION_KEYS,
   normalizeSectionVisibility
 } from '@/constants/recordResultSharingSections'
-
-function parseIsoToMs(iso) {
-  if (!iso) return null
-  const ms = new Date(iso).getTime()
-  return Number.isFinite(ms) ? ms : null
-}
+import { toMs } from '@/utils/toMs'
 
 function getSlotDurationMs(slot, nowMs) {
-  const startIso = slot?.start
-  if (!startIso) return 0
-  const startMs = new Date(startIso).getTime()
-  if (!Number.isFinite(startMs)) return 0
+  const startMs = toMs(slot?.start)
+  if (startMs == null) return 0
 
-  const endMs = slot?.end ? new Date(slot.end).getTime() : nowMs
-  if (!Number.isFinite(endMs)) return 0
+  const endMs = slot?.end ? toMs(slot.end) : nowMs
+  if (endMs == null) return 0
 
   return Math.max(0, endMs - startMs)
 }
@@ -27,12 +20,12 @@ function getRecordSpanMs(record, nowMs) {
   let latest = null
 
   for (const slot of slots) {
-    const startMs = parseIsoToMs(slot?.start)
+    const startMs = toMs(slot?.start)
     if (startMs == null) continue
     if (earliest == null || startMs < earliest) earliest = startMs
 
     const endIso = slot?.end || null
-    const endMs = endIso ? parseIsoToMs(endIso) : nowMs
+    const endMs = endIso ? toMs(endIso) : nowMs
     if (endMs == null || !Number.isFinite(endMs)) continue
     if (latest == null || endMs > latest) latest = endMs
   }
@@ -77,7 +70,7 @@ export function getRecordProjectTitle(record) {
 }
 
 export function getRecordCompletedAtMs(record, nowMs = Date.now()) {
-  const explicit = parseIsoToMs(record?.completed_at)
+  const explicit = toMs(record?.completed_at)
   if (explicit != null) return explicit
 
   if (!record?.is_completed) return null
@@ -86,14 +79,14 @@ export function getRecordCompletedAtMs(record, nowMs = Date.now()) {
   let latest = null
 
   for (const slot of slots) {
-    const endMs = slot?.end ? parseIsoToMs(slot.end) : null
-    if (endMs == null || !Number.isFinite(endMs)) continue
+    const endMs = slot?.end ? toMs(slot.end) : null
+    if (endMs == null) continue
     if (latest == null || endMs > latest) latest = endMs
   }
 
   if (latest != null) return latest
 
-  const updatedMs = parseIsoToMs(record?.updated_at)
+  const updatedMs = toMs(record?.updated_at)
   if (updatedMs != null) return updatedMs
 
   return nowMs

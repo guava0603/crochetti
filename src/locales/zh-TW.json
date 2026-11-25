@@ -12,6 +12,8 @@
     "home": "首頁",
     "confirm": "確認",
     "search": "搜尋",
+    "noSearchResults": "找不到符合的項目",
+    "clearSearch": "清除搜尋",
     "ok": "確定",
     "remove": "移除",
     "notice": "提示",
@@ -19,6 +21,7 @@
     "action": "操作",
     "actions": "操作",
     "copy": "複製",
+    "add": "新增",
     "delete": "刪除",
     "rows": "針法表格",
     "notes": "備註",
@@ -41,6 +44,7 @@
     "timeUnitHour": "時",
     "timeUnitDay": "天",
     "required": "必填",
+    "optional": "選填",
     "discardChangesConfirm": "你有尚未儲存的變更，要放棄嗎？"
   },
   "help": {
@@ -69,94 +73,6 @@
         }
       }
     },
-    "editCrochetBasics": {
-      "aria": "針法編輯教學",
-      "pageIntro": {
-        "title": "如何開始你的設計？",
-        "items": {
-          "openEditor": "點擊任一行的針法格 → 開啟此行的編輯工具",
-          "changeOrAdd": "用上方分頁切換：編輯行/編輯針法"
-        }
-      },
-      "pageChangeStitch": {
-        "title": "更換針法（Change stitch）",
-        "body": "當你只想把某一段針法改成另一個針法，使用「更換針法」最直覺。",
-        "items": {
-          "pickStitch": "從列表選一個針法，立即更新預覽",
-          "positionOptional": "部分針法可加上位置（例如 X/T/F/E）",
-          "bundlePattern": "選到 pattern / bundle 時，預覽會顯示巢狀結構",
-          "goParent": "需要回到上一層時，按「返回上層」"
-        }
-      },
-      "pageAddToBundle": {
-        "title": "加入到同一針（Add to bundle）",
-        "body": "當你要在同一個位置做多個針目（例如加針、爆米花等），把它們「加入到同一針」會更好管理。",
-        "items": {
-          "switchTab": "切到「加入到同一針」分頁",
-          "addSeveral": "連續加入多個針法，預覽會把它們放在同一個 bundle",
-          "countMultiplier": "用 × 數量做重複（例如同一個 pattern 重複多次）",
-          "useForShaping": "常用於加針／減針與各種塑形"
-        }
-      },
-      "pageBasicStitches": {
-        "title": "基礎針",
-        "body": "常用的基本針法：短針／半長針／長針／長長針（符號：X/T/F/E）。",
-        "items": {
-          "x": "X：短針",
-          "t": "T：半長針",
-          "f": "F：長針",
-          "e": "E：長長針"
-        }
-      },
-      "pageDecorativeStitches": {
-        "title": "裝飾針／輔助針",
-        "body": "用於連接、轉向、留空與調整的小針法（不一定會增加針數）。",
-        "items": {
-          "sl": "引抜：引拔（連接／移動）",
-          "ch": "鎖：鎖針（轉向／間隔）",
-          "skip": "休：跳過 1 針（消耗 1、產生 0）",
-          "turning": "^：起立針（依情境使用）"
-        }
-      },
-      "pageIncrease": {
-        "title": "加針",
-        "body": "加針會在同一個位置鉤出 2 針（針數增加）。",
-        "items": {
-          "v": "常見符號：V / TV / FV / EV（消耗 1 → 產生 2）",
-          "colorHint": "可搭配「總針數」顏色提示檢查塑形",
-          "useWithPosition": "必要時也可搭配 FL/BL/FP/BP"
-        }
-      },
-      "pageDecrease": {
-        "title": "減針",
-        "body": "減針會把 2 針合成 1 針（針數減少）。",
-        "items": {
-          "panel": "右側會有「減針」按鈕：選好 X/T/F/E 後點一下即可套用",
-          "mapping": "對應：X→A、T→TA、F→FA、E→EA",
-          "bpfa": "若有選 BP（外勾）並用長針減針，會顯示為 BPFA",
-          "stats": "減針固定：消耗 2、產生 1"
-        }
-      },
-      "pageCustom": {
-        "title": "自定義",
-        "body": "當內建針法不夠用時，可以建立自定義束（bundle），把多個針法打包成一個按鈕。",
-        "items": {
-          "when": "適合：爆米花、貝殼針、特殊針組",
-          "consumeGenerate": "建立時可自訂 consume / generate（會影響總針數計算）",
-          "name": "命名清楚，之後在列表中更好找"
-        }
-      },
-      "pageWorkflowTips": {
-        "title": "實用流程（快速上手）",
-        "body": "建議的工作方式：先把每一行的針法大致填完，再逐行微調。",
-        "items": {
-          "oneRowAtATime": "先完成一行，再換下一行（避免一次改太多）",
-          "checkTotal": "隨時看「總針數」顏色提示，檢查塑形是否合理",
-          "adjustEarlier": "如果某行總針數不對，通常要回頭檢查前幾行",
-          "okToSubmit": "顏色只是提醒：即使不一致仍可送出設計稿"
-        }
-      }
-    },
     "editCrochetHowTo": {
       "aria": "編輯針法幫助",
       "back": "返回",
@@ -164,26 +80,31 @@
         "title": "編輯針法",
         "body": "選擇你想看的主題：",
         "items": {
-          "addBundle": "新增一組針法",
-          "deleteBundle": "刪除某組針法",
-          "increase": "加針",
+          "addBundle": "新增針法",
+          "repeatPattern": "重複花樣",
+          "increase": "加針（在同一針目裡）",
+          "deleteBundle": "刪除針法",
           "decrease": "減針",
           "position": "不同的入針位",
           "custom": "自定義針法"
         }
       },
       "pageAddBundle": {
-        "title": "[新增一組針法]",
-        "body": "點擊左邊區塊的按鈕，生成對應的針法\n想要紀錄更多針法？重複點擊這個按鈕\n儲存後，針法自動計數成好讀版\n也可以在輸入針法時，直接調整輸入數量"
+        "title": "[新增針法]",
+        "body": "點擊「針目」區的按鈕，針法會加到輸入框的最後面\n想要更多針？重複點擊同一個按鈕\n輸入框會顯示整行的內容\n儲存後，針法自動計數成好讀版"
+      },
+      "pageRepeatPattern": {
+        "title": "[重複花樣]",
+        "body": "點擊「重複花樣」，輸入框會出現一個黃色區塊\n接著點的針法都會放進這個花樣裡\n黃色區塊旁的「× 數字」就是重複次數，點一下即可修改\n完成後按輸入框左邊的返回鍵，回到上一層繼續輸入\n想修改某個花樣？直接點輸入框裡那個花樣的任一針\n花樣還是空的時候，不能再開新的花樣"
       },
       "pageDeleteBundle": {
-          "componentNameRequired": "部件名稱為必填（第 {n} 個部件）",
-        "title": "[刪除某組針法]",
-        "body": "點開想要修改的這行\n朝著目標一層一層點入\n選中要修改的部分，點擊左下角刪除\n別忘了儲存！"
+        "componentNameRequired": "部件名稱為必填（第 {n} 個部件）",
+        "title": "[刪除針法]",
+        "body": "點開想要修改的這行\n按輸入框右邊的刪除鍵，會刪掉目前區塊的最後一個\n想刪花樣裡的針？先點輸入框裡的那個花樣，再按刪除鍵\n區塊空了再按一次，會移除整個區塊並回到上一層\n別忘了儲存！"
       },
       "pageIncrease": {
-        "title": "[加針]",
-        "body": "加針視為「在同一個針目裡做多個針法」\n先輸入基礎的第一針\n點入此針，記得此時針法的計數會是1\n上方出現切換按鈕，選擇「加針」\n加入同樣的一針\n儲存後，自動轉為加針符號\n也可以加各種不一樣的針\n回到上一層後，還可以調整加針數量"
+        "title": "[加針（在同一針目裡）]",
+        "body": "加針視為「在同一個針目裡做多個針法」\n點擊「在同一針目裡」，輸入框會出現黃色的 ( ) 區塊\n依序點入要鉤在同一針裡的針法，例如 X、X\n這時鍵盤只會顯示針目區\n完成後按輸入框左邊的返回鍵，回到上一層\n儲存後，自動轉為加針符號"
       },
       "pageDecrease": {
         "title": "[減針]",
@@ -485,6 +406,12 @@
       "message": "目前有尚未儲存的變更。要放棄並返回嗎？",
       "confirmText": "放棄變更"
     },
+    "saveProjectDraft": {
+      "title": "儲存為草稿",
+      "message": "目前有尚未儲存的變更。",
+      "discard": "丟棄",
+      "save": "儲存"
+    },
     "addProjectChooseComponentType": {
       "title": "新增",
       "message": "想新增哪一種？"
@@ -684,8 +611,8 @@
         "chooseStitch": "選擇針法:",
         "selectedStitches": "已選擇的針法:",
         "emptyHint": "點擊上方針法添加",
-        "consumeLabel": "消耗針數 (consume):",
-        "generateLabel": "產生針數 (generate):"
+        "consumeLabel": "消耗針數",
+        "generateLabel": "產生針數"
       }
     },
     "editRow": {
@@ -695,6 +622,7 @@
       "crochetLang": "針法顯示",
       "crochetLangSymbolJp": "縮寫(日)",
       "crochetLangSymbolUk": "縮寫(英)",
+      "crochetLangCustom": "自定義",
       "crochetLangTextZh": "文字",
       "crochetLangIcon": "圖示",
       "copyRow": "複製至最新行",
@@ -713,6 +641,10 @@
       "row": "行",
       "crochet": "針法"
     },
+    "crochetScrollbar": {
+      "expand": "展開工具列",
+      "collapse": "收合工具列"
+    },
     "editGroupRow": {
       "rangeLabel": "第 {start} 行 - 第 {end} 行",
       "repeatCount": "組數",
@@ -729,10 +661,13 @@
     },
     "editCrochet": {
       "count": "數量",
-      "addStitch": "新增針法",
-      "changeStitch": "更換針法",
-      "tabs": {
-        "addToBundle": "加針"
+      "deleteLast": "刪除最後一針",
+      "repeatPattern": "重複花樣",
+      "sameStitch": "在同一針目裡",
+      "sections": {
+        "stitch": "針目",
+        "pattern": "花樣",
+        "bundle": "同一針目"
       }
     }
   },
@@ -776,6 +711,7 @@
       "title": "材料",
       "yarn": "毛線",
       "hook": "鉤針",
+      "castOn": "起針",
       "needle": "棒針",
       "yarnType": "類型",
       "yarnAmount": "數量",
@@ -815,10 +751,10 @@
       "empty": "無"
     },
     "actions": {
-      "downloadDesign": "下載織圖",
+      "downloadDesign": "輸出設計稿",
       "editProject": "編輯設計稿",
       "deleteProject": "刪除設計稿",
-      "copyProjectLink": "複製設計稿連結",
+      "copyProjectLink": "複製連結",
       "saveProject": "收藏設計稿",
       "unsaveProject": "取消收藏"
     },
@@ -886,7 +822,7 @@
     "pauseRecording": "暫停記錄",
     "centeredPosition": "第{row}行，第{stitch}針",
     "selectedPosition": "第{row}行，第{stitch}針",
-    "syncProject": "同步專案",
+    "syncProject": "同步設計",
     "syncing": "同步中…",
     "syncNoChangesNotice": "沒有需要同步的變更，這筆紀錄已是最新。",
     "syncSuccessNotice": "已同步設計稿。",
@@ -927,7 +863,10 @@
   "designPrint": {
     "title": "輸出織圖",
     "exportOptionsTitle": "輸出選項",
-    "exportAsMultiplePhotos": "輸出為多張照片"
+    "exportAsMultiplePhotos": "輸出為多張照片",
+    "previewAlt": "織圖輸出預覽",
+    "previewAltNamed": "織圖輸出預覽：{name}",
+    "previewLoading": "正在產生預覽…"
   },
   "print": {
     "editSettings": "編輯顯示區塊",
@@ -937,13 +876,40 @@
   "recordPrint": {
     "title": "輸出圖片",
     "openPrintPage": "列印／匯出圖片",
+    "previewAlt": "紀錄輸出預覽",
+    "previewLoading": "正在產生預覽…",
+    "previewSection": "輸出預覽",
+    "stylePickerLabel": "輸出風格",
+    "styles": {
+      "standard": "標準",
+      "spring": "春日",
+      "simple": "簡約",
+      "modern": "現代",
+      "classic": "經典",
+      "ocean": "海洋",
+      "dusk": "黃昏"
+    },
     "sections": {
       "projectTitle": "設計名稱",
       "completedTime": "完成時間",
       "extraImages": "照片",
-      "textInfo": "文字資訊",
+      "textInfo": "文案",
       "moreStatus": "其他狀態",
       "extraNote": "回饋心得"
+    },
+    "completedTime": {
+      "precisionLabel": "時間精度",
+      "precisionSliderLabel": "完成時間精度",
+      "previewLabel": "預覽：{time}",
+      "previewEmpty": "尚無完成時間",
+      "units": {
+        "year": "年",
+        "month": "月",
+        "day": "日",
+        "hour": "時",
+        "minute": "分",
+        "second": "秒"
+      }
     },
     "extraImages": {
       "title": "照片版面",
@@ -951,14 +917,12 @@
       "orderLabel": "排列方式",
       "spacingLabel": "圖片間隔",
       "roundedCornersLabel": "圓角",
+      "aspectPreviewLabel": "目前比例 {ratio}",
+      "aspectSliderLabel": "方框比例",
+      "rotateAspectLabel": "旋轉比例（1:x ↔ x:1）",
       "orders": {
         "horizontal": "橫向",
         "vertical": "直向"
-      },
-      "sizes": {
-        "5_4": "5:4",
-        "3_2": "3:2",
-        "1_1": "1:1"
       }
     }
   },
@@ -1046,6 +1010,7 @@
     "followFailed": "追蹤失敗，請再試一次。",
     "unfollowFailed": "取消追蹤失敗，請再試一次。",
     "tabs": {
+      "createdDesigns": "自創",
       "savedDesigns": "收藏"
     },
     "loading": "載入使用者資料...",
@@ -1061,16 +1026,22 @@
       "searchUser": "搜尋使用者"
     },
     "moreMenu": {
-      "copyUserId": "複製個人ID",
-      "userIdCopied": "已複製個人ID",
-      "copyUserIdPrompt": "複製這個個人ID：",
-      "copyUserIdFailed": "複製個人ID失敗，請再試一次。",
+      "copyFriendCode": "複製好友代碼",
+      "friendCodeCopied": "已複製好友代碼。",
+      "copyFriendCodePrompt": "請複製好友代碼：",
+      "copyFriendCodeFailed": "複製好友代碼失敗，請再試一次。",
+      "friendCodeUnavailable": "好友代碼尚未準備好，請稍後再試。",
       "systemSettings": "更改系統設定"
     },
     "systemSettings": {
       "title": "系統設定",
       "languageLabel": "語言",
       "crochetDisplayLabel": "針法顯示",
+      "customDisplayButton": "更新自定義針法",
+      "customDisplayModal": {
+        "title": "自定義針法顯示",
+        "hint": "設定選擇「自定義」顯示時，各針法要顯示的文字。若留空則使用左側文字。"
+      },
       "langZhTw": "繁體中文",
       "langEn": "英文",
       "crochetSymbolJp": "日式縮寫",
@@ -1079,12 +1050,11 @@
     },
     "searchUser": {
       "title": "搜尋使用者",
-      "message": "輸入使用者 ID 或好友代碼以開啟個人頁面。",
-      "userIdLabel": "使用者 ID / 好友代碼",
-      "userIdPlaceholder": "例如：abc123... 或 ABC123",
+      "message": "輸入使用者代碼以開啟個人頁面。",
+      "userIdLabel": "使用者代碼",
       "errors": {
-        "userIdRequired": "請輸入使用者 ID 或好友代碼。",
-        "friendCodeNotFound": "找不到此好友代碼對應的使用者。",
+        "userIdRequired": "請輸入使用者代碼。",
+        "friendCodeNotFound": "找不到此使用者代碼對應的使用者。",
         "searchFailed": "搜尋失敗，請稍後再試。"
       }
     },
@@ -1092,11 +1062,13 @@
       "title": "開始一筆紀錄",
       "message": "請選擇要如何開始新的作品紀錄。",
       "actions": {
-        "selectProject": "從舊設計稿開始",
+        "selectProject": "選擇已有的設計稿",
         "addProject": "新增設計稿",
-        "quickAddProject": "快速開始（僅填針數與行數）"
+        "quickAddProject": "快速開始"
       },
       "selectProjectLabel": "設計稿",
+      "selectProjectFilterAria": "設計稿篩選",
+      "searchProjectsPlaceholder": "搜尋設計稿",
       "componentFallbackName": "部位 {n}",
       "untitledProject": "未命名設計稿",
       "noProjects": "目前尚無設計稿。",
@@ -1116,7 +1088,6 @@
         "errors": {
           "rowCount": "行數至少要 1。",
           "crochetCount": "每行針數至少要 1。",
-          "groupsRequired": "請至少新增一組「每行針數 × 行數」。",
           "groupIncomplete": "請先填完上一組「每行針數 × 行數」。"
         }
       },
@@ -1147,18 +1118,7 @@
       "avatarUploadFailed": "上傳大頭貼失敗，請再試一次。",
       "privacyLabel": "隱私設定",
       "privacyPublic": "公開",
-      "privacyPrivate": "不公開",
-      "friendCodeLabel": "好友代碼",
-      "friendCodeHint": "分享此代碼讓其他人可以找到你。",
-      "friendCodeUnavailable": "尚未產生",
-      "friendCodeCopyPrompt": "請複製好友代碼：",
-      "friendCodeCopied": "已複製好友代碼。",
-      "friendCodeCopyFailed": "複製好友代碼失敗。",
-      "friendCodeRegenerate": "重新產生",
-      "friendCodeRegenerateConfirmTitle": "重新產生好友代碼？",
-      "friendCodeRegenerateConfirmMessage": "舊的好友代碼會失效，其他人將無法再用舊代碼找到你。",
-      "friendCodeRegenerateFailed": "重新產生好友代碼失敗，請再試一次。",
-      "friendCodeRegenerated": "已產生新的好友代碼。"
+      "privacyPrivate": "不公開"
     },
     "privacy": {
       "privateNotice": "此帳號不公開"
@@ -1171,11 +1131,23 @@
   "addProject": {
     "startMode": {
       "new": "新設計",
-      "copy": "複製現有設計"
+      "copy": "複製現有設計",
+      "draft": "草稿"
+    },
+    "saveToDraft": "存草稿",
+    "savingDraft": "儲存中…",
+    "draft": {
+      "defaultName": "未命名草稿",
+      "hint": "請選擇要繼續編輯的草稿。",
+      "selectPlaceholder": "搜尋草稿…",
+      "listLabel": "[草稿] {name}",
+      "savedTitle": "已儲存草稿",
+      "savedMessage": "你可以稍後從「草稿」繼續編輯。",
+      "savedToast": "已儲存草稿"
     },
     "copy": {
       "title": "從現有設計稿複製",
-      "hint": "請選擇一個或多個現有設計稿作為範本。",
+      "hint": "請選擇一個設計稿作為範本。",
       "selectLabel": "設計稿",
       "selectPlaceholder": "搜尋設計稿…",
       "selectAria": "選擇要複製的設計稿",
@@ -1194,7 +1166,8 @@
     },
     "errors": {
       "loginRequired": "必須先登入才能新增設計稿",
-      "createFailed": "建立設計稿失敗：{message}"
+      "createFailed": "建立設計稿失敗：{message}",
+      "draftSaveFailed": "儲存草稿失敗：{message}"
     },
     "info": {
       "projectNameLabel": "織品名稱",
@@ -1230,11 +1203,10 @@
       "addKnittingComponent": "新增棒針部位",
       "addStitch": "新增縫合",
       "relatedComponentsLabel": "關聯部位",
-      "relatedComponentsPlaceholder": "選擇部位",
+      "relatedComponentsPlaceholder": "選擇先前部位（可多選）",
       "hookSelectPlaceholder": "選擇鉤針…",
       "needleSelectPlaceholder": "選擇棒針…",
       "yarnSelectPlaceholder": "選擇毛線…",
-      "yarnAmountPlaceholder": "毛線用量",
       "stitchNotesPlaceholder": "輸入備註",
       "creating": "建立中…",
       "createProject": "建立設計稿",
@@ -1343,7 +1315,7 @@
     "wordCount": "{n}/{max} 字",
     "allowContact": "我願意留下 Email 讓開發者聯絡我",
     "emailLabel": "Email",
-    "emailPlaceholder": "name@example.com",
+    "emailPlaceholder": "name{'@'}example.com",
     "emailHint": "僅用於回覆或聯絡，不會公開。",
     "submit": "送出",
     "submitting": "送出中…",

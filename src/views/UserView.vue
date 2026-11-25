@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import UserViewMain from '@/components/UserView/index.vue'
+import UserViewMain from '@/components/features/user/UserPage.vue'
 import { useCurrentUserProfile } from '@/composables/useCurrentUserProfile'
 
 import {

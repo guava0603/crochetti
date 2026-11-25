@@ -1,0 +1,14 @@
+[
+  {
+    "origin": [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://localhost:4173",
+      "https://crochetti-a8cd5.web.app",
+      "https://crochetti-a8cd5.firebaseapp.com"
+    ],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type", "Content-Length", "Content-Disposition"],
+    "maxAgeSeconds": 3600
+  }
+]

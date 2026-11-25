@@ -69,9 +69,18 @@ service cloud.firestore {
     }
 
     function isValidPublicRecordSummary() {
-      return request.resource.data.keys().hasOnly(['project_id', 'project_name', 'result'])
+      return request.resource.data.keys().hasOnly(['project_id', 'project_name', 'result', 'percentage'])
         && request.resource.data.project_id is string
         && request.resource.data.project_name is string
+        && (
+          !request.resource.data.keys().hasAny(['percentage'])
+          || request.resource.data.percentage == null
+          || (
+            request.resource.data.percentage is number
+            && request.resource.data.percentage >= 0
+            && request.resource.data.percentage <= 100
+          )
+        )
         && (
           request.resource.data.result == null
           || isValidPublicRecordResult(request.resource.data.result)
