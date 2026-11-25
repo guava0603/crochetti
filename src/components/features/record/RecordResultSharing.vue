@@ -12,18 +12,14 @@
       }
     ]"
     :style="printStyle.cssVars"
+    :data-capture-background="printStyle.captureBackground"
   >
-    <OceanPrintBackdrop v-if="printStyle.id === 'ocean'" />
+    <PrintStyleBackdrop :style-id="printStyle.id" />
+    <PrintStyleOrnaments :style-id="printStyle.id" />
 
-    <h1
-      v-if="projectTitle && isSectionVisible('projectTitle')"
-      class="sharing-meta__title"
-    >
-      {{ projectTitle }}
-    </h1>
-
-    <RecordResult
+    <PrintStyleCard
       layout="sharing"
+      :style-id="printStyle.id"
       :print-theme="printStyle"
       :current-user="currentUser"
       :profile="profile"
@@ -40,6 +36,12 @@
         />
       </template>
 
+      <template v-if="projectTitle && isSectionVisible('projectTitle')" #project-title>
+        <h1 class="sharing-meta__title">
+          {{ projectTitle }}
+        </h1>
+      </template>
+
       <template v-if="thought && isSectionVisible('extraNote')" #extra-note>
         <section
           class="extra-note-card export-healing-card"
@@ -49,7 +51,7 @@
           <p class="extra-note-card__body">{{ thought }}</p>
         </section>
       </template>
-    </RecordResult>
+    </PrintStyleCard>
 
     <p
       v-if="completedTimeLabel && isSectionVisible('completedTime')"
@@ -72,10 +74,11 @@ import {
   formatCompletedTimeForPrint,
   normalizeCompletedTimeSettings
 } from '@/constants/recordPrintCompletedTime'
-import RecordResult from '@/components/features/record/RecordResult.vue'
+import PrintStyleCard from '@/components/features/record/record-print/PrintStyleCard.vue'
 import ExtraImages from '@/components/features/record/ExtraImages.vue'
 import CardInnerFrame from '@/components/shared/ui/CardInnerFrame.vue'
-import OceanPrintBackdrop from '@/components/features/record/record-print/OceanPrintBackdrop.vue'
+import PrintStyleBackdrop from '@/components/features/record/record-print/PrintStyleBackdrop.vue'
+import PrintStyleOrnaments from '@/components/features/record/record-print/PrintStyleOrnaments.vue'
 import { captureElementAsPngBlob, shareOrDownloadElementAsImage, shareOrDownloadImageBlob } from '@/utils/downloadImage'
 import { measurePrintedDomainWidthPx } from '@/constants/recordResultSharingLayout'
 import { useRecordResultSharingLayoutWidth } from '@/composables/useRecordResultSharingLayoutWidth'
@@ -207,6 +210,7 @@ const shareOrDownload = async (captureOptions = {}) => {
   const resolvedOptions = {
     flattenForExport: true,
     backgroundColor: printStyle.value.captureBackground,
+    canvasBackgroundColor: printStyle.value.captureBackgroundFlat,
     ...captureOptions
   }
   const blob = await captureAsPngBlob(resolvedOptions)
@@ -244,13 +248,13 @@ defineExpose({
 }
 
 .sharing-meta__title {
-  margin: 0;
+  margin: 0 0 1rem;
   font-size: 1.5rem;
   font-weight: 900;
   line-height: 1.3;
   color: #111827;
   letter-spacing: 0.01em;
-  text-align: center;
+  text-align: left;
 }
 
 .sharing-meta__completed {
@@ -265,7 +269,7 @@ defineExpose({
 
 .record-result-sharing.printed-domain {
   border-radius: 12px;
-  background: #fff;
+  background: var(--print-domain-bg, #fff);
   padding: 0.9rem 0.9rem 1.1rem;
   box-sizing: border-box;
 }

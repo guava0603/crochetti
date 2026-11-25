@@ -2,11 +2,11 @@ import { auth, db } from '@/firebaseConfig'
 import {
   collection,
   doc,
-  getDocs,
   serverTimestamp,
   setDoc,
   Timestamp
 } from 'firebase/firestore'
+import { getDocsLocalFirst } from '@/services/firestore/localFirstRead'
 
 import { getLocalAchievementById, listLocalAchievements } from '@/services/achievements/catalog'
 
@@ -122,7 +122,7 @@ export async function fetchEarnedAchievements(userId) {
   if (!uid) throw new Error('fetchEarnedAchievements: missing userId')
 
   const earnedRef = collection(db, 'users', uid, 'earnedAchievements')
-  const snap = await getDocs(earnedRef)
+  const snap = await getDocsLocalFirst(earnedRef)
 
   return snap.docs
     .map((d) => {

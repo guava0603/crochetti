@@ -93,7 +93,7 @@
       },
       "pageRepeatPattern": {
         "title": "[Repeat pattern]",
-        "body": "Tap “Repeat pattern” and a yellow box appears in the input.\nStitches you tap next go into that pattern.\nThe “× number” next to the yellow box is the repeat count — tap it to change it.\nWhen done, tap the back button left of the input to return one level up.\nWant to change a pattern? Tap any stitch of it in the input.\nWhile a pattern is still empty, you can’t start another pattern inside it."
+        "body": "Tap “Repeat pattern” and a yellow box appears in the input.\nStitches you tap next go into that pattern.\nThe “× number” next to the yellow box is the repeat count — tap it to change it.\nWhen done, tap “Confirm” at the bottom to return one level up.\nWant to change a pattern or same-stitch box? Tap any stitch of it in the input.\nWhile a pattern is still empty, you can’t start another pattern inside it."
       },
       "pageDeleteBundle": {
         "title": "[Delete stitches]",
@@ -101,7 +101,7 @@
       },
       "pageIncrease": {
         "title": "[Increase (into the same stitch)]",
-        "body": "An increase is treated as: multiple stitches into the same stitch.\nTap “Into the same stitch” and a yellow ( ) box appears in the input.\nTap the stitches that go into that one stitch, e.g. X, X.\nOnly the Stitches section is shown while you are inside.\nWhen done, tap the back button left of the input.\nAfter saving, it auto-converts to the increase symbol."
+        "body": "An increase is treated as: multiple stitches into the same stitch.\nTap “Into the same stitch” and a yellow ( ) box appears in the input.\nTap the stitches that go into that one stitch, e.g. X, X.\nOnly the Stitches section is shown while you are inside.\nWhen done, tap “Confirm” at the bottom.\nWant to change it? Tap the ( ) box in the input; the “× number” next to it sets how many times it repeats.\nAfter saving, it auto-converts to the increase symbol."
       },
       "pageDecrease": {
         "title": "[Decrease]",
@@ -666,9 +666,7 @@
       "repeatPattern": "Repeat pattern",
       "sameStitch": "Into the same stitch",
       "sections": {
-        "stitch": "Stitches",
-        "pattern": "Pattern",
-        "bundle": "Same stitch"
+        "stitch": "Stitches"
       }
     }
   },
@@ -823,6 +821,8 @@
     "pauseRecording": "Pause recording",
     "centeredPosition": "Row {row}, stitch {stitch}",
     "selectedPosition": "Row {row}, stitch {stitch}",
+    "liveActivityRow": "Row {row}",
+    "liveActivityStart": "Start",
     "componentFallbackName": "Component {n}",
     "syncProject": "Sync design",
     "syncing": "Syncing…",

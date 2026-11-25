@@ -50,6 +50,7 @@
             @confirm="(changes) => $emit('confirm', changes)"
             @cancel="() => $emit('cancel')"
             @dirty-change="crochetDirty = $event"
+            @selection-change="crochetInSelection = $event"
           />
         </div>
       </template>
@@ -62,7 +63,17 @@
         :type="deleteConfirmType"
         @click="handleDelete"
       />
-      <div class="edit-row-crochet-tabs__actions-right">
+      <!-- A pattern/bundle is selected in the keypad: one 確認 confirms it and goes up a level. -->
+      <div v-if="showSelectionConfirm" class="edit-row-crochet-tabs__actions-right">
+        <button
+          type="button"
+          class="action-btn action-btn--primary"
+          @click="handleConfirmSelection"
+        >
+          {{ t('common.confirm') }}
+        </button>
+      </div>
+      <div v-else class="edit-row-crochet-tabs__actions-right">
         <button type="button" class="action-btn action-btn--secondary" @click="handleCancel">
           {{ t('common.cancel') }}
         </button>
@@ -186,6 +197,14 @@ const editRowRef = ref(null)
 const editCrochetRef = ref(null)
 const rowDirty = ref(false)
 const crochetDirty = ref(false)
+const crochetInSelection = ref(false)
+
+// While a pattern/bundle is selected on the 針法 tab, 取消/儲存 give way to a single 確認.
+const showSelectionConfirm = computed(() => props.tab === 'crochet' && crochetInSelection.value)
+
+const handleConfirmSelection = () => {
+  editCrochetRef.value?.confirmSelection?.()
+}
 
 const isDirty = computed(() => rowDirty.value || crochetDirty.value || props.hasCrochetDraft)
 
@@ -302,7 +321,8 @@ const handleConfirm = async () => {
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  padding: 1rem 1.8rem;
+  /* 1rem sides: the keypad needs the width on narrow phones (320–375px). */
+  padding: 1rem;
 }
 
 .edit-row-crochet-tabs__panel {
@@ -331,7 +351,7 @@ const handleConfirm = async () => {
   justify-content: flex-start;
   gap: 0.75rem;
   border-top: 1px solid #e5e7eb;
-  padding: 0.5rem 1.8rem 0.8rem;
+  padding: 0.5rem 1rem 0.8rem;
   padding-bottom: calc(0.8rem + var(--safe-area-bottom));
   background: #fff;
 }

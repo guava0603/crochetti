@@ -201,9 +201,15 @@ function handleClick(e) {
 }
 
 .thin-icon-button--m {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 0.65rem;
+}
+
+.thin-icon-button--m .thin-icon-button__icon {
+  width: calc(100% - 0.25rem);
+  height: calc(100% - 0.25rem);
+  transform: scale(1.5);
 }
 
 /* Toolbar-sized control (matches legacy ToolbarButton). */

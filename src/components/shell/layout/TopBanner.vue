@@ -12,6 +12,7 @@
         <div class="top-banner__side" aria-hidden="false">
           <ToolbarButton
             v-if="bannerShowBack"
+            inherit-banner-style
             class="btn-back banner-button-l"
             icon-src="001__arrow_left"
             :aria-label="t('common.back')"
@@ -161,6 +162,7 @@ async function handleBannerBack() {
 .app-banner--overlay :deep(.top-banner),
 .app-banner--overlay :deep(.top-banner__inner) {
   height: auto;
+  overflow: visible;
 }
 
 .top-banner {
@@ -193,6 +195,11 @@ async function handleBannerBack() {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.top-banner__side--right {
+  justify-content: flex-end;
+  overflow: visible;
 }
 
 .top-banner__placeholder {

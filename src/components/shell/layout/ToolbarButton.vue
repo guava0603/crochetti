@@ -30,6 +30,10 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  inheritBannerStyle: {
+    type: Boolean,
+    default: false
+  },
   size: {
     type: String,
     default: 'md',
@@ -39,5 +43,12 @@ const props = defineProps({
 
 defineEmits(['click'])
 
-const resolvedBackground = useBannerThinIconBackground(() => props.background)
+const bannerBackground = useBannerThinIconBackground(() => '')
+
+const resolvedBackground = computed(() => {
+  const explicit = String(props.background || '').trim()
+  if (explicit) return explicit
+  if (props.inheritBannerStyle) return bannerBackground.value
+  return 'transparent'
+})
 </script>

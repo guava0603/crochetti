@@ -19,11 +19,11 @@ The keypad owns a draft of the **whole row** plus a cursor `containerPath` (indi
 
 ## Input display
 - Shows the whole row; the current pattern/bundle has the yellow highlight, the rest is normal.
-- The current **pattern** always shows `× n` (InputNumber) right after it. Root and bundles have no ×.
-- Clicking any node selects the **deepest pattern containing it**; outside any pattern nothing happens.
+- The current **pattern or bundle** always shows `× n` (InputNumber) right after it. The root has no ×.
+- Clicking any node selects the **deepest pattern or bundle containing it** (both are containers with a child list, so they are selected the same way); outside both nothing happens.
 
 ## Navigation
-- Last-page button: go to parent; hidden at the root. Leaving an empty container removes it.
+- While a pattern/bundle is selected, the bottom bar's 取消/儲存 become a single **確認** (`confirmSelection`): it goes to the parent level; leaving an empty container removes it. At the root the normal 取消/儲存 show. There is no last-page button.
 - Delete-last: pops the last child; on an empty container removes it and goes to the parent.
 - Save prunes empty patterns/bundles (`pruneEmptyContainers`).
 

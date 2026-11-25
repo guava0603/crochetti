@@ -1,3 +1,46 @@
+/* Spring theme — watercolor gradient card surface */
+
+.record-result-sharing.print-style--spring {
+  position: relative;
+  background: var(--print-domain-bg) !important;
+}
+
 .record-result-sharing.print-style--spring.printed-domain {
-  box-shadow: inset 0 0 0 1px rgba(74, 222, 128, 0.2);
+  background: var(--print-domain-bg) !important;
+  border: 2px solid #ffffff;
+  border-radius: 2rem;
+  box-shadow: 0 16px 45px rgba(130, 155, 138, 0.2);
+  padding: 2rem 1.5rem 1.5rem;
+}
+
+.record-result-sharing.print-style--spring .sharing-meta__title {
+  color: #2f3e34;
+  font-weight: 700;
+}
+
+.record-result-sharing.print-style--spring .sharing-meta__completed {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #a0baa9;
+  letter-spacing: 0.5px;
+  opacity: 1;
+}
+
+.record-result-sharing.print-style--spring .extra-note-card {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(230, 242, 234, 0.8) !important;
+  border-radius: 1.125rem !important;
+  box-shadow: 0 4px 15px rgba(140, 185, 114, 0.04) !important;
+  padding: 1rem 1.25rem !important;
+}
+
+.record-result-sharing.print-style--spring .extra-note-card .card-inner-frame {
+  display: none;
+}
+
+.record-result-sharing.print-style--spring .extra-note-card__body {
+  color: #2f3e34;
+  font-weight: 500;
 }

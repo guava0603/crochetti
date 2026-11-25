@@ -8,8 +8,11 @@
 }
 
 .record-result-sharing[class*='print-style--'].printed-domain {
-  background: var(--print-domain-bg, #fff) !important;
   border-color: transparent;
+}
+
+.record-result-sharing[class*='print-style--']:has(.print-style-backdrop).printed-domain {
+  background: transparent !important;
 }
 
 .record-result-sharing[class*='print-style--'] .sharing-meta__title {

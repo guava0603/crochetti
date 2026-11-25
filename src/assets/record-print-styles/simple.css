@@ -1,3 +1,15 @@
+/* Simple minimal theme */
+
+.record-result-sharing.print-style--simple {
+  position: relative;
+  overflow: hidden;
+}
+
+.record-result-sharing.print-style--simple > :not(.print-style-backdrop) {
+  position: relative;
+  z-index: 1;
+}
+
 .record-result-sharing.print-style--simple.printed-domain {
-  background: var(--print-domain-bg) !important;
+  background: transparent !important;
 }

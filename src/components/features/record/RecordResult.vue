@@ -18,6 +18,7 @@
 
       <div v-else class="result-body" :class="{ 'result-body--sharing': isSharingLayout }">
         <slot v-if="isSharingLayout" name="extra-images" />
+        <slot v-if="isSharingLayout" name="project-title" />
 
         <div v-if="showSummaryBlock" class="result-summary">
           <div class="summary-line">{{ t('recordResult.spanLine', { span: spanText }) }}</div>

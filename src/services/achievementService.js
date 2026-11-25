@@ -2,12 +2,12 @@ import { auth, db } from '@/firebaseConfig'
 import {
   collection,
   doc,
-  getDocs,
   query,
   serverTimestamp,
   where,
   writeBatch
 } from 'firebase/firestore'
+import { getDocsLocalFirst } from '@/services/firestore/localFirstRead'
 
 import { listUserRecords } from '@/services/firestore/records'
 import { fetchAllAchievements, fetchEarnedAchievements } from '@/services/firestore/achievements'
@@ -45,7 +45,7 @@ function computeTotalEffortMs(records, opts) {
 async function fetchUserProjects(uid) {
   const projectsRef = collection(db, 'projects')
   const q = query(projectsRef, where('authorId', '==', String(uid)))
-  const snap = await getDocs(q)
+  const snap = await getDocsLocalFirst(q)
   return snap.docs
     .map((d) => Object.assign({ id: d.id }, d.data()))
     .filter((p) => !p?.is_draft)

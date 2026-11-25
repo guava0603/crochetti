@@ -1,8 +1,8 @@
 import { definePrintStyle } from '@/constants/recordPrintStyles/definePrintStyle'
 
 export default definePrintStyle({
-  id: 'standard',
-  titleKey: 'recordPrint.styles.standard',
+  id: 'warm',
+  titleKey: 'recordPrint.styles.warm',
   architecture: 'healing',
   swatchColors: ['#ffffff', '#f5ebda', '#a3b666'],
   tokens: {

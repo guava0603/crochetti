@@ -58,17 +58,15 @@ export function isValidContainerPath(root, containerPath) {
 }
 
 /**
- * Recompute derived consume/generate for every pattern/bundle (bottom-up).
- * Bundle `consume` is user-defined (always 1 from the keypad) and is preserved.
+ * Refresh each bundle's stored `generate` (bottom-up). It is the fallback when a bundle's
+ * stitches can't be looked up; bundle `consume` is user-defined and is preserved.
+ * Patterns store no stats: their totals are always computed from their children.
  */
 export function recomputeStats(list, stitchLookup) {
   const safe = Array.isArray(list) ? list : []
   for (const node of safe) {
     if (node?.type === 'pattern') {
       recomputeStats(node.pattern, stitchLookup)
-      const stats = calculateConsumeGenerateCore(node.pattern || [], node.count || 1, stitchLookup)
-      node.consume = stats.consume
-      node.generate = stats.generate
     } else if (node?.type === 'bundle') {
       recomputeStats(node.bundle, stitchLookup)
       node.generate = calculateConsumeGenerateCore(node.bundle || [], 1, stitchLookup).generate
@@ -117,9 +115,7 @@ export function insertEmptyPattern(root, containerPath, stitchLookup) {
   return insertEmptyContainer(root, containerPath, {
     type: 'pattern',
     pattern: [],
-    count: 1,
-    consume: 0,
-    generate: 0
+    count: 1
   }, stitchLookup)
 }
 
@@ -198,39 +194,40 @@ export function canRemoveLast(root, containerPath) {
   return getContainerChildren(root, containerPath).length > 0 || safePath(containerPath).length > 0
 }
 
-/** Set ×n on the current pattern (no-op for root / bundle). */
+/** Set ×n on the current pattern or bundle (no-op at the root). */
 export function setContainerCount(root, containerPath, count, stitchLookup) {
   const path = safePath(containerPath)
   const next = clone(Array.isArray(root) ? root : [])
   const node = getContainerNode(next, path)
-  if (!path.length || node?.type !== 'pattern') return next
+  if (!path.length || !childListKey(node)) return next
   node.count = Math.max(1, Math.floor(Number(count) || 1))
   if (stitchLookup) recomputeStats(next, stitchLookup)
   return next
 }
 
-/** ×n of the current pattern, or null when the cursor is not on a pattern. */
+/** ×n of the current pattern or bundle, or null at the root. */
 export function getContainerCount(root, containerPath) {
   if (!safePath(containerPath).length) return null
   const node = getContainerNode(root, containerPath)
-  if (node?.type !== 'pattern') return null
+  if (!childListKey(node)) return null
   return Math.max(1, Number(node.count) || 1)
 }
 
 /**
  * Preview click: given the path of the clicked node, return the path of the deepest
- * pattern that is (or contains) it. Returns null when it is not inside any pattern.
+ * pattern or bundle that is (or contains) it — both are containers with a child list,
+ * so they are selected the same way. Returns null when it is not inside either.
  */
-export function findLeafPatternPath(root, nodePath) {
+export function findLeafContainerPath(root, nodePath) {
   const path = safePath(nodePath)
   let list = Array.isArray(root) ? root : []
   let best = null
   for (let i = 0; i < path.length; i += 1) {
     const node = list[path[i]]
     if (!node) break
-    if (node.type === 'pattern') best = path.slice(0, i + 1)
     const key = childListKey(node)
     if (!key) break
+    best = path.slice(0, i + 1)
     list = Array.isArray(node[key]) ? node[key] : []
   }
   return best

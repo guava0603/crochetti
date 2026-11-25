@@ -93,7 +93,7 @@ import { auth } from '@/firebaseConfig'
 import { createProject } from '@/services/firestore/projects'
 import { startRecordForProject } from '@/services/records/startRecordForProject'
 import { useAchievementStore } from '@/stores/achievementStore'
-import { createPattern, createRow, updateRowStats } from '@/constants/crochetData'
+import { createRow, updateRowStats } from '@/constants/crochetData'
 import { openError } from '@/services/ui/notice'
 
 defineOptions({ name: 'QuickStartRecordView' })
@@ -204,7 +204,8 @@ const buildComponentList = (projectName, groups) => {
   let rowIndex = 1
   for (const g of groups) {
     for (let i = 0; i < g.rowCount; i++) {
-      const row = createRow(rowIndex, [createPattern(g.crochetCount, [{ type: 'stitch', stitch_id: 4 }])])
+      // N single crochets are one stitch anchor with count N (not a one-stitch pattern).
+      const row = createRow(rowIndex, [{ type: 'stitch', stitch_id: 4, count: g.crochetCount }])
       updateRowStats(row)
       rows.push(row)
       rowIndex += 1
