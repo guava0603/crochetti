@@ -9,7 +9,10 @@
 /* Begin PBXBuildFile section */
 		0E8099BE2F59CD5000A95A98 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0E8099BD2F59CD5000A95A98 /* GoogleService-Info.plist */; };
 		0EA2C4532F3F646E000C9EDF /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 0EA2C4522F3F646E000C9EDF /* FirebaseAnalytics */; };
+		18BF5D68C5E9EF94807E474B /* RecordLiveActivityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C52909B53D62186440F6B76 /* RecordLiveActivityStore.swift */; };
+		1DF940FC5D0C62765FEF19BB /* RecordLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB8C976F7C848E687BC3131 /* RecordLiveActivityWidget.swift */; };
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
+		457A3EDFF839220D82FAE99A /* RecordActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88A27AC5A67268E81D456D29 /* RecordActivityAttributes.swift */; };
 		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
@@ -17,12 +20,49 @@
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
+		653CBC3D0E4E55715DC3C320 /* ToggleRecordIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5055CA55EA1B3EF84DDD0CDB /* ToggleRecordIntent.swift */; };
+		907616413E7B7BB1CE238A37 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B1166DB1231BD46DCA57CAC /* MainViewController.swift */; };
+		9139C1DE67F770047FEEE6A4 /* RecordLiveActivityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C52909B53D62186440F6B76 /* RecordLiveActivityStore.swift */; };
+		96B034F10F8E2D0BE76DC68F /* RecordLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C2AB663623BF5DDFC79E2112 /* RecordLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A00C91D14C931AC366C2F2D6 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55A36F5729FD884C9B57F20D /* Foundation.framework */; };
+		A1580F4BD83E23F50382B9ED /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C56D56A5283009B475C95E3C /* SwiftUI.framework */; };
+		BD37E41B8D72DDC06112BA76 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501BA7DFA5413BCAF3FC1F9E /* WidgetKit.framework */; };
+		C4DCBD30E22685164D7FF7B0 /* ToggleRecordIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5055CA55EA1B3EF84DDD0CDB /* ToggleRecordIntent.swift */; };
+		CE910202650DE3F666F1E564 /* RecordLiveActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E609BE35538898B8AA8A5EF /* RecordLiveActivityPlugin.swift */; };
+		ED95B4A239E9424BD1262497 /* RecordActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88A27AC5A67268E81D456D29 /* RecordActivityAttributes.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		A1F59D2C3267D231CF76980A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7229E7BB14EA72BDCD21097C;
+			remoteInfo = RecordLiveActivity;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		FF5AD00913D87475D34131C0 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				96B034F10F8E2D0BE76DC68F /* RecordLiveActivity.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		0C52909B53D62186440F6B76 /* RecordLiveActivityStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecordLiveActivityStore.swift; sourceTree = "<group>"; };
 		0E8099BD2F59CD5000A95A98 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		0E8099BF2F59F6C100A95A98 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
+		170524EEB80762BEC52F49BF /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
+		501BA7DFA5413BCAF3FC1F9E /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -30,8 +70,17 @@
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5055CA55EA1B3EF84DDD0CDB /* ToggleRecordIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ToggleRecordIntent.swift; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
+		55A36F5729FD884C9B57F20D /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		88A27AC5A67268E81D456D29 /* RecordActivityAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecordActivityAttributes.swift; sourceTree = "<group>"; };
+		8B1166DB1231BD46DCA57CAC /* MainViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		9E609BE35538898B8AA8A5EF /* RecordLiveActivityPlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecordLiveActivityPlugin.swift; sourceTree = "<group>"; };
+		C2AB663623BF5DDFC79E2112 /* RecordLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RecordLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C56D56A5283009B475C95E3C /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		DAB8C976F7C848E687BC3131 /* RecordLiveActivityWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecordLiveActivityWidget.swift; sourceTree = "<group>"; };
+		E8566951E9787737D25BC155 /* RecordLiveActivity.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = RecordLiveActivity.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,15 +93,38 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E050A524B8C7044BB7FBF724 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00C91D14C931AC366C2F2D6 /* Foundation.framework in Frameworks */,
+				BD37E41B8D72DDC06112BA76 /* WidgetKit.framework in Frameworks */,
+				A1580F4BD83E23F50382B9ED /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1DBD204D869554A7C817A1E1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				5E8FF456866FF2CCB788870F /* iOS */,
+				501BA7DFA5413BCAF3FC1F9E /* WidgetKit.framework */,
+				C56D56A5283009B475C95E3C /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
+				1DBD204D869554A7C817A1E1 /* Frameworks */,
+				EBCE085203301F9EC9853255 /* Shared */,
+				E72E06EE30D19A831FB7D5BD /* RecordLiveActivity */,
 			);
 			sourceTree = "<group>";
 		};
@@ -60,6 +132,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				C2AB663623BF5DDFC79E2112 /* RecordLiveActivity.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -77,8 +150,40 @@
 				504EC3131FED79650016851F /* Info.plist */,
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
+				9E609BE35538898B8AA8A5EF /* RecordLiveActivityPlugin.swift */,
+				8B1166DB1231BD46DCA57CAC /* MainViewController.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		5E8FF456866FF2CCB788870F /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				55A36F5729FD884C9B57F20D /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		E72E06EE30D19A831FB7D5BD /* RecordLiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				DAB8C976F7C848E687BC3131 /* RecordLiveActivityWidget.swift */,
+				170524EEB80762BEC52F49BF /* Info.plist */,
+				E8566951E9787737D25BC155 /* RecordLiveActivity.entitlements */,
+			);
+			name = RecordLiveActivity;
+			path = RecordLiveActivity;
+			sourceTree = "<group>";
+		};
+		EBCE085203301F9EC9853255 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				88A27AC5A67268E81D456D29 /* RecordActivityAttributes.swift */,
+				0C52909B53D62186440F6B76 /* RecordLiveActivityStore.swift */,
+				5055CA55EA1B3EF84DDD0CDB /* ToggleRecordIntent.swift */,
+			);
+			name = Shared;
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -91,10 +196,12 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				FF5AD00913D87475D34131C0 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				BE3E8106E0D016315E2DA0C2 /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -104,6 +211,23 @@
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
+		};
+		7229E7BB14EA72BDCD21097C /* RecordLiveActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DDB7F0E1AB0246E30930C8F1 /* Build configuration list for PBXNativeTarget "RecordLiveActivity" */;
+			buildPhases = (
+				2CB3E5513D6C2451506018D7 /* Sources */,
+				E050A524B8C7044BB7FBF724 /* Frameworks */,
+				79A68E4F8189C30EEEC93D1E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RecordLiveActivity;
+			productName = RecordLiveActivity;
+			productReference = C2AB663623BF5DDFC79E2112 /* RecordLiveActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -140,6 +264,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				7229E7BB14EA72BDCD21097C /* RecordLiveActivity */,
 			);
 		};
 /* End PBXProject section */
@@ -159,18 +284,50 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		79A68E4F8189C30EEEC93D1E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		2CB3E5513D6C2451506018D7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ED95B4A239E9424BD1262497 /* RecordActivityAttributes.swift in Sources */,
+				18BF5D68C5E9EF94807E474B /* RecordLiveActivityStore.swift in Sources */,
+				C4DCBD30E22685164D7FF7B0 /* ToggleRecordIntent.swift in Sources */,
+				1DF940FC5D0C62765FEF19BB /* RecordLiveActivityWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		504EC3001FED79650016851F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+				457A3EDFF839220D82FAE99A /* RecordActivityAttributes.swift in Sources */,
+				9139C1DE67F770047FEEE6A4 /* RecordLiveActivityStore.swift in Sources */,
+				653CBC3D0E4E55715DC3C320 /* ToggleRecordIntent.swift in Sources */,
+				CE910202650DE3F666F1E564 /* RecordLiveActivityPlugin.swift in Sources */,
+				907616413E7B7BB1CE238A37 /* MainViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BE3E8106E0D016315E2DA0C2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = RecordLiveActivity;
+			target = 7229E7BB14EA72BDCD21097C /* RecordLiveActivity */;
+			targetProxy = A1F59D2C3267D231CF76980A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -192,6 +349,35 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		093D805554098D9DF6F183FF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = RecordLiveActivity/RecordLiveActivity.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JQX44M6NGC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RecordLiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Corchetti;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.crochetti.app.RecordLiveActivity;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) RECORD_WIDGET_EXTENSION";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 		504EC3141FED79650016851F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
@@ -359,6 +545,36 @@
 			};
 			name = Release;
 		};
+		DA33969B41AE7EF4569AECE9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = RecordLiveActivity/RecordLiveActivity.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JQX44M6NGC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RecordLiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Corchetti;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.crochetti.app.RecordLiveActivity;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) RECORD_WIDGET_EXTENSION";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -376,6 +592,15 @@
 			buildConfigurations = (
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DDB7F0E1AB0246E30930C8F1 /* Build configuration list for PBXNativeTarget "RecordLiveActivity" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DA33969B41AE7EF4569AECE9 /* Release */,
+				093D805554098D9DF6F183FF /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

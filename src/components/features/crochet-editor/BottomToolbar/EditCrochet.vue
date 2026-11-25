@@ -3,7 +3,6 @@
     <div class="edit-crochet__body">
       <!-- Input display: whole row, current pattern/bundle highlighted -->
       <div class="input-row">
-        <GoParent v-if="containerPath.length > 0" class="input-row__back" @go-parent="handleGoParent" />
         <div class="input-display">
           <KeypadPreview
             :row-list="draftRow"
@@ -24,6 +23,31 @@
         />
       </div>
 
+      <!-- 重複花樣 / 在同一針目裡: buttons only, above the stitches. A hidden button keeps its
+           space so the stitch buttons never move under the finger. -->
+      <div class="keypad-structure">
+        <button
+          type="button"
+          class="keypad-structure__button"
+          :class="{ 'is-hidden': !showPatternSection }"
+          :aria-hidden="!showPatternSection"
+          :disabled="!showPatternSection"
+          @click="handleStartPattern"
+        >
+          {{ t('toolbar.editCrochet.repeatPattern') }}
+        </button>
+        <button
+          type="button"
+          class="keypad-structure__button"
+          :class="{ 'is-hidden': !showBundleSection }"
+          :aria-hidden="!showBundleSection"
+          :disabled="!showBundleSection"
+          @click="handleStartBundle"
+        >
+          {{ t('toolbar.editCrochet.sameStitch') }}
+        </button>
+      </div>
+
       <!-- Stitch section -->
       <section class="keypad-section keypad-section--stitch">
         <h4 class="keypad-section__title">{{ t('toolbar.editCrochet.sections.stitch') }}</h4>
@@ -38,25 +62,6 @@
           @add-rope="handleAddRope"
         />
       </section>
-
-      <!-- Hidden sections keep their space so the stitch buttons never move under the finger. -->
-      <div class="keypad-structure">
-        <!-- Pattern section -->
-        <section class="keypad-section" :class="{ 'is-hidden': !showPatternSection }" :aria-hidden="!showPatternSection">
-          <h4 class="keypad-section__title">{{ t('toolbar.editCrochet.sections.pattern') }}</h4>
-          <button type="button" class="keypad-structure__button" :disabled="!showPatternSection" @click="handleStartPattern">
-            {{ t('toolbar.editCrochet.repeatPattern') }}
-          </button>
-        </section>
-
-        <!-- Same-stitch (bundle) section -->
-        <section class="keypad-section" :class="{ 'is-hidden': !showBundleSection }" :aria-hidden="!showBundleSection">
-          <h4 class="keypad-section__title">{{ t('toolbar.editCrochet.sections.bundle') }}</h4>
-          <button type="button" class="keypad-structure__button" :disabled="!showBundleSection" @click="handleStartBundle">
-            {{ t('toolbar.editCrochet.sameStitch') }}
-          </button>
-        </section>
-      </div>
     </div>
   </div>
 </template>
@@ -71,7 +76,6 @@ import { ref, computed, watch, nextTick, inject, unref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AddCrochet from '@/components/features/crochet-editor/BottomToolbar/AddCrochet.vue'
 import KeypadPreview from '@/components/features/crochet-editor/BottomToolbar/KeypadPreview.vue'
-import GoParent from '@/components/shared/buttons/GoParent.vue'
 import ThinIconButton from '@/components/shared/buttons/ThinIconButton.vue'
 import { BasicStitch, createSimpleStitch } from '@/constants/crochetData.js'
 import { openConfirmation } from '@/services/ui/confirmation'
@@ -80,7 +84,7 @@ import {
   canRemoveLast,
   canStartBundle,
   canStartPattern,
-  findLeafPatternPath,
+  findLeafContainerPath,
   getContainerKind,
   insertEmptyBundle,
   insertEmptyPattern,
@@ -127,7 +131,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['confirm', 'cancel', 'draft-pattern-change', 'dirty-change'])
+const emit = defineEmits(['confirm', 'cancel', 'draft-pattern-change', 'dirty-change', 'selection-change'])
 
 const stitchLookupInjected = inject('stitchLookup', null)
 const stitchLookup = computed(() => unref(stitchLookupInjected) || BasicStitch)
@@ -211,18 +215,24 @@ const commitIfChanged = (result) => {
   commit({ root: changed ? result.root : undefined, containerPath: result.containerPath })
 }
 
-const handleGoParent = () => {
+// 確認 in the bottom bar (EditRowCrochetTabs) confirms the selected pattern/bundle and
+// goes up one level; leaving an empty container removes it.
+const confirmSelection = () => {
   commitIfChanged(leaveContainer(draftRow.value, containerPath.value, stitchLookup.value))
 }
+
+// Tell the bottom bar whether a pattern/bundle is selected (it then shows only 確認).
+const isInContainer = computed(() => containerPath.value.length > 0)
+watch(isInContainer, (next) => emit('selection-change', next), { immediate: true })
 
 const handleDeleteLast = () => {
   if (!canDeleteLast.value) return
   commit(removeLast(draftRow.value, containerPath.value, stitchLookup.value))
 }
 
-// Clicking a node selects the deepest pattern containing it; outside any pattern nothing happens.
+// Clicking a node selects the deepest pattern or bundle containing it; outside both nothing happens.
 const handlePreviewPick = (nodePath) => {
-  const target = findLeafPatternPath(draftRow.value, nodePath)
+  const target = findLeafContainerPath(draftRow.value, nodePath)
   if (!target) return
   commitIfChanged(moveToContainer(draftRow.value, containerPath.value, target, stitchLookup.value))
 }
@@ -264,6 +274,7 @@ const handleCancel = async ({ close = true, skipConfirm = false } = {}) => {
 defineExpose({
   confirm: handleConfirm,
   cancel: handleCancel,
+  confirmSelection,
   isDirty
 })
 </script>
@@ -303,6 +314,8 @@ defineExpose({
 .input-row__delete {
   flex: none;
   align-self: center;
+  /* The icon box is scaled past the button; keep it from widening the row. */
+  overflow: hidden;
 }
 
 .input-display {
@@ -333,19 +346,20 @@ defineExpose({
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding-right: 0.5rem;
 }
 
 .keypad-structure {
   flex: none;
   display: flex;
   gap: 0.75rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid #e5e7eb;
 }
 
-.keypad-structure .keypad-section {
+.keypad-structure__button {
   flex: 1;
+}
+
+.keypad-structure__button.is-hidden {
+  visibility: hidden;
 }
 
 .keypad-structure__button {
@@ -359,9 +373,6 @@ defineExpose({
   cursor: pointer;
 }
 
-.keypad-section.is-hidden {
-  visibility: hidden;
-}
 
 .keypad-structure__button:active {
   transform: translateY(1px);

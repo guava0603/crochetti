@@ -1,7 +1,8 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { onAuthStateChanged } from 'firebase/auth'
-import { doc, getDoc, serverTimestamp, setDoc, Timestamp } from 'firebase/firestore'
+import { doc, serverTimestamp, setDoc, Timestamp } from 'firebase/firestore'
+import { getDocLocalFirst } from '@/services/firestore/localFirstRead'
 
 import { auth } from '@/firebaseConfig'
 import { db } from '@/firebaseConfig'
@@ -86,7 +87,7 @@ export const useAchievementStore = defineStore('achievement', () => {
 
   async function getUserAchievementCheckState(uid) {
     const userRef = doc(db, 'users', String(uid))
-    const snap = await getDoc(userRef)
+    const snap = await getDocLocalFirst(userRef)
     if (!snap.exists()) return { lastCheckMs: null, lastVersionSeen: null }
     const data = snap.data() || {}
     return {

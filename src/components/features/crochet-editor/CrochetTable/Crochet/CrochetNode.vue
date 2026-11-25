@@ -26,6 +26,7 @@
       v-else-if="node.type === 'rope'"
       :is="RopeComponent"
       :chain-count="node.chain_count"
+      :count="node.count || 1"
     />
 
     <component

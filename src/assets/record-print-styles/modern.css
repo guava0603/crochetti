@@ -1,3 +1,19 @@
+/* Modern editorial theme */
+
+.record-result-sharing.print-style--modern {
+  position: relative;
+  overflow: hidden;
+}
+
+.record-result-sharing.print-style--modern > :not(.print-style-backdrop) {
+  position: relative;
+  z-index: 1;
+}
+
 .record-result-sharing.print-style--modern.printed-domain {
-  background: var(--print-domain-bg) !important;
+  background: transparent !important;
+}
+
+.record-result-sharing.print-style--modern .top-card.export-healing-card {
+  border-top: 0.3rem solid rgba(59, 130, 246, 0.85) !important;
 }

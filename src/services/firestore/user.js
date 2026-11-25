@@ -6,14 +6,13 @@ import {
   arrayUnion,
   collection,
   doc,
-  getDoc,
-  getDocs,
   onSnapshot,
   query,
   runTransaction,
   setDoc,
   where
 } from 'firebase/firestore'
+import { getDocLocalFirst, getDocsLocalFirst } from '@/services/firestore/localFirstRead'
 
 /**
  * Returns true if `userId` matches the currently authenticated user.
@@ -70,7 +69,7 @@ export async function fetchUserProfile({ appId, userId }) {
   if (!resolvedAppId) throw new Error('fetchUserProfile: missing appId')
   if (!uid) throw new Error('fetchUserProfile: missing userId')
 
-  const snap = await getDoc(userProfileDocRef(resolvedAppId, uid))
+  const snap = await getDocLocalFirst(userProfileDocRef(resolvedAppId, uid))
   return snap.exists() ? (snap.data() || {}) : null
 }
 
@@ -141,7 +140,7 @@ export async function fetchUserProjectSummaries({ userId, includePrivate = false
     ? query(projectsRef, where('authorId', '==', String(userId)))
     : query(projectsRef, where('authorId', '==', String(userId)), where('is_public', '==', true))
 
-  const querySnapshot = await getDocs(q)
+  const querySnapshot = await getDocsLocalFirst(q)
   const summaries = querySnapshot.docs.map((d) => {
     const data = d.data() || {}
     const images = Array.isArray(data?.images) ? data.images.filter(Boolean) : []
@@ -170,7 +169,7 @@ export async function fetchUsers({ appId, userIds }) {
   if (uniqueIds.length === 0) return []
 
   const snapshots = await Promise.all(
-    uniqueIds.map((id) => getDoc(userProfileDocRef(resolvedAppId, id)))
+    uniqueIds.map((id) => getDocLocalFirst(userProfileDocRef(resolvedAppId, id)))
   )
 
   return snapshots.map((snap, idx) => {

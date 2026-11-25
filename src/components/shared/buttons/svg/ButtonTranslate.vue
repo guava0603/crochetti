@@ -16,7 +16,7 @@
       <ThinIconButton
         class="translate-toggle__trigger"
         src="064__telephone directory"
-        size="s"
+        size="m"
         background="transparent"
         :class="{ 'is-disabled': disabled }"
         :disabled="disabled"
@@ -266,12 +266,10 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 32px;
-  min-height: 26px;
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: 0.65rem;
   background: transparent;
   color: var(--color-icon-base, #374151);
   cursor: pointer;

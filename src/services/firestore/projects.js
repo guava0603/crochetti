@@ -6,8 +6,6 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDoc,
-  getDocs,
   serverTimestamp,
   Timestamp,
   updateDoc,
@@ -15,6 +13,7 @@ import {
   query,
   documentId
 } from 'firebase/firestore'
+import { getDocLocalFirst, getDocsLocalFirst } from '@/services/firestore/localFirstRead'
 
 import { normalizeEmptyNotesForSaveInPlace } from '@/utils/normalizeEmptyNotesForSave'
 import { filterNonDraftProjects } from '@/utils/projectDraft'
@@ -35,7 +34,7 @@ function normalizeEmptyNotesForSave(componentList) {
 export async function fetchProject(projectId) {
   if (!projectId) return null
   const ref = doc(db, 'projects', String(projectId))
-  const snap = await getDoc(ref)
+  const snap = await getDocLocalFirst(ref)
 
   // Permission is enforced by Firestore Security Rules; unauthorized reads
   // will throw (permission-denied) and no data is returned to the client.
@@ -49,14 +48,10 @@ export async function fetchProject(projectId) {
   if (data.updated_at == null) patch.updated_at = now
 
   if (Object.keys(patch).length) {
-    try {
-      await updateDoc(ref, patch)
-      return { ...data, ...patch }
-    } catch (error) {
-      // If rules disallow updates, still return best-effort values for UI.
+    void updateDoc(ref, patch).catch((error) => {
       console.warn('fetchProject: failed to repair timestamps', error)
-      return { ...data, ...patch }
-    }
+    })
+    return { ...data, ...patch }
   }
 
   return data
@@ -152,7 +147,7 @@ export async function fetchProjectSummariesByIds(projectIds) {
 
   for (const chunk of chunks) {
     const q = query(projectsRef, where(documentId(), 'in', chunk))
-    const snap = await getDocs(q)
+    const snap = await getDocsLocalFirst(q)
     snap.forEach((d) => {
       results.push(normalizeProjectSummary(d.id, d.data()))
     })
@@ -173,6 +168,6 @@ export async function fetchUserDraftSummaries({ userId }) {
     where('is_draft', '==', true)
   )
 
-  const querySnapshot = await getDocs(q)
+  const querySnapshot = await getDocsLocalFirst(q)
   return querySnapshot.docs.map((d) => normalizeProjectSummary(d.id, d.data()))
 }

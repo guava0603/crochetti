@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import { auth } from '@/firebaseConfig'
+import { auth, isAnonSignInPending } from '@/firebaseConfig'
 import { waitForAuthInit } from '@/services/auth/waitForAuthInit'
 import { onAuthStateChanged } from 'firebase/auth'
 
@@ -94,7 +94,13 @@ const router = createRouter({
       path: '/record/:record_id/print',
       name: 'record-print',
       component: () => import('../views/PrintRecordView.vue'),
-      meta: { bannerTitleKey: 'recordPrint.title', requiresAuth: true, footer: 'bar' },
+      meta: {
+        bannerOverlay: true,
+        bannerTransparent: true,
+        bannerVariant: 'glass',
+        requiresAuth: true,
+        footer: 'bar'
+      },
     },
 
     {
@@ -124,6 +130,7 @@ router.beforeEach(async (to) => {
   const isAuthed = Boolean(auth.currentUser?.uid)
 
   if (requiresAuth && !isAuthed) {
+    if (isAnonSignInPending()) return
     const redirect = typeof to.fullPath === 'string' && to.fullPath ? to.fullPath : '/home'
     return {
       name: 'login',

@@ -2,10 +2,10 @@ import { auth, db } from '@/firebaseConfig'
 import { getAppId } from '@/utils/appId'
 import {
   doc,
-  getDoc,
   runTransaction,
   serverTimestamp
 } from 'firebase/firestore'
+import { getDocLocalFirst } from '@/services/firestore/localFirstRead'
 
 const FRIEND_CODE_LENGTH = 6
 const FRIEND_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // exclude 0,O,I,1,L
@@ -70,7 +70,7 @@ export async function searchUserByFriendCode(rawCode, { appId } = {}) {
   if (!resolvedAppId) throw new Error('searchUserByFriendCode: missing appId')
   if (!code) throw new Error('searchUserByFriendCode: missing code')
 
-  const snap = await getDoc(shortcutDocRef(resolvedAppId, code))
+  const snap = await getDocLocalFirst(shortcutDocRef(resolvedAppId, code))
   if (!snap.exists()) return null
 
   const data = snap.data() || {}

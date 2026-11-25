@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest'
+import { calculateConsumeGenerateCore } from './crochetStatsCore.js'
 import {
   appendNode,
   canRemoveLast,
   canStartBundle,
   canStartPattern,
-  findLeafPatternPath,
+  findLeafContainerPath,
   getContainerCount,
   getContainerKind,
   insertEmptyBundle,
@@ -35,7 +36,9 @@ describe('keypadEdit', () => {
     root = appendNode(started.root, started.containerPath, v, lookup)
     root = appendNode(root, started.containerPath, x, lookup)
     expect(root[1].pattern).toEqual([v, x])
-    expect(root[1].generate).toBe(3)
+    // Patterns store no stats; totals come from their children.
+    expect(root[1]).not.toHaveProperty('generate')
+    expect(calculateConsumeGenerateCore([root[1]], 1, lookup).generate).toBe(3)
   })
 
   it('does not mutate its input', () => {
@@ -62,14 +65,22 @@ describe('keypadEdit', () => {
     expect(next[1]).toMatchObject({ type: 'bundle', consume: 1, generate: 2, bundle: [x, x] })
   })
 
-  it('×n applies only to the current pattern', () => {
+  it('×n applies to the current pattern or bundle, never the root', () => {
     const { root, containerPath } = insertEmptyPattern([], [], lookup)
     const filled = appendNode(root, containerPath, x, lookup)
     expect(getContainerCount(filled, containerPath)).toBe(1)
     const counted = setContainerCount(filled, containerPath, 6, lookup)
-    expect(counted[0]).toMatchObject({ count: 6, consume: 6, generate: 6 })
+    expect(counted[0]).toMatchObject({ count: 6 })
+    expect(calculateConsumeGenerateCore(counted, 1, lookup)).toEqual({ consume: 6, generate: 6 })
     expect(getContainerCount(counted, [])).toBeNull()
     expect(setContainerCount(counted, [], 3, lookup)).toEqual(counted)
+
+    const inBundle = insertEmptyBundle([], [], lookup)
+    const bundled = appendNode(inBundle.root, inBundle.containerPath, x, lookup)
+    expect(getContainerCount(bundled, inBundle.containerPath)).toBe(1)
+    const bundleCounted = setContainerCount(bundled, inBundle.containerPath, 4, lookup)
+    expect(bundleCounted[0]).toMatchObject({ type: 'bundle', count: 4 })
+    expect(calculateConsumeGenerateCore(bundleCounted, 1, lookup).generate).toBe(4)
   })
 
   it('last-page leaves the container and drops it when empty', () => {
@@ -93,15 +104,20 @@ describe('keypadEdit', () => {
     expect(canRemoveLast([], [])).toBe(false)
   })
 
-  it('preview click selects the deepest pattern, or nothing', () => {
+  it('preview click selects the deepest pattern or bundle, or nothing', () => {
     const root = [
       x,
-      { type: 'pattern', count: 2, pattern: [v, { type: 'pattern', count: 3, pattern: [x] }, { type: 'bundle', bundle: [x, v] }] }
+      { type: 'pattern', count: 2, pattern: [v, { type: 'pattern', count: 3, pattern: [x] }, { type: 'bundle', bundle: [x, v] }] },
+      { type: 'bundle', bundle: [x, x] }
     ]
-    expect(findLeafPatternPath(root, [0])).toBeNull()
-    expect(findLeafPatternPath(root, [1, 0])).toEqual([1])
-    expect(findLeafPatternPath(root, [1, 1, 0])).toEqual([1, 1])
-    expect(findLeafPatternPath(root, [1, 2, 1])).toEqual([1])
+    expect(findLeafContainerPath(root, [0])).toBeNull()
+    expect(findLeafContainerPath(root, [1, 0])).toEqual([1])
+    expect(findLeafContainerPath(root, [1, 1, 0])).toEqual([1, 1])
+    // A bundle is selected exactly like a pattern: tapping inside it selects it.
+    expect(findLeafContainerPath(root, [1, 2, 1])).toEqual([1, 2])
+    expect(findLeafContainerPath(root, [1, 2])).toEqual([1, 2])
+    expect(findLeafContainerPath(root, [2, 0])).toEqual([2])
+    expect(findLeafContainerPath(root, [2])).toEqual([2])
   })
 
   it('moving away from an empty container drops it and keeps the target', () => {

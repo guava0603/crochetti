@@ -1,5 +1,6 @@
 import { db } from '@/firebaseConfig'
-import { collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where, Timestamp } from 'firebase/firestore'
+import { collection, deleteDoc, doc, query, serverTimestamp, setDoc, updateDoc, where, Timestamp } from 'firebase/firestore'
+import { getDocLocalFirst, getDocsLocalFirst } from '@/services/firestore/localFirstRead'
 import { normalizeRecordForComponentCountsInPlace } from '@/utils/componentInstances'
 import { getRecordProgressPercent } from '@/utils/recordProgressGenerate'
 import { getAppId } from '@/utils/appId'
@@ -78,7 +79,7 @@ export async function deletePublicUserRecordSummary({ appId, userId, recordId })
 }
 
 export async function listPublicUserRecordSummaries(userId, { appId } = {}) {
-  const snaps = await getDocs(publicRecordSummariesCol({ appId, userId }))
+  const snaps = await getDocsLocalFirst(publicRecordSummariesCol({ appId, userId }))
 
   return snaps.docs.map((d) => {
     const data = d.data() || {}
@@ -102,7 +103,7 @@ export async function listPublicUserRecordSummaries(userId, { appId } = {}) {
 
 export async function fetchUserRecord(uid, recordId) {
   const ref = recordRef(uid, recordId)
-  const snap = await getDoc(ref)
+  const snap = await getDocLocalFirst(ref)
   if (!snap.exists()) return null
 
   const data = snap.data() || {}
@@ -118,13 +119,10 @@ export async function fetchUserRecord(uid, recordId) {
   if (clampPercent(data?.percentage) == null) patch.percentage = computedPercent
 
   if (Object.keys(patch).length) {
-    try {
-      await updateDoc(ref, patch)
-      return { ...data, ...patch }
-    } catch (error) {
+    void updateDoc(ref, patch).catch((error) => {
       console.warn('fetchUserRecord: failed to repair timestamps', error)
-      return { ...data, ...patch }
-    }
+    })
+    return { ...data, ...patch }
   }
   return data
 }
@@ -172,7 +170,7 @@ export async function listUserRecordsByProjectId(uid, projectId) {
 
   const recordsCol = collection(db, 'users', String(uid), 'records')
   const q = query(recordsCol, where('project_id', '==', String(projectId)))
-  const snaps = await getDocs(q)
+  const snaps = await getDocsLocalFirst(q)
 
   const records = snaps.docs.map((d) => {
     const data = d.data() || {}
@@ -191,7 +189,7 @@ export async function listUserRecords(uid) {
   if (!uid) throw new Error('listUserRecords: missing uid')
 
   const recordsCol = collection(db, 'users', String(uid), 'records')
-  const snaps = await getDocs(recordsCol)
+  const snaps = await getDocsLocalFirst(recordsCol)
 
   const records = snaps.docs.map((d) => {
     const data = d.data() || {}
@@ -222,7 +220,7 @@ export async function listUserRecordSummaries(uid) {
   if (!uid) throw new Error('listUserRecordSummaries: missing uid')
 
   const recordsCol = collection(db, 'users', String(uid), 'records')
-  const snaps = await getDocs(recordsCol)
+  const snaps = await getDocsLocalFirst(recordsCol)
 
   const records = snaps.docs.map((d) => {
     const data = d.data() || {}

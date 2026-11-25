@@ -8,6 +8,7 @@ import App from './App.vue'
 import router from './router'
 import { i18n } from './i18n'
 import { useAchievementStore } from '@/stores/achievementStore'
+import { useUserProfileStore } from '@/stores/userProfileStore'
 
 // Hash-router deep-link normalization:
 // If the app is opened at a path URL like `/user/123` (no hash), Vue Router (hash mode)
@@ -87,6 +88,8 @@ app.use(router)
 app.use(i18n)
 
 // Start background stores that need to react to auth state.
+// App mounts immediately — auth and Firestore sync run in the background.
 useAchievementStore(pinia).start()
+useUserProfileStore(pinia).start()
 
 app.mount('#app')

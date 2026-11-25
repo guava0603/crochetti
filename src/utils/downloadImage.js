@@ -337,17 +337,36 @@ function injectExportCaptureStyles(doc) {
   doc.head.appendChild(style)
 }
 
+function isGradientBackground(value) {
+  return String(value || '').includes('gradient')
+}
+
+function applyDomainBackground(el, domainBg) {
+  const bg = String(domainBg || '').trim()
+  if (!bg) return
+
+  if (isGradientBackground(bg)) {
+    el.style.setProperty('background', bg, 'important')
+    el.style.setProperty('background-color', 'transparent', 'important')
+    return
+  }
+
+  el.style.setProperty('background', bg, 'important')
+  el.style.setProperty('background-color', bg, 'important')
+}
+
 function readResolvedExportColors(sourceRoot, doc, { backgroundColor } = {}) {
   const view = doc?.defaultView || (typeof window !== 'undefined' ? window : null)
   const sampleCard = sourceRoot?.querySelector?.('.export-healing-card')
 
   let domainBg = String(backgroundColor || '').trim()
-  const hasThemedBackdrop = Boolean(sourceRoot?.querySelector?.('.ocean-print-backdrop'))
+  const hasThemedBackdrop = Boolean(sourceRoot?.querySelector?.('.print-style-backdrop'))
+  const captureBgAttr = sourceRoot?.dataset?.captureBackground
   if (!domainBg && sourceRoot && view) {
     domainBg = view.getComputedStyle(sourceRoot).backgroundColor || ''
   }
   if (hasThemedBackdrop) {
-    domainBg = '#bae6fd'
+    domainBg = String(captureBgAttr || '').trim() || domainBg || '#ffffff'
   } else if (!domainBg || domainBg === 'transparent' || domainBg === 'rgba(0, 0, 0, 0)') {
     domainBg = '#ffffff'
   }
@@ -406,8 +425,7 @@ export function applyExportFlatStyles(root, doc = null, options = {}) {
     root.style.setProperty('box-shadow', cardShadow, 'important')
   }
 
-  root.style.setProperty('background', domainBg, 'important')
-  root.style.setProperty('background-color', domainBg, 'important')
+  applyDomainBackground(root, domainBg)
 
   normalizeExtraImagesForExport(root, layoutWidthPx, sourceRoot, doc?.defaultView ? doc : document)
 }
@@ -445,8 +463,12 @@ export async function captureElementAsPngBlob(element, options = {}) {
     throw new Error('captureElementAsPngBlob: failed to inline export images')
   }
 
+  const domainBackground = options.backgroundColor ?? '#ffffff'
+  const canvasBackground = options.canvasBackgroundColor
+    || (isGradientBackground(domainBackground) ? '#ffffff' : domainBackground)
+
   const mergedCanvasOptions = {
-    backgroundColor: options.backgroundColor ?? '#ffffff',
+    backgroundColor: canvasBackground,
     scale,
     logging: false,
     ...html2canvasOptions,
@@ -462,7 +484,7 @@ export async function captureElementAsPngBlob(element, options = {}) {
           applyExportFlatStyles(clonedNode, doc, {
             layoutWidthPx,
             sourceRoot: element,
-            backgroundColor: options.backgroundColor
+            backgroundColor: domainBackground
           })
         } else {
           normalizeExtraImagesForExport(clonedNode, layoutWidthPx, element, doc)

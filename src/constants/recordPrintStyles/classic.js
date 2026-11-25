@@ -3,7 +3,7 @@ import { definePrintStyle } from '@/constants/recordPrintStyles/definePrintStyle
 export default definePrintStyle({
   id: 'classic',
   titleKey: 'recordPrint.styles.classic',
-  architecture: 'healing',
+  architecture: 'classic',
   swatchColors: ['#fffbeb', '#fef3c7', '#d97706'],
   tokens: {
     domain: { bg: '#fffbeb' },

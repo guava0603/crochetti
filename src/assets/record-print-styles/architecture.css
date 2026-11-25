@@ -1,8 +1,9 @@
 /**
  * Layout architecture per `print-arch--*` on `.record-result-sharing`.
+ * Each style uses a distinct composition while sharing the same content blocks.
  */
 
-/* --- healing (standard, classic): overlapping hero badge --- */
+/* --- healing (warm): overlapping hero badge --- */
 .record-result-sharing.print-arch--healing .top-card.export-healing-card {
   padding: calc(11.75rem - 3.25rem + 0.75rem) 1rem 1rem;
   margin-top: 4rem;
@@ -19,29 +20,9 @@
   grid-template-columns: 1fr;
 }
 
-/* --- spring: softer hero, extra vertical rhythm --- */
-.record-result-sharing.print-arch--spring .top-card.export-healing-card {
-  padding: calc(11.5rem - 3rem + 0.85rem) 1.1rem 1.15rem;
-  margin-top: 3.5rem;
-}
+/* --- spring: independent SpringPrintCard layout (see cards/SpringPrintCard.vue) --- */
 
-.record-result-sharing.print-arch--spring .top-card.export-healing-card .top-badge {
-  position: absolute;
-  left: 50%;
-  top: -3rem;
-  transform: translateX(-50%);
-}
-
-.record-result-sharing.print-arch--spring .result-body--sharing {
-  gap: 1.25rem;
-}
-
-.record-result-sharing.print-arch--spring .result-body--sharing .rest-grid {
-  grid-template-columns: 1fr;
-  gap: 1rem;
-}
-
-/* --- simple: flat stack, inline badge, no overlap --- */
+/* --- simple: flat stack, inline badge --- */
 .record-result-sharing.print-arch--simple .export-healing-card .card-inner-frame {
   display: none;
 }
@@ -75,7 +56,12 @@
   padding: 0.85rem 1rem;
 }
 
-/* --- modern: sharp grid, badge in flow, two-column rest --- */
+.record-result-sharing.print-arch--simple .sharing-meta__title {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* --- modern: editorial grid, badge beside metrics --- */
 .record-result-sharing.print-arch--modern .top-card.export-healing-card {
   margin-top: 0;
   padding: 1rem 1.25rem 1.15rem;
@@ -137,7 +123,45 @@
   }
 }
 
-/* --- ocean: wide cards with left accent stripe --- */
+/* --- classic: centered heirloom card, framed badge --- */
+.record-result-sharing.print-arch--classic .top-card.export-healing-card {
+  padding: calc(10.5rem - 2.85rem + 0.85rem) 1.15rem 1.15rem;
+  margin-top: 3.25rem;
+  max-width: 92%;
+  margin-inline: auto;
+}
+
+.record-result-sharing.print-arch--classic .top-card.export-healing-card .top-badge {
+  position: absolute;
+  left: 50%;
+  top: -2.85rem;
+  transform: translateX(-50%);
+  width: 10.5rem;
+  height: 10.5rem;
+}
+
+.record-result-sharing.print-arch--classic .top-card.export-healing-card .card-inner-frame {
+  border-width: 0.125rem;
+  border-style: double;
+}
+
+.record-result-sharing.print-arch--classic .result-body--sharing .rest-grid {
+  grid-template-columns: 1fr;
+  gap: 0.7rem;
+  max-width: 92%;
+  margin-inline: auto;
+}
+
+.record-result-sharing.print-arch--classic .rest-card.export-healing-card,
+.record-result-sharing.print-arch--classic .extra-note-card.export-healing-card {
+  max-width: 100%;
+}
+
+.record-result-sharing.print-arch--classic .sharing-meta__title {
+  font-weight: 700;
+}
+
+/* --- ocean: flowing cards with left tide stripe --- */
 .record-result-sharing.print-arch--ocean .top-card.export-healing-card {
   padding: calc(11.25rem - 3rem + 0.75rem) 1rem 1rem;
   margin-top: 3.25rem;
@@ -165,17 +189,20 @@
   gap: 0.85rem;
 }
 
-/* --- dusk: dark panels, compact hero --- */
+
+/* --- dusk: compact night card, inset panels --- */
 .record-result-sharing.print-arch--dusk .top-card.export-healing-card {
-  padding: calc(11rem - 3rem + 0.65rem) 1rem 1rem;
-  margin-top: 3rem;
+  padding: calc(10.75rem - 2.9rem + 0.65rem) 1rem 1rem;
+  margin-top: 2.75rem;
 }
 
 .record-result-sharing.print-arch--dusk .top-card.export-healing-card .top-badge {
   position: absolute;
   left: 50%;
-  top: -3rem;
+  top: -2.9rem;
   transform: translateX(-50%);
+  width: 10.25rem;
+  height: 10.25rem;
 }
 
 .record-result-sharing.print-arch--dusk .export-healing-card .card-inner-frame {
@@ -190,3 +217,4 @@
 .record-result-sharing.print-arch--dusk .rest-card.export-healing-card {
   padding: 0.9rem 1.1rem;
 }
+

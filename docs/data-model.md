@@ -101,6 +101,19 @@ Use Auth display fields only to **bootstrap** an empty Firestore profile (`useCu
 | `content.type` | Cast-on for part components |
 | `content.row_list` | Crochet rows, groups, nodes (stitch / bundle / pattern / rope) |
 
+### Stitch nodes (`row.content.stitch_node_list[]`)
+
+`SingleAnchor = SimpleStitch | Bundle | Pattern | RopeBundle`. **Every anchor has `count` (integer ≥ 1, default 1).**
+
+| Type | Shape |
+|------|-------|
+| `stitch` | `{ type, stitch_id, position?, label?, count }`; N of the same stitch is `count: N`, not a one-stitch pattern |
+| `bundle` | `{ type, bundle: SimpleStitch[], consume, generate?, label?, count }` |
+| `pattern` | `{ type, pattern: SingleAnchor[], label?, count }` |
+| `rope` | `{ type, chain_count, label?, count }` |
+
+Every row save runs the clean step `crochetValidate` (`src/utils/crochetValidate.js`), from the innermost lists out: `count` ≤ 0 removes the anchor; empty and ×1 patterns are unwrapped; a one-child pattern becomes that child with the counts multiplied; neighbours that differ only by `count` are merged (counts summed). Row totals never change, so record `end_at.crochet_count` stays valid. Existing data: `scripts/migrate-stitch-counts.mjs` (dry run by default).
+
 ### `self_defined_stitches[]` item shape
 
 `stitch_id`, `name`, `symbol_jp`, `text_zh`, `description`, `consume`, `generate`

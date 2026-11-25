@@ -1,23 +1,37 @@
 <template>
-  <div class="record-print-shell">
-    <section v-if="recordData && !recordLoading" class="print-page-preview" :aria-label="t('recordPrint.previewSection')">
-      <div class="print-page-toolbar">
-        <ToolbarButton
-          icon-src="083__setting_edit"
-          :aria-label="t('print.editSettings')"
-          :title="t('print.editSettings')"
-          :disabled="!recordData || recordLoading"
-          @click="openSettings"
-        />
-        <ToolbarButton
-          icon-src="027__download"
-          :aria-label="t('record.shareCompletedResultImage')"
-          :title="t('record.shareCompletedResultImage')"
-          :disabled="!recordData || recordLoading || sharing"
-          @click="shareImage"
-        />
-      </div>
+  <Teleport to=".top-banner__side--right">
+    <div
+      v-if="recordData && !recordLoading"
+      class="print-banner-actions"
+      @click.stop
+    >
+      <ToolbarButton
+        background="glass"
+        icon-src="083__setting_edit"
+        :aria-label="t('print.editSettings')"
+        :title="t('print.editSettings')"
+        :disabled="!recordData || recordLoading"
+        @click="openSettings"
+      />
+      <ToolbarButton
+        background="glass"
+        icon-src="027__download"
+        :aria-label="t('record.shareCompletedResultImage')"
+        :title="t('record.shareCompletedResultImage')"
+        :disabled="!recordData || recordLoading || sharing"
+        @click="shareImage"
+      />
+    </div>
+  </Teleport>
 
+  <div
+    class="record-print-shell"
+    :class="{
+      'record-print-shell--spring': effectivePrintStyleId === 'spring',
+      'record-print-shell--no-style-dock': !showPrintStylePicker
+    }"
+  >
+    <section v-if="recordData && !recordLoading" class="print-page-preview" :aria-label="t('recordPrint.previewSection')">
       <div class="printed-image-preview">
         <div class="printed-image-preview__display">
           <img
@@ -35,7 +49,7 @@
             ref="sharingRef"
             disable-animations
             show-printed-domain-border
-            :print-style-id="printStyleId"
+            :print-style-id="effectivePrintStyleId"
             :current-user="currentUser"
             :profile="profile"
             :section-visibility="sectionVisibility"
@@ -51,7 +65,7 @@
     </div>
 
     <footer
-      v-if="recordData && !recordLoading"
+      v-if="recordData && !recordLoading && showPrintStylePicker"
       class="print-style-dock"
       :aria-label="t('recordPrint.stylePickerLabel')"
     >
@@ -88,9 +102,11 @@ import HorizontalStylePicker from '@/components/shared/inputs/HorizontalStylePic
 import RecordResultSharing from '@/components/features/record/RecordResultSharing.vue'
 import '@/constants/recordPrintStyles'
 import {
+  DEFAULT_RECORD_PRINT_STYLE_ID,
   getRecordPrintStyle,
   RECORD_PRINT_STYLES
 } from '@/constants/recordPrintStyles'
+import { isFeatureEnabled } from '@/constants/featureFlags'
 import RecordPrintSettingsModal from '@/components/modals/record/RecordPrintSettingsModal.vue'
 import { provideRecordContext } from '@/composables/recordContext'
 import { useAppBanner } from '@/composables/appBanner'
@@ -137,9 +153,12 @@ const showSettingsModal = ref(false)
 
 const printSettings = ref(loadStoredPrintSettings(recordId.value))
 
+const showPrintStylePicker = computed(() => isFeatureEnabled('recordPrintStylePicker'))
+
 const printStyleId = computed({
   get: () => printSettings.value.printStyle,
   set: (value) => {
+    if (!showPrintStylePicker.value) return
     printSettings.value = {
       ...printSettings.value,
       printStyle: value
@@ -147,15 +166,21 @@ const printStyleId = computed({
   }
 })
 
-const activePrintStyle = computed(() => getRecordPrintStyle(printStyleId.value))
+const effectivePrintStyleId = computed(() => {
+  if (showPrintStylePicker.value) return printStyleId.value
+  return DEFAULT_RECORD_PRINT_STYLE_ID
+})
 
-const printStylePickerItems = computed(() =>
-  RECORD_PRINT_STYLES.map((style) => ({
+const activePrintStyle = computed(() => getRecordPrintStyle(effectivePrintStyleId.value))
+
+const printStylePickerItems = computed(() => {
+  if (!showPrintStylePicker.value) return []
+  return RECORD_PRINT_STYLES.map((style) => ({
     id: style.id,
     label: t(style.titleKey),
     swatchColors: style.swatchColors
   }))
-)
+})
 
 const { previewUrl, previewLoading, scheduleRefresh } = usePrintedImagePreview(
   () => sharingRef.value,
@@ -166,7 +191,8 @@ const { previewUrl, previewLoading, scheduleRefresh } = usePrintedImagePreview(
     printSettings.value
   ],
   () => ({
-    backgroundColor: activePrintStyle.value.captureBackground
+    backgroundColor: activePrintStyle.value.captureBackground,
+    canvasBackgroundColor: activePrintStyle.value.captureBackgroundFlat
   })
 )
 
@@ -212,6 +238,7 @@ watch(recordId, () => {
 })
 
 watch(printStyleId, (nextId, prevId) => {
+  if (!showPrintStylePicker.value) return
   if (nextId === prevId || recordLoading.value) return
   saveStoredPrintSettings(
     recordId.value,
@@ -226,16 +253,6 @@ watch([availableSectionKeys, sourceImageUrls], () => {
   if (!availableSectionKeys.value.length) return
   reloadPrintSettings()
 })
-
-const bannerTitle = computed(() => t('recordPrint.title'))
-
-watch(
-  bannerTitle,
-  (v) => {
-    appBanner?.setBanner({ title: v })
-  },
-  { immediate: true }
-)
 
 async function loadRecord() {
   const id = recordId.value
@@ -308,7 +325,8 @@ async function shareImage() {
   try {
     await sharingRef.value?.shareOrDownload?.({
       flattenForExport: true,
-      backgroundColor: activePrintStyle.value.captureBackground
+      backgroundColor: activePrintStyle.value.captureBackground,
+      canvasBackgroundColor: activePrintStyle.value.captureBackgroundFlat
     })
   } catch (error) {
     console.warn('RecordPrintPage: share image failed', error)
@@ -338,7 +356,15 @@ watch(
 )
 
 onMounted(() => {
-  appBanner?.setBanner({ visible: true, showBack: true, onBack: lastPage })
+  appBanner?.setBanner({
+    visible: true,
+    variant: 'glass',
+    overlay: true,
+    transparent: true,
+    title: '',
+    showBack: true,
+    onBack: lastPage
+  })
 })
 
 onUnmounted(() => {
@@ -349,11 +375,28 @@ onUnmounted(() => {
 <style scoped>
 .record-print-shell {
   --print-style-dock-height: 5.25rem;
+  --print-style-dock-offset: var(--print-style-dock-height);
+  /* Glass overlay banner: top pad + 60px control + bottom pad + safe area */
+  --print-glass-banner-offset: calc(5.25rem + var(--safe-area-top));
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.record-print-shell--no-style-dock {
+  --print-style-dock-offset: 0px;
+}
+
+.print-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.record-print-shell--spring .print-page-preview {
+  background: linear-gradient(135deg, #fff3f3 0%, #f4faf6 50%, #fffcf0 100%);
 }
 
 .print-page-preview {
@@ -364,7 +407,7 @@ onUnmounted(() => {
   overflow-x: clip;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 1rem 0.75rem calc(var(--print-style-dock-height) + var(--app-footer-height) + var(--safe-area-bottom) + 0.75rem);
+  padding: var(--print-glass-banner-offset) 0.75rem calc(var(--print-style-dock-offset) + var(--app-footer-height) + var(--safe-area-bottom) + 0.75rem);
   box-sizing: border-box;
 }
 
@@ -373,17 +416,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-}
-
-.print-page-toolbar {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.75rem;
-  z-index: var(--z-sticky);
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
+  padding: var(--print-glass-banner-offset) 1rem 1rem;
+  box-sizing: border-box;
 }
 
 .print-style-dock {

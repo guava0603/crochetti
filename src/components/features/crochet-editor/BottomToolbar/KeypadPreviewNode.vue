@@ -23,6 +23,7 @@
             :path="[...path, i]"
             :active-path="activePath"
             @pick="(p) => $emit('pick', p)"
+            @update-count="(n) => $emit('update-count', n)"
           />
           <span v-if="i < children.length - 1" class="kp-sep">, </span>
         </template>
@@ -30,7 +31,8 @@
         <span class="kp-paren">)</span>
       </template>
     </span>
-    <span v-if="node.type === 'pattern'" class="kp-count" @click.stop>
+    <!-- Selected pattern or bundle: both repeat their child list × n. -->
+    <span class="kp-count" @click.stop>
       <span class="kp-count__symbol">×</span>
       <InputNumber
         :model-value="patternCount"
@@ -91,6 +93,7 @@
       v-else-if="node.type === 'rope'"
       :is="RopeComponent"
       :chain-count="node.chain_count"
+      :count="node.count || 1"
     />
   </span>
 </template>
@@ -136,6 +139,7 @@ const isAncestorOfActive = computed(() =>
   props.activePath.length > props.path.length && props.path.every((v, i) => v === props.activePath[i])
 )
 
+// Repeat count of a pattern or bundle (both are containers with a child list).
 const patternCount = computed(() => Math.max(1, Number(props.node?.count) || 1))
 
 const isCompact = computed(() =>

@@ -1,6 +1,6 @@
 <template>
   <div
-    :class="buttonClass"
+    class="btn-delete"
     :disabled="disabled"
     @click="handleClick"
   >
@@ -9,7 +9,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { openConfirmation } from '@/services/ui/confirmation'
 import { resolveSettingsIconUrl } from '@/utils/settingsIcon'
 
@@ -20,21 +19,10 @@ const props = defineProps({
   type: {
     type: [String, Object],
     default: 'deleteItem'
-  },
-  variant: {
-    type: String,
-    default: 'default'
   }
 })
 
 const emit = defineEmits(['click'])
-
-const variant = computed(() => (props.variant === 'small' ? 'small' : 'default'))
-
-const buttonClass = computed(() => [
-  'btn-delete',
-  variant.value === 'small' ? 'btn-delete--small' : null
-])
 
 async function handleClick() {
   if (props.disabled) return
@@ -65,21 +53,19 @@ async function handleClick() {
   justify-content: center;
 }
 
-.btn-delete--small {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-}
-
 .btn-delete__icon {
   display: block;
+  /* The SVG has no intrinsic size (150px default) and iOS WebKit won't always shrink it
+     inside a flex button, so size it to the button explicitly. The 40×40 viewBox has
+     padding built in, so the trash glyph ends up about 40% of the button. */
+  flex: none;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  object-fit: contain;
   /* Convert the dark SVG fill to white without masks */
   filter: brightness(0) invert(1);
-}
-
-.btn-delete--small .btn-delete__icon {
-  width: 16px;
-  height: 16px;
 }
 
 .btn-delete:hover {

@@ -1,1 +1,23 @@
-/* Classic shares healing architecture; tokens drive colors. */
+/* Classic heirloom theme */
+
+.record-result-sharing.print-style--classic {
+  position: relative;
+  overflow: hidden;
+}
+
+.record-result-sharing.print-style--classic > :not(.print-style-backdrop) {
+  position: relative;
+  z-index: 1;
+}
+
+.record-result-sharing.print-style--classic.printed-domain {
+  background: transparent !important;
+}
+
+.record-result-sharing.print-style--classic .export-healing-card {
+  border-width: 0.14rem;
+}
+
+.record-result-sharing.print-style--classic .top-card.export-healing-card .card-inner-frame {
+  border-style: double;
+}

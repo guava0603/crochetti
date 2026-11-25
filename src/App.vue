@@ -33,10 +33,12 @@ import { RouterView, useRoute } from 'vue-router'
 import { provideAppBanner } from '@/composables/appBanner'
 import { provideFooterContext } from '@/composables/footerContext'
 import Footer from '@/components/shell/Footer/index.vue'
+import { useRecordLiveActivity } from '@/composables/useRecordLiveActivity'
 
 const route = useRoute()
 provideAppBanner()
 provideFooterContext()
+useRecordLiveActivity()
 
 const footerType = computed(() => {
   const raw = String(route.meta?.footer || 'none')

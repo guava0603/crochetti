@@ -56,8 +56,8 @@ export function useAppBanner() {
 }
 
 /**
- * ThinIconButton background for banner controls (back, more menu).
- * Reads global banner variant so teleported menus still get glass styling.
+ * ThinIconButton background for banner controls (back, teleported actions).
+ * Only used when ToolbarButton sets `inheritBannerStyle`.
  *
  * @param {import('vue').MaybeRefOrGetter<string>} [explicitBackground]
  */

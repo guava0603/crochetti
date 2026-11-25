@@ -61,6 +61,7 @@ export function definePrintStyle(config) {
     themeClass: `print-style--${id}`,
     architectureClass: `print-arch--${architecture}`,
     captureBackground: domain.bg,
+    captureBackgroundFlat: domain.bgFlat || domain.bg,
     cssVars,
     chart: Object.freeze({ ...chart }),
     tokens

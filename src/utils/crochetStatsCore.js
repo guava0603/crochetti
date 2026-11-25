@@ -1,4 +1,4 @@
-import { getRopeChainCount } from '@/utils/ropeChainCount'
+import { getRopeChainCount } from './ropeChainCount.js'
 
 const isCrochetNode = (value) => {
   return !!value && typeof value === 'object' && typeof value.type === 'string'

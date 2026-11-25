@@ -4,7 +4,8 @@ import { getStorage } from "firebase/storage";
 import {
   initializeAuth,
   indexedDBLocalPersistence,
-  getAuth
+  getAuth,
+  signInAnonymously
 } from "firebase/auth";
 import {
   initializeFirestore,
@@ -50,3 +51,37 @@ export const storage = getStorage(app);
 // 3. ⚠️ 重要：暫時移除 getAnalytics(app)
 // Analytics 在 iOS Webview 中常會觸發 CORS 錯誤導致白屏
 
+let authStateReadyPromise = null
+let anonSignInStarted = false
+
+export function getAuthStateReadyPromise() {
+  if (!authStateReadyPromise) {
+    authStateReadyPromise = auth.authStateReady()
+  }
+  return authStateReadyPromise
+}
+
+export function isAnonSignInPending() {
+  return anonSignInStarted
+}
+
+/**
+ * Restore auth from IndexedDB immediately, then sign in anonymously in the background
+ * when no local session exists. Never blocks app mount or routing.
+ */
+export function initUserSession() {
+  void getAuthStateReadyPromise().then(() => {
+    if (auth.currentUser?.uid) return
+
+    anonSignInStarted = true
+    void signInAnonymously(auth)
+      .catch((error) => {
+        console.warn('initUserSession: anonymous sign-in failed', error)
+      })
+      .finally(() => {
+        anonSignInStarted = false
+      })
+  })
+}
+
+initUserSession()

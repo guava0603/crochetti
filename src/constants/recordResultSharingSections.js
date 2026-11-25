@@ -69,7 +69,8 @@ export function loadStoredPrintSettings(recordId, availableKeys, sourceImageUrls
     return {
       sectionVisibility: filterVisibilityByAvailable(normalizeSectionVisibility(sections), availableKeys),
       extraImages,
-      completedTime
+      completedTime,
+      printStyle: normalizeRecordPrintStyleId(parsed?.printStyle)
     }
   } catch {
     return {

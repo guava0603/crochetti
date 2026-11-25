@@ -463,6 +463,8 @@ const getStitchLabel = (stitch) => {
 .crochet-adjust-group {
   display: flex;
   flex-direction: column;
+  /* Span the side panel so the V / A buttons fill it like FL / BL / FP / BP. */
+  align-self: stretch;
 }
 
 .crochet-adjust-button {
@@ -540,7 +542,9 @@ const getStitchLabel = (stitch) => {
 /* Side panel buttons behave like a vertical button-group */
 .crochet-position-button {
   width: 100%;
-  min-width: 4rem;
+  /* Fill the side panel (4rem incl. its 2px border); a 4rem minimum overflowed it and the
+     panel's overflow:hidden cut the right edge of every button. */
+  min-width: 0;
   border-radius: 0;
   border: 0;
   border-bottom: 1px solid #e5e7eb;
