@@ -7,11 +7,11 @@ import {
 } from '@/constants/recordStatusCatalog'
 import {
   allocateNextCustomStatusId,
-  appendNoteIfNew,
   findCatalogStatusById,
   findCatalogStatusByName,
   getNoteSuggestionsForStatus,
   linkStatusToRecordList,
+  markNoteApplied,
   mergeRecordNotesIntoProfile,
   mergeRecordStatusesIntoCatalog,
   normalizeRecordLinkedStatuses,
@@ -85,7 +85,11 @@ export function useUserRecordStatusCatalog(profileSource, userIdSource) {
       for (let i = 0; i < merged.length; i += 1) {
         const a = merged[i]
         const b = notes.value[i]
-        if (Number(a?.status_id) !== Number(b?.status_id) || a?.description !== b?.description) {
+        if (
+          Number(a?.status_id) !== Number(b?.status_id) ||
+          a?.description !== b?.description ||
+          a?.last_applied_at !== b?.last_applied_at
+        ) {
           same = false
           break
         }
@@ -114,9 +118,10 @@ export function useUserRecordStatusCatalog(profileSource, userIdSource) {
     return entry
   }
 
+  /** Save a note the user just applied to a status (new or existing) and stamp its last-applied time. */
   async function addCustomNote({ statusId, description }) {
-    const next = appendNoteIfNew(notes.value, { statusId, description })
-    if (next.length === notes.value.length) return next
+    const next = markNoteApplied(notes.value, { statusId, description })
+    if (JSON.stringify(next) === JSON.stringify(notes.value)) return next
     await persistNotes(next)
     return next
   }

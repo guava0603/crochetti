@@ -7,7 +7,7 @@
         type="button"
         class="crochet-button"
         :class="{ 'is-selected': selectedStitchId === getStitchId(crochet) }"
-        :disabled="disabled || !isStitchEnabled(getStitchId(crochet)) || isStitchDisabledByPositionSelection(getStitchId(crochet)) || isStitchDisabledByAdjustMode(getStitchId(crochet))"
+        :disabled="disabled || isStitchDisabledByPositionSelection(getStitchId(crochet)) || isStitchDisabledByAdjustMode(getStitchId(crochet))"
         @click="handleStitchClick(getStitchId(crochet))"
       >
         <img
@@ -25,7 +25,7 @@
         type="button"
         class="crochet-button crochet-button--self-defined crochet-button--user-defined"
         :class="{ 'is-selected': selectedStitchId === getStitchId(sd) }"
-        :disabled="disabled || !isStitchEnabled(getStitchId(sd)) || isStitchDisabledByPositionSelection(getStitchId(sd)) || isStitchDisabledByAdjustMode(getStitchId(sd))"
+        :disabled="disabled || isStitchDisabledByPositionSelection(getStitchId(sd)) || isStitchDisabledByAdjustMode(getStitchId(sd))"
         @click="handleStitchClick(getStitchId(sd))"
       >
         <div class="crochet-symbol">{{ getStitchLabel(sd) }}</div>
@@ -37,7 +37,7 @@
         type="button"
         class="crochet-button"
         :class="{ 'is-selected': selectedStitchId === getStitchId(crochet) }"
-        :disabled="disabled || !isStitchEnabled(getStitchId(crochet)) || isStitchDisabledByPositionSelection(getStitchId(crochet)) || isStitchDisabledByAdjustMode(getStitchId(crochet))"
+        :disabled="disabled || isStitchDisabledByPositionSelection(getStitchId(crochet)) || isStitchDisabledByAdjustMode(getStitchId(crochet))"
         @click="handleStitchClick(getStitchId(crochet))"
       >
         <img
@@ -55,7 +55,7 @@
         type="button"
         class="crochet-button crochet-button--self-defined"
         :class="{ 'is-selected': selectedStitchId === getStitchId(sd) }"
-        :disabled="disabled || !isStitchEnabled(getStitchId(sd)) || isStitchDisabledByPositionSelection(getStitchId(sd)) || isStitchDisabledByAdjustMode(getStitchId(sd))"
+        :disabled="disabled || isStitchDisabledByPositionSelection(getStitchId(sd)) || isStitchDisabledByAdjustMode(getStitchId(sd))"
         @click="handleStitchClick(getStitchId(sd))"
       >
         <div class="crochet-symbol">{{ getStitchLabel(sd) }}</div>
@@ -66,7 +66,7 @@
         :key="`rope-${p.chainCount}`"
         type="button"
         class="crochet-button crochet-button--self-defined"
-        :disabled="disabled || isCustomDisabledByPositionSelection || adjustMode !== 'none'"
+        :disabled="disabled || isCustomDisabledByPositionSelection || adjustMode !== 'none' || disableRope"
         @click="$emit('rope-preset-click', p)"
       >
         <div class="crochet-symbol">{{ formatRopePresetLabel(p) }}</div>
@@ -76,7 +76,7 @@
         v-if="showCustomButton"
         type="button"
         class="crochet-button custom-button"
-        :disabled="disabled || isCustomDisabledByPositionSelection || adjustMode !== 'none'"
+        :disabled="disabled || isCustomDisabledByPositionSelection || adjustMode !== 'none' || disableRope"
         @click="$emit('bundle-click')"
       >
         <div class="crochet-symbol">{{ t('toolbar.addCrochet.quickAdd.bundle') }}</div>
@@ -154,7 +154,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   BasicStitchGeneral,
@@ -183,7 +183,8 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  emitOnDecreaseToggle: {
+  // Rope (縄束) cannot go inside a same-stitch group.
+  disableRope: {
     type: Boolean,
     default: false
   },
@@ -199,25 +200,9 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  presetStitchId: {
-    type: Number,
-    default: null
-  },
-  presetPosition: {
-    type: String,
-    default: ''
-  },
-  defaultPosition: {
-    type: String,
-    default: ''
-  },
   stitches: {
     type: Array,
     default: () => BasicStitchGeneral
-  },
-  enabledStitchIds: {
-    type: Array,
-    default: null
   },
   showCustomButton: {
     type: Boolean,
@@ -268,12 +253,6 @@ const isSelfDefinedStitchId = (stitchId) => {
   const id = Number(stitchId)
   if (!Number.isFinite(id)) return false
   return selfDefinedIdSet.value.has(id)
-}
-
-const isStitchEnabled = (stitchId) => {
-  const list = props.enabledStitchIds
-  if (!Array.isArray(list) || list.length === 0) return true
-  return list.includes(stitchId)
 }
 
 const selectedStitchId = ref(null)
@@ -336,84 +315,11 @@ const decreaseButtonLabel = computed(() => (isSymbolMode.value ? decreaseSymbol 
 
 const increaseButtonLabel = computed(() => (isSymbolMode.value ? increaseSymbol : increaseText.value))
 
-const DECREASE_VARIANT_TO_BASE = computed(() => {
-  const map = new Map()
-  for (const baseId of ADJUST_ALLOWED_BASE_STITCH_IDS) {
-    const variantId = getVariantStitchId(baseId, 'decrease')
-    if (variantId !== null && variantId !== undefined) {
-      map.set(variantId, baseId)
-    }
-  }
-  return map
-})
-
-const INCREASE_VARIANT_TO_BASE = computed(() => {
-  const map = new Map()
-  for (const baseId of ADJUST_ALLOWED_BASE_STITCH_IDS) {
-    const variantId = getVariantStitchId(baseId, 'increase')
-    if (variantId !== null && variantId !== undefined) {
-      map.set(variantId, baseId)
-    }
-  }
-  return map
-})
-
-const emitStitchSelection = (stitchId) => {
-  const effectivePosition = POSITION_SUPPORTED_STITCH_IDS.has(stitchId)
-    ? selectedPosition.value
-    : ''
-
-  emit('stitch-click', {
-    stitch_id: stitchId,
-    position: effectivePosition
-  })
-}
-
-const resolveBaseForAdjust = (stitchId) => {
-  if (stitchId === null || stitchId === undefined) return null
-  if (ADJUST_ALLOWED_BASE_STITCH_IDS.has(stitchId)) return stitchId
-  const fromDecrease = DECREASE_VARIANT_TO_BASE.value.get(stitchId)
-  if (fromDecrease !== null && fromDecrease !== undefined) return fromDecrease
-  const fromIncrease = INCREASE_VARIANT_TO_BASE.value.get(stitchId)
-  if (fromIncrease !== null && fromIncrease !== undefined) return fromIncrease
-  return null
-}
-
 const toggleAdjust = (mode) => {
   if (adjustDisabled.value) return
-
   const nextMode = mode === 'decrease' ? 'decrease' : 'increase'
-  const isTogglingOff = adjustMode.value === nextMode
-  const current = selectedStitchId.value
-
-  if (isTogglingOff) {
-    adjustMode.value = 'none'
-
-    // If we are currently on a variant, revert to base.
-    const baseId = resolveBaseForAdjust(current)
-    if (!props.emitOnDecreaseToggle) return
-    if (baseId === null || baseId === undefined) return
-    if (baseId === current) return
-    selectedStitchId.value = baseId
-    emitStitchSelection(baseId)
-    return
-  }
-
-  // Switching ON (or switching modes): set mode first
-  adjustMode.value = nextMode
-
-  // In Change-stitch mode, toggling should immediately apply to the currently
-  // selected stitch to avoid requiring an extra click.
-  if (!props.emitOnDecreaseToggle) return
-
-  const baseId = resolveBaseForAdjust(current)
-  if (baseId === null || baseId === undefined) return
-  if (!ADJUST_ALLOWED_BASE_STITCH_IDS.has(baseId)) return
-
-  const variantId = getVariantStitchId(baseId, nextMode)
-  if (variantId === null || variantId === undefined) return
-  selectedStitchId.value = variantId
-  emitStitchSelection(variantId)
+  // Toggling only arms the mode; the next stitch tap adds the increase/decrease variant.
+  adjustMode.value = adjustMode.value === nextMode ? 'none' : nextMode
 }
 
 const positionOptions = computed(() => {
@@ -535,32 +441,6 @@ const getStitchLabel = (stitch) => {
   }
   return getStitchDisplayText(stitch, crochetLang.value)
 }
-
-watch(
-  () => [props.presetStitchId, props.presetPosition],
-  ([nextId, nextPos]) => {
-    if (typeof nextId === 'number' && Number.isFinite(nextId)) {
-      selectedStitchId.value = nextId
-      if (supportsPosition.value) {
-        const normalized = normalizePosition(nextPos)
-        selectedPosition.value = POSITION_SUPPORTED_STITCH_IDS.has(nextId) ? normalized : ''
-
-        // If preset is an adjustment variant, reflect it in the UI.
-        if (new Set([5, 8, 11, 14, 17]).has(nextId)) {
-          adjustMode.value = 'increase'
-        } else if (new Set([6, 9, 12, 15, 18]).has(nextId)) {
-          adjustMode.value = 'decrease'
-        } else {
-          adjustMode.value = 'none'
-        }
-      } else {
-        selectedPosition.value = ''
-        adjustMode.value = 'none'
-      }
-    }
-  },
-  { immediate: true }
-)
 </script>
 
 <style scoped>

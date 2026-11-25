@@ -37,27 +37,18 @@
             />
           </div>
           <EditCrochet
-            v-if="currentSelectedData"
+            v-if="activeRow"
             ref="editCrochetRef"
             :craft-key="craftKey"
             :stitches-for-list="stitchesForList"
             :show-custom-button="showCustomButton"
             :enable-wizard="enableWizard"
             :enable-self-defined-stitches="enableSelfDefinedStitches"
-            :selected-node-type="currentSelectedData.selectedNodeType"
-            :selected-count="currentSelectedData.selectedCount"
-            :virtual-whole-row="Boolean(currentSelectedData.virtualWholeRow)"
-            :current-pattern="currentSelectedData.currentPattern"
-            :can-go-parent="canGoParent"
-            :selection-path="selectionPath"
+            :row-key="activeRow.row_index"
             :row-copy="rowCopy"
-            @delete-selection="() => $emit('delete-selection')"
-            @add-inner-selection="(next) => $emit('add-inner-selection', next)"
             @draft-pattern-change="(next) => $emit('draft-pattern-change', next)"
-            @row-copy-count-change="(payload) => $emit('row-copy-count-change', payload)"
             @confirm="(changes) => $emit('confirm', changes)"
             @cancel="() => $emit('cancel')"
-            @go-parent="(event) => $emit('go-parent', event)"
             @dirty-change="crochetDirty = $event"
           />
         </div>
@@ -141,21 +132,9 @@ const props = defineProps({
     type: Object,
     default: null
   },
-  currentSelectedData: {
-    type: Object,
-    default: null
-  },
   isSelectingMultipleRows: {
     type: Boolean,
     default: false
-  },
-  canGoParent: {
-    type: Boolean,
-    default: false
-  },
-  selectionPath: {
-    type: Array,
-    default: () => []
   },
   rowCopy: {
     type: Array,
@@ -197,13 +176,9 @@ const emit = defineEmits([
   'move-row',
   'delete-row',
   'delete-group-rows',
-  'delete-selection',
-  'add-inner-selection',
   'draft-pattern-change',
-  'row-copy-count-change',
   'confirm',
   'cancel',
-  'go-parent',
   'close'
 ])
 
@@ -229,13 +204,8 @@ const deleteConfirmType = computed(() => {
   return 'deleteItem'
 })
 
-const showDeleteButton = computed(() => {
-  // Row tab always supports deletion.
-  if (props.tab === 'row') return true
-
-  // Crochet tab: only show when there is a parent context (matches UX requirement).
-  return !!props.canGoParent
-})
+// Crochet tab deletes through the keypad's delete-last button instead.
+const showDeleteButton = computed(() => props.tab === 'row')
 
 const setTab = (next) => {
   // Multi-row selection mode is a Row-tab-only interaction (used for building row groups).
@@ -256,10 +226,7 @@ const handleDelete = () => {
     }
     emit('delete-row')
     emit('close')
-    return
   }
-
-  emit('delete-selection')
 }
 
 const handleCancel = async () => {

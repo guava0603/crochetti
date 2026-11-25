@@ -4,6 +4,7 @@ import {
   allocateNextCustomStatusId,
   appendNoteIfNew,
   getNoteSuggestionsForStatus,
+  markNoteApplied,
   mergeRecordNotesIntoProfile,
   mergeRecordStatusesIntoCatalog,
   normalizeRecordLinkedStatuses
@@ -43,5 +44,32 @@ describe('recordStatusCatalog', () => {
       [{ status_id: 101, description: 'Note B' }]
     )
     expect(merged).toHaveLength(2)
+  })
+
+  it('lists notes by last applied time, newest first', () => {
+    let notes = [
+      { status_id: 3, description: 'A' },
+      { status_id: 3, description: 'B' },
+      { status_id: 3, description: 'C' }
+    ]
+    // Legacy notes (never applied): newest-created first.
+    expect(getNoteSuggestionsForStatus(notes, 3)).toEqual(['C', 'B', 'A'])
+
+    notes = markNoteApplied(notes, { statusId: 3, description: 'A', appliedAt: 1000 })
+    notes = markNoteApplied(notes, { statusId: 3, description: 'B', appliedAt: 2000 })
+    expect(getNoteSuggestionsForStatus(notes, 3)).toEqual(['B', 'A', 'C'])
+
+    // Re-applying an older note moves it back to the top.
+    notes = markNoteApplied(notes, { statusId: 3, description: 'A', appliedAt: 3000 })
+    expect(getNoteSuggestionsForStatus(notes, 3)).toEqual(['A', 'B', 'C'])
+  })
+
+  it('markNoteApplied appends a new note stamped, without duplicates', () => {
+    const notes = markNoteApplied([{ status_id: 3, description: 'A' }], { statusId: 3, description: 'New', appliedAt: 5 })
+    expect(notes).toEqual([
+      { status_id: 3, description: 'A' },
+      { status_id: 3, description: 'New', last_applied_at: 5 }
+    ])
+    expect(markNoteApplied(notes, { statusId: 3, description: 'New', appliedAt: 9 })).toHaveLength(2)
   })
 })

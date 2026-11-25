@@ -127,10 +127,6 @@ const setSelection = (nextSelectionList) => {
   callDisplay('setSelection', nextSelectionList)
 }
 
-const addInnerSelection = (nextSelection) => {
-  callDisplay('addInnerSelection', nextSelection)
-}
-
 // Validate if row consume matches previous row generate
 const validationClass = computed(() => {
   if (props.previousGenerate === 0) return 'valid'
@@ -143,44 +139,8 @@ const validationClass = computed(() => {
 // Get row number display
 const rowNumberDisplay = computed(() => `${props.row.row_index}`)
 
-const addStitch = (payload) => {
-  callDisplay('addStitch', payload)
-}
-
-const addBundle = (bundle) => {
-  callDisplay('addBundle', bundle)
-}
-
-const deleteSelected = () => {
-  callDisplay('deleteSelected')
-}
-
-const createPatternFromRange = (count) => {
-  callDisplay('createPatternFromRange', count)
-}
-
-const updateNodeCount = (count) => {
-  callDisplay('updateNodeCount', count)
-}
-
-const changeSelectedStitch = (payload) => {
-  callDisplay('changeSelectedStitch', payload)
-}
-
-const updateNodePattern = (pattern) => {
-  callDisplay('updateNodePattern', pattern)
-}
-
-const replaceSelectedNode = (nextNode) => {
-  callDisplay('replaceSelectedNode', nextNode)
-}
-
 const setStitchNodeList = (nextList) => {
   callDisplay('setStitchNodeList', nextList)
-}
-
-const createPatternFromWholeRow = (count) => {
-  callDisplay('createPatternFromWholeRow', count)
 }
 
 const handleUpdateContent = (updatedContent) => {
@@ -192,18 +152,8 @@ const handleUpdateContent = (updatedContent) => {
 }
 
 defineExpose({
-  addStitch,
-  addBundle,
   clearSelection,
   setSelection,
-  addInnerSelection,
-  deleteSelected,
-  createPatternFromRange,
-  createPatternFromWholeRow,
-  updateNodeCount,
-  changeSelectedStitch,
-  updateNodePattern,
-  replaceSelectedNode,
   setStitchNodeList
 })
 </script>

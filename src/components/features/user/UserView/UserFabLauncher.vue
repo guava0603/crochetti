@@ -51,6 +51,7 @@ import { fetchProject } from '@/services/firestore/projects'
 import { openError } from '@/services/ui/notice'
 import { useAchievementStore } from '@/stores/achievementStore'
 import { startRecordForProject } from '@/services/records/startRecordForProject'
+import { normalizeUserTab as normalizeTab } from '@/utils/userTab'
 
 defineOptions({
   name: 'UserFabLauncher'
@@ -60,6 +61,12 @@ const props = defineProps({
   isMyPage: {
     type: Boolean,
     default: false
+  },
+  // The tab actually shown by the page. Preferred over the URL, which may omit `?tab=`
+  // when the page opens on its default tab.
+  activeTab: {
+    type: String,
+    default: ''
   },
   projects: {
     type: Array,
@@ -84,16 +91,9 @@ const showAddProjectStartModeModal = ref(false)
 const addRecordLoading = ref(false)
 const showSearchUserModal = ref(false)
 
-function normalizeUserTab(raw) {
-  const v = String(raw || '').trim().toLowerCase()
-  if (v === 'design') return 'design'
-  if (v === 'record' || v === 'records') return 'record'
-  if (v === 'saved' || v === 'save-project' || v === 'save_project' || v === 'saved-project') return 'saved'
-  if (v === 'following' || v === 'follow' || v === 'follows') return 'following'
-  return 'design'
-}
+const normalizeUserTab = (raw) => normalizeTab(raw, { fallback: 'design' })
 
-const activeTab = computed(() => normalizeUserTab(route.query?.tab || route.params?.tab))
+const activeTab = computed(() => normalizeUserTab(props.activeTab || route.query?.tab || route.params?.tab))
 
 const shouldShowFab = computed(() => {
   if (!props.isMyPage) return false

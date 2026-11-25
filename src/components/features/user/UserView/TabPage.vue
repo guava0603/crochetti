@@ -84,6 +84,7 @@
   <UserFabLauncher
     v-if="isMyPage"
     :is-my-page="isMyPage"
+    :active-tab="tabValue"
     :projects="userProjects"
     :saved-projects="savedProjects"
     @project-created="(p) => emit('project-created', p)"

@@ -4,18 +4,13 @@
       <CrochetList
         :disabled="disabled"
         :craft-key="craftKey"
-        :preset-stitch-id="presetStitchId"
-        :preset-position="presetPosition"
-        :default-position="defaultPosition"
         :stitches="stitchesForList"
         :self-defined-stitches="selfDefinedStitchesForList"
         :user-defined-stitches="userDefinedStitchesForList"
         :rope-presets="ropePresets"
-        :enabled-stitch-ids="null"
         :show-custom-button="resolvedShowCustomButton"
-        :emit-on-decrease-toggle="emitOnDecreaseToggle"
+        :disable-rope="disableRope"
         @stitch-click="handleCrochetClick"
-        @position-change="handlePositionChange"
         @bundle-click="openRopeBundleWizard"
         @raised-click="openRaisedWizard"
         @custom-click="openCustomWizard"
@@ -71,21 +66,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  emitOnDecreaseToggle: {
+  // Rope (縄束) cannot go inside a same-stitch group.
+  disableRope: {
     type: Boolean,
     default: false
-  },
-  presetStitchId: {
-    type: Number,
-    default: null
-  },
-  presetPosition: {
-    type: String,
-    default: ''
-  },
-  defaultPosition: {
-    type: String,
-    default: ''
   },
   stitches: {
     type: Array,
@@ -105,11 +89,8 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['add-crochet', 'add-bundle', 'add-rope', 'position-change'])
+const emit = defineEmits(['add-crochet', 'add-rope'])
 
-// mode: 'normal' => append stitches as usual
-// mode: 'same-stitch' => append into a top-level bundle (consume must be 1)
-const mode = ref('normal')
 
 const { list: selfDefinedStitches, addStitch: addSelfDefinedStitch } = useSelfDefinedStitchesContext()
 const { userSelfDefinedStitches } = useUserCrochetDisplay()
@@ -140,17 +121,7 @@ const handleCrochetClick = (payload) => {
   if (stitchId === null || stitchId === undefined) return
 
   const position = typeof payload === 'object' ? String(payload?.position ?? '') : ''
-
-  if (mode.value === 'same-stitch') {
-    emit('add-crochet', { stitchId, position, mode: 'same-stitch' })
-    return
-  }
-
-  emit('add-crochet', { stitchId, position, mode: 'normal' })
-}
-
-const handlePositionChange = (pos) => {
-  emit('position-change', pos)
+  emit('add-crochet', { stitchId, position })
 }
 
 const showCustomModal = ref(false)
@@ -258,7 +229,7 @@ const handleWizardSubmit = (draft) => {
   })
 
   // Auto-insert once after creating it.
-  emit('add-crochet', { stitchId: nextId, position: '', mode: 'normal' })
+  emit('add-crochet', { stitchId: nextId, position: '' })
 }
 </script>
 
@@ -279,43 +250,4 @@ const handleWizardSubmit = (draft) => {
   -webkit-overflow-scrolling: touch;
 }
 
-h4 {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.875rem;
-  color: #6b7280;
-  text-align: center;
-}
-
-.add-tabs {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-  margin-bottom: 0.75rem;
-}
-
-.add-tab {
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  border-radius: 999px;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #374151;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.05s;
-}
-
-.add-tab:hover {
-  background: #f3f4f6;
-}
-
-.add-tab:active {
-  transform: translateY(1px);
-}
-
-.add-tab.active {
-  border-color: rgb(var(--color-icon-add-rgb) / 0.55);
-  background: rgb(var(--color-icon-add-rgb) / 0.12);
-  color: #0f5132;
-}
 </style>

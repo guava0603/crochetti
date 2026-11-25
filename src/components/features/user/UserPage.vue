@@ -74,6 +74,7 @@ import { useAchievementStore } from '@/stores/achievementStore'
 import { openError } from '@/services/ui/notice'
 import { openToast } from '@/services/ui/toast'
 import { useAppBanner } from '@/composables/appBanner'
+import { normalizeUserTab as normalizeTab } from '@/utils/userTab'
 
 defineOptions({ name: 'UserViewMain' })
 
@@ -136,11 +137,8 @@ watch(
   }
 )
 
-function normalizeUserTab(raw) {
-  const v = String(raw || '').trim().toLowerCase()
-  if (v === 'record' || v === 'records') return 'record'
-  return 'design'
-}
+// Other users' pages only have 設計稿 / 作品紀錄 and open on 設計稿.
+const normalizeUserTab = (raw) => normalizeTab(raw, { tabs: ['design', 'record'], fallback: 'design' })
 
 watch(
   () => [userId.value, currentUser.value?.uid, route.query?.tab],

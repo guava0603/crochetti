@@ -31,7 +31,10 @@ export function normalizeStatusNotes(raw) {
     const key = `${statusId}::${description}`
     if (seen.has(key)) continue
     seen.add(key)
-    out.push({ status_id: statusId, description })
+    const note = { status_id: statusId, description }
+    const appliedAt = Number(item.last_applied_at)
+    if (Number.isFinite(appliedAt) && appliedAt > 0) note.last_applied_at = appliedAt
+    out.push(note)
   }
 
   return out
@@ -102,12 +105,35 @@ export function linkStatusToRecordList(recordStatuses, statusEntry) {
   return normalizeRecordLinkedStatuses([...list, { id, name: String(entry.name || '').trim() }], [entry])
 }
 
+/**
+ * Notes for one status, most recently applied first.
+ * Notes never applied (legacy, no `last_applied_at`) come after, newest-created first.
+ */
 export function getNoteSuggestionsForStatus(notes, statusId) {
   const id = Number(statusId)
   if (!Number.isFinite(id)) return []
   return normalizeStatusNotes(notes)
-    .filter((n) => Number(n.status_id) === id)
-    .map((n) => n.description)
+    .map((n, index) => ({ n, index }))
+    .filter(({ n }) => Number(n.status_id) === id)
+    .sort((a, b) => (b.n.last_applied_at || 0) - (a.n.last_applied_at || 0) || b.index - a.index)
+    .map(({ n }) => n.description)
+}
+
+/** Record that a note was applied now: stamp it, or append it stamped if it is new. */
+export function markNoteApplied(notes, { statusId, description, appliedAt = Date.now() }) {
+  const id = Number(statusId)
+  const desc = String(description || '').trim()
+  const list = normalizeStatusNotes(notes)
+  if (!Number.isFinite(id) || !desc) return list
+
+  const at = Number(appliedAt)
+  let found = false
+  const next = list.map((n) => {
+    if (Number(n.status_id) !== id || n.description !== desc) return n
+    found = true
+    return { ...n, last_applied_at: at }
+  })
+  return found ? next : [...next, { status_id: id, description: desc, last_applied_at: at }]
 }
 
 export function appendNoteIfNew(notes, { statusId, description }) {

@@ -57,10 +57,7 @@
 					:show-help-button="showHelpButton"
 					:help-topic-id="helpTopicId"
 				:active-row="activeRow"
-				:current-selected-data="currentSelectedData"
 				:is-selecting-multiple-rows="isSelectingMultipleRows"
-				:can-go-parent="activeSelectionList.length > 0"
-				:selection-path="activeSelectionList"
 				:row-copy="activeRowCopy"
 				:has-crochet-draft="hasCrochetDraft"
 				:group-index="activeGroupKey"
@@ -77,13 +74,9 @@
 				@copy-group="() => activeGroupKey !== null && handleCopyGroup(activeGroupKey)"
 				@move-row="(payload) => handleMoveRow(activeRow.row_index, payload)"
 				@close="handleBlurRow"
-				@delete-selection="handleDeleteSelection"
-				@add-inner-selection="handleAddInnerSelection"
 				@draft-pattern-change="handleDraftPatternChange"
-				@row-copy-count-change="handleRowCopyCountChange"
 				@confirm="handleEditCrochetConfirm"
 				@cancel="handleEditCrochetCancel"
-				@go-parent="handleGoParent"
 			/>
 		</BottomToolbar>
 	</div>
@@ -93,18 +86,12 @@
 import { computed, ref, watch, nextTick, onMounted, onUnmounted, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 import CrochetRow from './Crochet/CrochetRow.vue'
-import CrochetNode from './Crochet/CrochetNode.vue'
 import BottomToolbar from '@/components/features/crochet-editor/BottomToolbar/BottomToolbar.vue'
 import EditRowCrochetTabs from '@/components/features/crochet-editor/BottomToolbar/EditRowCrochetTabs.vue'
 import AddNew from '@/components/shared/buttons/AddNew.vue'
 import ButtonTranslate from '@/components/shared/buttons/svg/ButtonTranslate.vue'
-import { computeCurrentSelectedData } from '@/utils/crochetSelection.js'
-import { mergeInnerSelectionPath, shouldApplyCountOverrideToLeaf } from '@/utils/crochetSelectionPath'
-import { isSingleStitchPattern } from '@/utils/editCrochetCount'
-import { applyCountToRowCopy, getLeafAtSelectionPath } from '@/utils/rowCopyCount'
 import { isRowContainerGroupedStart } from '@/utils/crochetTable.js'
-import { createSelection, isRangeSelection } from '@/constants/selection'
-import { BasicStitch, createPattern } from '@/constants/crochetData.js'
+import { BasicStitch } from '@/constants/crochetData.js'
 import { buildStitchLookup } from '@/utils/calculateConsumeGenerate.js'
 import { calculateConsumeGenerateCore } from '@/utils/crochetStatsCore.js'
 import { useSelfDefinedStitchesContext } from '@/composables/selfDefinedStitchesContext'
@@ -345,7 +332,6 @@ const activeGroupIndex = ref(null)
 const activeToolbarKey = ref(TOOLBAR_KEYS.NONE)
 
 const activeEditTab = ref(EDIT_TABS.ROW)
-const rowSelectionByIndex = ref({})
 const suppressSelectionSideEffects = ref(false)
 
 watch(activeToolbarKey, (next) => {
@@ -355,7 +341,6 @@ watch(activeToolbarKey, (next) => {
 })
 
 const clearAllSelections = () => {
-	rowSelectionByIndex.value = {}
 	suppressSelectionSideEffects.value = true
 	for (const rowRef of rowRefs.values()) {
 		if (rowRef && typeof rowRef.clearSelection === 'function') {
@@ -568,12 +553,6 @@ const activeGroupRowSpan = computed(() => {
 	return activeGroupSegment.value?.rowSpan || 1
 })
 
-const activeSelectionList = computed(() => {
-	if (editingRowIndex.value === undefined) return []
-	const list = rowSelectionByIndex.value?.[editingRowIndex.value]
-	return Array.isArray(list) ? list : []
-})
-
 const getActiveRowRootListForSelection = () => {
 	if (
 		draftRowIndex.value !== null &&
@@ -589,84 +568,7 @@ const getActiveRowRootListForSelection = () => {
 
 const activeRowCopy = computed(() => getActiveRowRootListForSelection())
 
-const buildDraftRootList = (baseRootList, selectionList, nextInnerList, countOverride = null) => {
-	const root = Array.isArray(baseRootList) ? baseRootList : []
-	const pending = Array.isArray(nextInnerList) ? nextInnerList : []
-	const safeSelection = Array.isArray(selectionList) ? selectionList : []
-
-	// No selection means we're editing the whole row pattern (virtualWholeRow).
-	if (safeSelection.length === 0) {
-		return JSON.parse(JSON.stringify(pending))
-	}
-
-	const last = safeSelection[safeSelection.length - 1]
-	if (!last || last.start === null || last.start === undefined) {
-		return null
-	}
-
-	// If selecting a range at the current level, treat pending as that level's list.
-	if (isRangeSelection(last)) {
-		// Only root-level range is supported in edit table; fall back to whole-row replacement.
-		if (safeSelection.length === 1) {
-			return JSON.parse(JSON.stringify(pending))
-		}
-		return null
-	}
-
-	const draft = JSON.parse(JSON.stringify(root))
-	let currentList = draft
-	for (const sel of safeSelection.slice(0, -1)) {
-		const idx = sel?.start
-		const node = currentList?.[idx]
-		if (!node) return null
-		if (node.type === 'pattern') {
-			if (!Array.isArray(node.pattern)) node.pattern = []
-			currentList = node.pattern
-			continue
-		}
-		if (node.type === 'bundle') {
-			if (!Array.isArray(node.bundle)) node.bundle = []
-			currentList = node.bundle
-			continue
-		}
-		return null
-	}
-
-	const leafIdx = last.start
-	const leaf = currentList?.[leafIdx]
-	if (!leaf) return null
-
-	if (leaf.type === 'pattern') {
-		leaf.pattern = JSON.parse(JSON.stringify(pending))
-		if (
-			typeof countOverride === 'number' &&
-			Number.isFinite(countOverride) &&
-			shouldApplyCountOverrideToLeaf(leaf)
-		) {
-			leaf.count = Math.max(1, Number(countOverride) || 1)
-		}
-		return draft
-	}
-	if (leaf.type === 'bundle') {
-		leaf.bundle = JSON.parse(JSON.stringify(pending))
-		if (
-			typeof countOverride === 'number' &&
-			Number.isFinite(countOverride) &&
-			shouldApplyCountOverrideToLeaf(leaf)
-		) {
-			leaf.count = Math.max(1, Number(countOverride) || 1)
-		}
-		return draft
-	}
-
-	// stitch
-	const replacement = pending?.[0]
-	if (replacement && typeof replacement === 'object') {
-		currentList.splice(leafIdx, 1, JSON.parse(JSON.stringify(replacement)))
-	}
-	return draft
-}
-
+// The keypad (EditCrochet) always reports the whole row: { list, replaceWholeRow: true }, or null to discard.
 const handleDraftPatternChange = (payload) => {
 	if (editingRowIndex.value === undefined) return
 	if (payload === null || payload === undefined) {
@@ -674,147 +576,11 @@ const handleDraftPatternChange = (payload) => {
 		return
 	}
 
-	const nextInnerList = Array.isArray(payload) ? payload : payload?.list
-	const countOverride = Array.isArray(payload) ? null : payload?.count
-	const selectRootPattern = !Array.isArray(payload) && Boolean(payload?.selectRootPattern)
-	const replaceWholeRow = !Array.isArray(payload) && Boolean(payload?.replaceWholeRow)
-	if (!Array.isArray(nextInnerList)) return
+	const nextList = Array.isArray(payload) ? payload : payload?.list
+	if (!Array.isArray(nextList)) return
 
-	const rowIndex = editingRowIndex.value
-	const baseRoot =
-		rowIndex === draftRowIndex.value && Array.isArray(draftRootStitchNodeList.value)
-			? draftRootStitchNodeList.value
-			: getActiveRowRootListForSelection()
-
-	let nextRoot = replaceWholeRow
-		? JSON.parse(JSON.stringify(nextInnerList))
-		: buildDraftRootList(baseRoot, activeSelectionList.value, nextInnerList, countOverride)
-
-	// Virtual whole-row editing: reflect count immediately by drafting a root pattern node.
-	// buildDraftRootList() intentionally treats empty selection as "replace whole row list"; we override
-	// that here when countOverride is provided.
-	if (activeSelectionList.value.length === 0 && typeof countOverride === 'number' && Number.isFinite(countOverride)) {
-		const repeatCount = Math.max(1, Number(countOverride) || 1)
-		if (repeatCount > 1) {
-			const lookup = stitchLookupForProvide.value || BasicStitch
-			nextRoot = [createPattern(repeatCount, nextInnerList.map((n) => JSON.parse(JSON.stringify(n))), null, lookup)]
-		} else {
-			nextRoot = JSON.parse(JSON.stringify(nextInnerList))
-		}
-	}
-	if (!Array.isArray(nextRoot)) return
-
-	draftRowIndex.value = rowIndex
-	draftRootStitchNodeList.value = nextRoot
-
-	if (selectRootPattern) {
-		const nextSel = [createSelection(0, 0)]
-		rowSelectionByIndex.value = { [rowIndex]: nextSel }
-		rowRefs.get(rowIndex)?.setSelection?.(nextSel)
-	}
-}
-
-const handleRowCopyCountChange = ({ count } = {}) => {
-	if (editingRowIndex.value === undefined) return
-	if (typeof count !== 'number' || !Number.isFinite(count)) return
-
-	const rowIndex = editingRowIndex.value
-	const data = currentSelectedData.value
-	if (!data) return
-
-	const baseRoot = getActiveRowRootListForSelection()
-	let nextRoot = baseRoot
-
-	if (data.virtualWholeRow) {
-		const repeatCount = Math.max(1, Number(count) || 1)
-		const innerList = Array.isArray(data.currentPattern) ? data.currentPattern : baseRoot
-		if (repeatCount > 1) {
-			const lookup = stitchLookupForProvide.value || BasicStitch
-			nextRoot = [createPattern(
-				repeatCount,
-				JSON.parse(JSON.stringify(innerList)),
-				null,
-				lookup
-			)]
-		} else {
-			nextRoot = JSON.parse(JSON.stringify(innerList))
-		}
-	} else {
-		nextRoot = applyCountToRowCopy(baseRoot, activeSelectionList.value, count, {
-			selectedNodeType: data.selectedNodeType
-		})
-	}
-
-	draftRowIndex.value = rowIndex
-	draftRootStitchNodeList.value = nextRoot
-
-	if (data.virtualWholeRow && count > 1) {
-		const nextSel = [createSelection(0, 0)]
-		rowSelectionByIndex.value = { [rowIndex]: nextSel }
-		rowRefs.get(rowIndex)?.setSelection?.(nextSel)
-		return
-	}
-
-	// Plain stitch 1→N: wrap into a single-stitch pattern and drill into the inner stitch
-	// so × shows N (repeat count), not ×1 (token-level outer multiplier).
-	if (data.selectedNodeType === 'stitch' && count > 1) {
-		const prevLeaf = getLeafAtSelectionPath(baseRoot, activeSelectionList.value)
-		const nextLeaf = getLeafAtSelectionPath(nextRoot, activeSelectionList.value)
-		if (
-			prevLeaf?.node?.type === 'stitch' &&
-			isSingleStitchPattern(nextLeaf?.node)
-		) {
-			const baseSel = activeSelectionList.value
-			const innerSel = [
-				...(Array.isArray(baseSel) ? baseSel : []),
-				createSelection(0, 0)
-			]
-			rowSelectionByIndex.value = { [rowIndex]: innerSel }
-			rowRefs.get(rowIndex)?.setSelection?.(innerSel)
-		}
-	}
-}
-
-const currentSelectedData = computed(() => {
-	const safeRowList = getActiveRowRootListForSelection()
-
-	// Virtual selection: when nothing is selected but the row has content,
-	// allow EditCrochet to edit the whole row pattern.
-	if (activeSelectionList.value.length === 0) {
-		return {
-			selectionState: 'select_range',
-			selectedNodeType: 'pattern',
-			selectedCount: 1,
-			currentPattern: safeRowList,
-			virtualWholeRow: true
-		}
-	}
-
-	return computeCurrentSelectedData(activeSelectionList.value, safeRowList)
-})
-
-// Click outside handler
-const handleClickOutside = async (event) => {
-	if (editingRowIndex.value !== undefined && tableRef.value) {
-		// BottomToolbar is teleported to <body>. On iOS this also avoids fixed/transform
-		// stacking issues, but it means the toolbar is no longer contained by `toolbarRef`.
-		// Treat clicks inside the toolbar as "inside" so they don't close edit mode.
-		const path = typeof event?.composedPath === 'function' ? event.composedPath() : null
-		if (
-			Array.isArray(path) &&
-			path.some((node) => node?.classList?.contains?.('crochet-scrollbar'))
-		) {
-			return
-		}
-
-		if (toolbarRef.value && toolbarRef.value.contains(event.target)) {
-			return
-		}
-		if (!tableRef.value.contains(event.target)) {
-			if (!await confirmDiscardCrochetDraft()) return
-			handleBlurRow()
-		}
-	}
+	draftRowIndex.value = editingRowIndex.value
+	draftRootStitchNodeList.value = JSON.parse(JSON.stringify(nextList))
 }
 
 const scrollToEditingRow = async (rowIndex) => {
@@ -900,11 +666,6 @@ watch(
 					recalculateAllRowIndices()
 					emitUpdate()
 
-					// Remove any stale selection state for the removed row.
-					const nextSelectionMap = { ...rowSelectionByIndex.value }
-					delete nextSelectionMap[prevIndex]
-					rowSelectionByIndex.value = nextSelectionMap
-
 					// After row_index recalculation, keep focus on the same target row object.
 					if (targetRow && typeof targetRow.row_index === 'number' && targetRow.row_index !== nextIndex) {
 						editingRowIndex.value = targetRow.row_index
@@ -926,16 +687,6 @@ onMounted(() => {
 onUnmounted(() => {
 	document.removeEventListener('click', handleClickOutside)
 })
-
-const addStitch = (stitchId) => {
-	const rowRef = getActiveRowRef()
-	if (rowRef && typeof rowRef.addStitch === 'function') rowRef.addStitch(stitchId)
-}
-
-const addBundle = (bundle) => {
-	const rowRef = getActiveRowRef()
-	if (rowRef && typeof rowRef.addBundle === 'function') rowRef.addBundle(bundle)
-}
 
 const getActiveRowRef = () => {
 	if (editingRowIndex.value === undefined) return null
@@ -992,10 +743,33 @@ const handleEditRow = async (rowIndex) => {
 	activeGroupIndex.value = null
 	activeToolbarKey.value = TOOLBAR_KEYS.EDIT
 	activeEditTab.value = EDIT_TABS.CROCHET
-	rowSelectionByIndex.value = { [rowIndex]: [] }
 	nextTick(() => {
 		rowRefs.get(rowIndex)?.setSelection?.([])
 	})
+}
+
+// Click outside handler
+const handleClickOutside = async (event) => {
+	if (editingRowIndex.value !== undefined && tableRef.value) {
+		// BottomToolbar is teleported to <body>. On iOS this also avoids fixed/transform
+		// stacking issues, but it means the toolbar is no longer contained by `toolbarRef`.
+		// Treat clicks inside the toolbar as "inside" so they don't close edit mode.
+		const path = typeof event?.composedPath === 'function' ? event.composedPath() : null
+		if (
+			Array.isArray(path) &&
+			path.some((node) => node?.classList?.contains?.('crochet-scrollbar'))
+		) {
+			return
+		}
+
+		if (toolbarRef.value && toolbarRef.value.contains(event.target)) {
+			return
+		}
+		if (!tableRef.value.contains(event.target)) {
+			if (!await confirmDiscardCrochetDraft()) return
+			handleBlurRow()
+		}
+	}
 }
 
 const handleBlurRow = () => {
@@ -1158,8 +932,6 @@ const handleToggleSelectMultipleRows = (next) => {
 }
 
 const resetRowEditSelectionToRoot = (rowIndex) => {
-	rowSelectionByIndex.value = { [rowIndex]: [] }
-
 	const rowRef = rowRefs.get(rowIndex)
 	if (!rowRef || typeof rowRef.setSelection !== 'function') return
 
@@ -1185,24 +957,8 @@ const handleRowSelectionChange = (rowIndex, nextSelectionList) => {
 		return
 	}
 
-	if (safeList.length > 0) {
-		// Preview / programmatic drill (setSelection with a path). Table edit clicks emit [] only.
-		rowSelectionByIndex.value = { [rowIndex]: safeList }
-
-		suppressSelectionSideEffects.value = true
-		for (const [otherRowIndex, otherRowRef] of rowRefs.entries()) {
-			if (otherRowIndex === rowIndex) continue
-			if (otherRowRef && typeof otherRowRef.clearSelection === 'function') {
-				otherRowRef.clearSelection()
-			}
-		}
-		nextTick(() => {
-			suppressSelectionSideEffects.value = false
-		})
-	} else {
-		// Table click in edit mode: stay at whole-row root.
-		resetRowEditSelectionToRoot(rowIndex)
-	}
+	// The keypad edits the whole row, so the table selection always stays at the row root.
+	resetRowEditSelectionToRoot(rowIndex)
 
 	editingRowIndex.value = rowIndex
 	activeToolbarKey.value = TOOLBAR_KEYS.EDIT
@@ -1210,76 +966,12 @@ const handleRowSelectionChange = (rowIndex, nextSelectionList) => {
 	void scrollToEditingRow(rowIndex)
 }
 
-const handleDeleteSelection = async () => {
-	const rowRef = getActiveRowRef()
-	if (!rowRef || typeof rowRef.deleteSelected !== 'function') return
-	if (editingRowIndex.value === undefined || editingRowIndex.value === null) return
-
-	const rowIndex = editingRowIndex.value
-
-	// IMPORTANT: Delete must be a draft-only mutation so that pressing Cancel reverts it.
-	// We achieve this by ensuring the draft overlay exists before calling into CrochetDisplay,
-	// because handleUpdateRow() already routes updates into draftRootStitchNodeList when draftRowIndex is set.
-	if (
-		draftRowIndex.value === null ||
-		draftRowIndex.value === undefined ||
-		draftRowIndex.value !== rowIndex ||
-		!Array.isArray(draftRootStitchNodeList.value)
-	) {
-		const base = activeRow.value?.content?.stitch_node_list
-		draftRowIndex.value = rowIndex
-		draftRootStitchNodeList.value = Array.isArray(base)
-			? JSON.parse(JSON.stringify(base))
-			: []
-		await nextTick()
-	}
-
-	rowRef.deleteSelected()
-}
-
-const handleAddInnerSelection = (nextSelection) => {
-	const rowRef = getActiveRowRef()
-	if (!rowRef || typeof rowRef.setSelection !== 'function') return
-
-	const nextPath = mergeInnerSelectionPath({
-		baseSelection: activeSelectionList.value,
-		payload: nextSelection,
-		rootList: getActiveRowRootListForSelection()
-	})
-
-	if (!Array.isArray(nextPath) || !nextPath.length) return
-
-	const rowIndex = editingRowIndex.value
-	if (rowIndex !== undefined && rowIndex !== null) {
-		rowSelectionByIndex.value = { [rowIndex]: nextPath }
-	}
-	rowRef.setSelection(nextPath)
-}
-
-const handleGoParent = () => {
-	const rowRef = getActiveRowRef()
-	if (!rowRef || typeof rowRef.setSelection !== 'function') return
-
-	const safe = Array.isArray(activeSelectionList.value) ? activeSelectionList.value : []
-	if (safe.length <= 1) {
-		// Root-level: the parent of either a whole-row selection or a single top-level node
-		// is the implicit "whole row" editor state (empty selection).
-		if (typeof rowRef.clearSelection === 'function') rowRef.clearSelection()
-		return
-	}
-	rowRef.setSelection(safe.slice(0, -1))
-}
-
 const handleEditCrochetConfirm = (changes) => {
 	const rowRef = getActiveRowRef()
-	const data = currentSelectedData.value
-	if (!rowRef || !data) return
+	if (!rowRef) return
 
-	// If EditCrochet was editing a draft (pendingPattern reflected into the row),
-	// commit the full draft root list first so subsequent operations target real nodes.
 	if (
-		changes &&
-		changes.applyDraft &&
+		changes?.applyDraft &&
 		draftRowIndex.value !== null &&
 		draftRowIndex.value !== undefined &&
 		editingRowIndex.value === draftRowIndex.value &&
@@ -1290,100 +982,6 @@ const handleEditCrochetConfirm = (changes) => {
 		rowRef.setStitchNodeList(draftRootStitchNodeList.value)
 		clearDraft()
 		isCommittingDraft.value = false
-	}
-
-	if (data.virtualWholeRow) {
-		const nextList = Array.isArray(changes.pattern) ? changes.pattern : null
-		const repeatCount = typeof changes.count === 'number' ? changes.count : null
-
-		// If we have a pending pattern list, apply repeatCount directly to that list.
-		// This avoids relying on CrochetDisplay reading props.stitchNodeList (which may still be empty).
-		if (nextList && typeof rowRef.setStitchNodeList === 'function') {
-			if (repeatCount && repeatCount > 1) {
-				const cloned = JSON.parse(JSON.stringify(nextList))
-				const flattened = cloned.flatMap((node) => {
-					if (
-						node &&
-						node.type === 'pattern' &&
-						Array.isArray(node.pattern) &&
-						node.pattern.length === 1 &&
-						(node.count || 1) === 1
-					) {
-						return node.pattern.map((innerNode) => ({ ...innerNode }))
-					}
-					return [{ ...node }]
-				})
-				const lookup = stitchLookupForProvide.value || BasicStitch
-				const newPattern = createPattern(repeatCount, flattened, null, lookup)
-				rowRef.setStitchNodeList([newPattern])
-			} else {
-				rowRef.setStitchNodeList(nextList)
-			}
-		} else if (repeatCount && repeatCount > 1 && typeof rowRef.createPatternFromWholeRow === 'function') {
-			rowRef.createPatternFromWholeRow(repeatCount)
-		}
-		if (typeof rowRef.clearSelection === 'function') {
-			rowRef.clearSelection()
-		}
-		handleBlurRow()
-		return
-	}
-
-	if (data.selectionState === 'select_range') {
-		if (typeof rowRef.createPatternFromRange === 'function') {
-			rowRef.createPatternFromRange(changes.count)
-		}
-	} else {
-		// IMPORTANT: applying multiple mutations via rowRef.* triggers multiple emits.
-		// If we call them back-to-back, later calls may operate on stale props and overwrite earlier changes.
-		// Prefer a single replaceSelectedNode for stitch edits when multiple fields change.
-		if (data.selectedNodeType === 'stitch' && typeof rowRef.replaceSelectedNode === 'function') {
-			if (changes.replaceNode !== undefined) {
-				const nextNode = changes.replaceNode
-				if (changes.count !== undefined && nextNode && typeof nextNode === 'object') {
-					nextNode.count = changes.count
-				}
-				rowRef.replaceSelectedNode(nextNode)
-			} else if ((changes.stitch !== undefined || changes.stitchId !== undefined) && changes.count !== undefined) {
-				const stitchId = changes.stitch?.stitch_id ?? changes.stitchId
-				const position = typeof changes.stitch?.position === 'string' ? changes.stitch.position.trim().toUpperCase() : ''
-				const count = changes.count
-				const nextNode = count > 1
-					? { type: 'pattern', pattern: [{ type: 'stitch', stitch_id: stitchId, position }], count }
-					: { type: 'stitch', stitch_id: stitchId, position }
-				if (!position) {
-					if (nextNode.type === 'stitch') delete nextNode.position
-					if (nextNode.type === 'pattern' && Array.isArray(nextNode.pattern) && nextNode.pattern[0]) delete nextNode.pattern[0].position
-				}
-				rowRef.replaceSelectedNode(nextNode)
-			} else {
-				if (changes.count !== undefined && typeof rowRef.updateNodeCount === 'function') {
-					rowRef.updateNodeCount(changes.count)
-				}
-				if ((changes.stitch !== undefined || changes.stitchId !== undefined) && typeof rowRef.changeSelectedStitch === 'function') {
-					rowRef.changeSelectedStitch(changes.stitch ?? changes.stitchId)
-				}
-			}
-			// Stitch edits don't use updateNodePattern.
-		} else {
-			if (changes.replaceNode !== undefined && typeof rowRef.replaceSelectedNode === 'function') {
-				const nextNode = changes.replaceNode
-				if (changes.count !== undefined && nextNode && typeof nextNode === 'object') {
-					nextNode.count = changes.count
-				}
-				rowRef.replaceSelectedNode(nextNode)
-			} else {
-				if (changes.count !== undefined && typeof rowRef.updateNodeCount === 'function') {
-					rowRef.updateNodeCount(changes.count)
-				}
-				if ((changes.stitch !== undefined || changes.stitchId !== undefined) && typeof rowRef.changeSelectedStitch === 'function') {
-					rowRef.changeSelectedStitch(changes.stitch ?? changes.stitchId)
-				}
-				if (changes.pattern !== undefined && typeof rowRef.updateNodePattern === 'function') {
-					rowRef.updateNodePattern(changes.pattern)
-				}
-			}
-		}
 	}
 
 	if (typeof rowRef.clearSelection === 'function') {
@@ -1572,32 +1170,6 @@ const handleAddRow = async () => {
 	emitUpdate()
 	editingRowIndex.value = newRow.row_index
 }
-
-const setSelectionForRow = (rowIndex, nodeIndex, _innerStitchIndex = null) => {
-	void _innerStitchIndex
-	// Only first-level selection is supported in edit table.
-	// Ensure the row is in editing mode so CrochetDisplay exists.
-	if (editingRowIndex.value !== rowIndex) {
-		handleEditRow(rowIndex)
-	}
-
-	const list = [{ start: nodeIndex, end: nodeIndex }]
-	nextTick(() => {
-		const rowRef = rowRefs.get(rowIndex)
-		if (rowRef && typeof rowRef.setSelection === 'function') {
-			rowRef.setSelection(list)
-		}
-	})
-
-	return true
-}
-
-defineExpose({
-	addStitch,
-	addBundle,
-	setSelectionForRow,
-	CrochetNode
-})
 
 const visibleRows = computed(() => {
 	const maxVisible = 100

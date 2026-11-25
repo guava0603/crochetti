@@ -304,4 +304,15 @@ onBeforeUnmount(() => {
   padding: 0.15rem 0.6rem;
   border-radius: 0.5rem;
 }
+
+/* Same size as 必填, but outlined and muted so it doesn't read as a requirement. */
+:deep(.optional-badge) {
+  background: transparent;
+  color: var(--color-font-invisible);
+  box-shadow: inset 0 0 0 1px var(--color-surface-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.6rem;
+  border-radius: 0.5rem;
+}
 </style>

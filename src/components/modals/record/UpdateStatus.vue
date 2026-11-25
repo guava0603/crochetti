@@ -215,13 +215,11 @@ const handleSave = () => {
   onConfirm.value(payload)
 }
 
+// Applying a note (new or existing) records it with its last-applied time,
+// which is what the suggestion list is ordered by.
 const handleSaveNote = () => {
   const description = noteDraft.value.trim()
   if (!description) return
-
-  if (noteSuggestions.value.includes(description)) {
-    return
-  }
 
   if (typeof addStatusNote.value === 'function') {
     addStatusNote.value({

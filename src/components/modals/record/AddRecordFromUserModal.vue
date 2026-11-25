@@ -69,6 +69,8 @@
         :options="projectPickerItems"
         :disabled="loading"
         :aria-label="t('user.addRecord.selectProjectLabel')"
+        searchable
+        :search-placeholder="t('user.addRecord.searchProjectsPlaceholder')"
       />
       <p v-else class="picker-empty">{{ t('user.addRecord.noProjects') }}</p>
     </template>
@@ -122,11 +124,10 @@ const projectFilterOptions = computed(() => [
   { id: 'saved', label: t('user.tabs.savedDesigns') }
 ])
 
+// Each filter toggles on its own; with none selected the list is simply empty.
 const activeProjectFilters = computed(() => {
   const raw = Array.isArray(projectFilter.value) ? projectFilter.value : []
-  const set = new Set(raw.map((v) => String(v || '').trim()).filter(Boolean))
-  if (!set.size) return new Set(DEFAULT_PROJECT_FILTERS)
-  return set
+  return new Set(raw.map((v) => String(v || '').trim()).filter(Boolean))
 })
 
 const activeProjectList = computed(() => {
@@ -251,12 +252,7 @@ watch(
 
 watch(
   projectFilter,
-  (next) => {
-    const filters = Array.isArray(next) ? next.map((v) => String(v || '').trim()).filter(Boolean) : []
-    if (!filters.length) {
-      projectFilter.value = [...DEFAULT_PROJECT_FILTERS]
-      return
-    }
+  () => {
     if (!props.show) return
     if (step.value !== 2) return
     selectedProjectId.value = ''

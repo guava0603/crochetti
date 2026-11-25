@@ -280,16 +280,21 @@ function handleClick(e) {
   height: 1rem;
 }
 
+/* Settings SVGs are 40×40 viewBoxes with ~20 units of glyph, so the box is sized
+   explicitly (not `auto`, which depends on flex shrinking the 150px intrinsic size)
+   and scaled so the visible glyph lands around 20–23px — standard toolbar size. */
 .thin-icon-button--l .thin-icon-button__icon {
-  width: auto;
-  height: auto;
-  transform: scale(1.5);
+  width: 100%;
+  height: 100%;
+  transform: scale(1.2);
 }
 
+/* FAB: 015__circle_plus's ring is 17/40 of its viewBox, so scaling the button-sized
+   box by 40/17 (≈2.353) puts the ring exactly on the button's edge. */
 .thin-icon-button--xl .thin-icon-button__icon {
-  width: auto;
-  height: auto;
-  transform: scale(2.5);
+  width: 100%;
+  height: 100%;
+  transform: scale(2.353);
 }
 
 .thin-icon-button--inverted .thin-icon-button__icon {

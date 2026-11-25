@@ -112,6 +112,7 @@ import { friendCodeUtils, getOrCreateCurrentUserFriendCode } from '@/services/fi
 
 import { useAchievementStore } from '@/stores/achievementStore'
 import { AVATAR_IDS, avatarIdFromValue } from '@/constants/avatarPresets'
+import { normalizeUserTab as normalizeTab } from '@/utils/userTab'
 
 defineOptions({ name: 'HomeViewMain' })
 
@@ -148,15 +149,10 @@ const recordsLoading = ref(false)
 
 const achievementStore = useAchievementStore()
 
-const activeTab = ref('design')
+const activeTab = ref('record')
 
-function normalizeUserTab(raw) {
-  const v = String(raw || '').trim().toLowerCase()
-  if (v === 'record' || v === 'records') return 'record'
-  if (v === 'following' || v === 'follow') return 'following'
-  if (v === 'saved' || v === 'save') return 'saved'
-  return 'design'
-}
+// Home opens on 作品紀錄 when no tab is given.
+const normalizeUserTab = (raw) => normalizeTab(raw, { fallback: 'record' })
 
 // Route-driven tab control: `?tab=design|saved|record|following`
 activeTab.value = normalizeUserTab(route.query?.tab || route.params?.tab)

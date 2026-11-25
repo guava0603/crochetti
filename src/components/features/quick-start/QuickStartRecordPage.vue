@@ -28,7 +28,7 @@
           :disabled="loading"
         />
 
-        <FormSubsection kind="slot" :title="t('user.addRecord.quick.groupsTitle')" required>
+        <FormSubsection kind="slot" :title="t('user.addRecord.quick.groupsTitle')" optional>
           <div class="quick-groups">
             <div v-if="draft.groups.length" class="quick-groups__list">
               <div v-for="(g, i) in draft.groups" :key="i" class="quick-group-row">
@@ -246,11 +246,7 @@ const onSubmit = async () => {
     return
   }
 
-  if (!groupsRaw.length) {
-    await openError({ title: t('common.error'), message: t('user.addRecord.quick.errors.groupsRequired'), confirmText: t('common.ok') })
-    return
-  }
-
+  // 每行針數 × 行數 is optional: with no groups the design starts with no rows.
   const groups = groupsRaw.map(normalizeGroup)
   if (groups.some((g) => !isGroupComplete(g))) {
     await openError({ title: t('common.error'), message: t('user.addRecord.quick.errors.groupIncomplete'), confirmText: t('common.ok') })

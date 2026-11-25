@@ -421,7 +421,7 @@ const handleDeleteProject = async () => {
       try {
         await callApi('deleteProjectDoc', String(projectId.value))
         openToast({ message: t('project.toasts.deletedProject') })
-        router.push('/home')
+        router.push({ path: '/home', query: { tab: 'design' } })
       } catch (error) {
         console.error('Error deleting project:', error)
         openError({

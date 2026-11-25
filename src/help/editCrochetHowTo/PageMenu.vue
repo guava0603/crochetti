@@ -28,11 +28,12 @@ const { t } = useI18n({ useScope: 'global' })
 const menuItems = computed(() => {
   return [
     { pageIndex: 1, label: t('help.editCrochetHowTo.pageMenu.items.addBundle') },
-    { pageIndex: 2, label: t('help.editCrochetHowTo.pageMenu.items.deleteBundle') },
+    { pageIndex: 2, label: t('help.editCrochetHowTo.pageMenu.items.repeatPattern') },
     { pageIndex: 3, label: t('help.editCrochetHowTo.pageMenu.items.increase') },
-    { pageIndex: 4, label: t('help.editCrochetHowTo.pageMenu.items.decrease') },
-    { pageIndex: 5, label: t('help.editCrochetHowTo.pageMenu.items.position') },
-    { pageIndex: 6, label: t('help.editCrochetHowTo.pageMenu.items.custom') }
+    { pageIndex: 4, label: t('help.editCrochetHowTo.pageMenu.items.deleteBundle') },
+    { pageIndex: 5, label: t('help.editCrochetHowTo.pageMenu.items.decrease') },
+    { pageIndex: 6, label: t('help.editCrochetHowTo.pageMenu.items.position') },
+    { pageIndex: 7, label: t('help.editCrochetHowTo.pageMenu.items.custom') }
   ]
 })
 </script>

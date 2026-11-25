@@ -7,7 +7,8 @@
     >
       <div class="label-wrapper">
         <div v-if="resolvedTitle" class="subsection-title">{{ resolvedTitle }}</div>
-        <span v-if="required" class="required-badge">必填</span>
+        <span v-if="required" class="required-badge">{{ t('common.required') }}</span>
+        <span v-else-if="optional" class="optional-badge">{{ t('common.optional') }}</span>
       </div>
     </div>
 
@@ -143,6 +144,8 @@ const props = defineProps({
   forId: { type: String, default: '' },
 
   required: { type: Boolean, default: false },
+  /** Shows a 選填 tag next to the title (ignored when `required` is set). */
+  optional: { type: Boolean, default: false },
 
   kind: {
     type: String,
