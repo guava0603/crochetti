@@ -723,7 +723,6 @@ const handleStartCta = async () => {
   align-items: center;
 }
 
-
 .notice {
   position: sticky;
   top: 0.75rem;
@@ -809,65 +808,6 @@ const handleStartCta = async () => {
   width: min(680px, 70%);
   margin-top: 1.5rem;
   text-align: center;
-}
-
-.project-record-tracking {
-  padding: 0 2rem;
-}
-
-.project-record-tracking__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.project-record-tracking__title {
-  font-weight: 900;
-  color: var(--color-font-dark);
-}
-
-.project-record-tracking__lists {
-  margin-top: 0.75rem;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
-}
-
-.project-record-tracking__list {
-  border: 1px solid rgba(17, 24, 39, 0.08);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  background: #fff;
-}
-
-.project-record-tracking__label {
-  font-weight: 800;
-  color: var(--color-font-dark);
-}
-
-.project-record-tracking__items {
-  margin: 0.5rem 0 0;
-  padding-left: 1.25rem;
-}
-
-.project-record-tracking__item {
-  color: var(--color-font-note);
-  font-size: 0.9rem;
-  overflow-wrap: anywhere;
-}
-
-.project-record-tracking__empty {
-  margin-top: 0.4rem;
-  color: var(--color-font-note);
-  font-size: 0.9rem;
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  justify-content: flex-end;
-  position: relative;
 }
 
 :deep(.row-list-vertical) {

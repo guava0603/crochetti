@@ -1,4 +1,4 @@
-import { getCastOnByIndex, getCastOnDisplayName } from '@/constants/crochetData'
+import { CAST_ON_OTHER_INDEX, getCastOnByIndex, getCastOnDisplayName } from '@/constants/crochetData'
 import { isComponentType } from '@/utils/componentTypes'
 
 export function getComponentCastOnLabel(component, t) {
@@ -12,4 +12,12 @@ export function getComponentCastOnLabel(component, t) {
 
   const castOn = getCastOnByIndex(typeIndex)
   return getCastOnDisplayName(castOn, t)
+}
+
+/**
+ * Whether a component's rows are checked against the previous row's stitch count
+ * (green / yellow / red 針數 cells, save-time warning). Not for cast-on 其他.
+ */
+export function shouldVerifyRowCounts(component) {
+  return Number(component?.content?.type) !== CAST_ON_OTHER_INDEX
 }

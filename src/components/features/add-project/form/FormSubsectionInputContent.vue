@@ -22,6 +22,7 @@
           >
             <ButtonDeleteLight
               :disabled="disabled"
+              :size="'small'"
               @click="emit('delete', idx)"
             />
           </div>
@@ -59,6 +60,7 @@
         >
           <ButtonDeleteLight
             :disabled="disabled"
+            :size="'small'"
             @click="emit('delete')"
           />
         </div>

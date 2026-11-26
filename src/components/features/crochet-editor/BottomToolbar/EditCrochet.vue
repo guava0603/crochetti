@@ -62,9 +62,21 @@
           :enable-wizard="enableWizard"
           :enable-self-defined-stitches="enableSelfDefinedStitches"
           @add-crochet="handleAddCrochet"
+          @add-crochet-count="openStitchCountPicker"
           @add-rope="handleAddRope"
         />
       </section>
+
+      <!-- Long press on a stitch: pick how many (1–999), then add that stitch ×n. -->
+      <InputNumber
+        ref="stitchCountPickerRef"
+        hide-trigger
+        :model-value="1"
+        :min="1"
+        :max="999"
+        @save="handleStitchCountPicked"
+        @close="pendingCountStitch = null"
+      />
     </div>
   </div>
 </template>
@@ -81,6 +93,7 @@ import AddCrochet from '@/components/features/crochet-editor/BottomToolbar/AddCr
 import KeypadPreview from '@/components/features/crochet-editor/BottomToolbar/KeypadPreview.vue'
 import KeypadCaretButton from '@/components/features/crochet-editor/BottomToolbar/KeypadCaretButton.vue'
 import ThinIconButton from '@/components/shared/buttons/ThinIconButton.vue'
+import InputNumber from '@/components/shared/inputs/InputNumber.vue'
 import { BasicStitch, createSimpleStitch } from '@/constants/crochetData.js'
 import { openConfirmation } from '@/services/ui/confirmation'
 import {
@@ -200,7 +213,7 @@ const moveCaret = (delta) => {
   caret.value = clampCaret(draftRow.value, containerPath.value, caret.value + delta)
 }
 
-const handleAddCrochet = (payload) => {
+const handleAddCrochet = (payload, count = 1) => {
   const stitchId = typeof payload === 'number' ? payload : (payload?.stitchId ?? payload?.stitch_id)
   if (stitchId === null || stitchId === undefined) return
   const position = typeof payload === 'object' ? String(payload?.position ?? '') : ''
@@ -211,7 +224,23 @@ const handleAddCrochet = (payload) => {
   } catch {
     return
   }
+  node.count = Math.max(1, Math.min(999, Math.floor(Number(count) || 1)))
   commit(insertNode(draftRow.value, containerPath.value, caret.value, node, stitchLookup.value))
+}
+
+// Long press on a stitch button → number dialog → that stitch with count n at the caret.
+const stitchCountPickerRef = ref(null)
+const pendingCountStitch = ref(null)
+
+const openStitchCountPicker = (payload) => {
+  pendingCountStitch.value = payload
+  stitchCountPickerRef.value?.open?.()
+}
+
+const handleStitchCountPicked = (n) => {
+  const payload = pendingCountStitch.value
+  pendingCountStitch.value = null
+  if (payload) handleAddCrochet(payload, n)
 }
 
 const handleAddRope = (rope) => {

@@ -15,7 +15,7 @@
     "ok": "OK",
     "remove": "Remove",
     "notice": "Notice",
-      "addMenuAria": "Add",
+    "addMenuAria": "Add",
     "error": "Error",
     "action": "Action",
     "actions": "Actions",
@@ -32,7 +32,6 @@
     "saveFailed": "Failed to save. Please try again.",
     "saving": "Saving…",
     "loading": "Loading...",
-    "unknown": "Unknown",
     "repeatDo": "Repeat ",
     "rowUnit": " rows",
     "repeatRowGroup": "Repeat these {n} rows for {m} groups",
@@ -87,7 +86,7 @@
       },
       "pageAddBundle": {
         "title": "[Add stitches]",
-        "body": "Tap a button in the Stitches section to add it at the blinking insertion point.\nMove the insertion point with ◀ ▶ next to the input, or tap a stitch to put it right after that stitch.\nThe insertion point only moves inside the currently selected box.\nNeed more stitches? Tap again.\nThe input shows the whole row.\nAfter saving, stitches are auto-formatted into a readable counted form."
+        "body": "Tap a button in the Stitches section to add it at the blinking insertion point.\nMove the insertion point with ◀ ▶ next to the input, or tap a stitch to put it right after that stitch.\nThe insertion point only moves inside the currently selected box.\nNeed more stitches? Tap again, or long-press the button to pick a count (1–999).\nThe input shows the whole row.\nAfter saving, stitches are auto-formatted into a readable counted form."
       },
       "pageRepeatPattern": {
         "title": "[Repeat pattern]",
@@ -103,7 +102,7 @@
       },
       "pageDecrease": {
         "title": "[Decrease]",
-        "body": "Tap the Decrease button first, then pick a stitch in the middle list to enter a decrease.\nPicked the wrong order? It’s ok—enter the single stitch first, then apply decrease inside."
+        "body": "Tap the Decrease button first, then pick a stitch in the middle list to enter a decrease.\nPicked the wrong order? Delete that stitch with the delete key, switch on Decrease, and tap it again."
       },
       "pagePosition": {
         "title": "[Stitch positions]",
@@ -135,7 +134,7 @@
       },
       "pageAddFromOldRow": {
         "title": "[Add from an existing row]",
-        "body": "Tap a completed row.\nTap “Copy to latest row”."
+        "body": "Tap a completed row.\nTap “Copy row”."
       },
       "pageRepeatMultipleRows": {
         "title": "[Repeat multiple rows]",
@@ -151,7 +150,7 @@
       },
       "pageMultiRowActions": {
         "title": "[Apply actions to multiple rows]",
-        "body": "All the above features can be applied to multiple rows at once!\nTap “Select multiple rows” (top-right).\nSelect the first and last row numbers in the table.\nConfirm the displayed range is correct.\nTap the action you want to run.\nRemember to save!"
+        "body": "All the above features can be applied to multiple rows at once!\nTap “Select multiple rows” (top-right).\nTap the first and last row numbers in the table.\nConfirm the displayed range is correct.\nTap the action you want to run.\nSet a repeat count above 1 and save to keep the rows as a repeated group; without a repeat they go back to single rows.\nTapping another row after choosing a range ends the multi-row selection.\nRemember to save!"
       }
     },
     "recordHowTo": {
@@ -213,7 +212,7 @@
       },
       "pageTotalStitches": {
         "title": "[Total stitches]",
-        "body": "Automatically calculated from the Stitch column. It checks whether the previous row’s stitch count matches this row’s expected input.\n\nYellow: too few stitches\nGreen: correct\nRed: too many stitches"
+        "body": "Automatically calculated from the Stitch column. It checks whether the previous row’s stitch count matches this row’s expected input.\n\nYellow: too few stitches\nGreen: correct\nRed: too many stitches\n\nWith the cast-on type set to “Other”, rows are not checked and the total keeps its plain color."
       }
     }
   },
@@ -372,9 +371,7 @@
       }
     },
     "cabinet": {
-      "title": "Achievement Cabinet",
-      "earnedAt": "Earned",
-      "notEarned": "Locked"
+      "title": "Achievement Cabinet"
     },
     "more": "More"
   },
@@ -738,7 +735,8 @@
       "magicRing": "Magic ring",
       "chainRing": "Chain ring",
       "flat": "Flat",
-      "oval": "Oval"
+      "oval": "Oval",
+      "other": "Other"
     },
     "shareLink": "Share link",
     "copyLink": "Copy link",
@@ -1305,7 +1303,8 @@
       "magicRing": "Magic ring",
       "chainRing": "Chain ring",
       "flat": "Flat foundation",
-      "oval": "Oval foundation"
+      "oval": "Oval foundation",
+      "other": "Other"
     }
   },
   "wishPool": {

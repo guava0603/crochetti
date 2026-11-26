@@ -94,8 +94,4 @@ const handleChildSelectionChange = (nIndex, nextSelectionList) => {
 .bundle-sep {
   color: var(--color-font-note);
 }
-
-.bundle-item {
-  color: inherit;
-}
 </style>

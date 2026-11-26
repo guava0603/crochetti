@@ -1,6 +1,7 @@
 <template>
-  <div class="input-number" @click.stop>
+  <div class="input-number" :class="{ 'input-number--dialog-only': hideTrigger }" @click.stop>
     <button
+      v-if="!hideTrigger"
       type="button"
       class="input-number__trigger"
       :class="[
@@ -113,10 +114,15 @@ const props = defineProps({
   ariaLabel: {
     type: String,
     default: ''
+  },
+  /** Dialog only: no trigger button; the parent opens it through the exposed `open()`. */
+  hideTrigger: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'close'])
+const emit = defineEmits(['update:modelValue', 'save', 'close'])
 
 const isOpen = ref(false)
 const draftValue = ref(props.modelValue)
@@ -160,6 +166,8 @@ function saveModal() {
   if (next !== props.modelValue) {
     emit('update:modelValue', next)
   }
+  // Always fired on 儲存, even when the value is unchanged.
+  emit('save', next)
   emit('close')
 }
 
@@ -174,12 +182,19 @@ function increase() {
   const base = clampInputNumber(draftValue.value, { min: props.min, max: props.max })
   draftValue.value = clampInputNumber(base + 1, { min: props.min, max: props.max })
 }
+
+defineExpose({ open: openModal })
 </script>
 
 <style scoped>
 .input-number {
   display: inline-flex;
   vertical-align: middle;
+}
+
+/* Dialog-only: the wrapper takes no space in the parent's layout. */
+.input-number--dialog-only {
+  display: contents;
 }
 
 .input-number__trigger {

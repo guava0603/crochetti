@@ -78,6 +78,9 @@ function handleClick(e) {
   height: 1.5rem;
 }
 
+/* 017__circle_close's ring is 17/40 of its viewBox; scaling the button-sized box by
+   ≈40/17 puts the ring on the button's edge (black ring, white fill, × in the middle).
+   2.3 rather than 2.353 keeps the ring just inside the round clip. */
 .btn-delete-light__icon {
   display: block;
   width: 100%;
@@ -85,6 +88,7 @@ function handleClick(e) {
   padding: 0;
   margin: 0;
   object-fit: fill;
+  transform: scale(2.3);
   pointer-events: none;
 }
 

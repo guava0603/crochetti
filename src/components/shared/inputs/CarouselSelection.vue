@@ -312,15 +312,4 @@ watch(
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.carousel-card-ratio {
-  font-size: 0.72rem;
-  font-weight: 900;
-  color: #065f46;
-  background: #d1fae5;
-  border: 1px solid #a7f3d0;
-  border-radius: 999px;
-  padding: 0.1rem 0.4rem;
-  white-space: nowrap;
-}
 </style>

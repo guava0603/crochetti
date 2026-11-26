@@ -240,18 +240,6 @@ const handleSaveNote = () => {
   margin-bottom: 1rem;
 }
 
-.status-section-label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--color-font-dark);
-  margin-bottom: 0.35rem;
-}
-
-.status-section-label--spaced {
-  margin-top: 1rem;
-}
-
 .status-note {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;

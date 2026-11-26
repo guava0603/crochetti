@@ -26,7 +26,7 @@
           />
         </div>
 
-        <div class="row-table-cell row-generate" :class="[validationClass, { 'view-mode': tableType !== 'edit' }]">
+        <div class="row-table-cell row-generate" :class="[validationClass, { 'view-mode': tableType !== 'edit' || !verifyRowCounts }]">
           {{ props.row.content.generate }}
         </div>
       </div>
@@ -70,6 +70,11 @@ const props = defineProps({
   isSelected: {
     type: Boolean,
     default: false
+  },
+  // Off (cast-on 其他): the 針數 cell keeps the plain read-only color.
+  verifyRowCounts: {
+    type: Boolean,
+    default: true
   },
   tableType: {
     type: String,
@@ -135,6 +140,7 @@ const setSelection = (nextSelectionList) => {
 
 // Validate if row consume matches previous row generate
 const validationClass = computed(() => {
+  if (!props.verifyRowCounts) return ''
   if (props.previousGenerate === 0) return 'valid'
 
   if (props.row.content.consume < props.previousGenerate) return 'less'

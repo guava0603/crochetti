@@ -198,13 +198,6 @@ const spacingEnabled = computed({
   gap: 1rem;
 }
 
-.settings-group-title {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: var(--color-font-dark);
-}
-
 .settings-group-subtitle {
   margin: 0 0 0.65rem;
   font-size: 0.85rem;

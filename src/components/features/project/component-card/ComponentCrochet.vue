@@ -10,6 +10,7 @@
       <EditingTable
         v-model="rowListModel"
         v-model:row-groups="rowGroupsModel"
+        :verify-row-counts="verifyRowCounts"
       />
     </FormSubsection>
 
@@ -50,7 +51,9 @@ defineOptions({
 const props = defineProps({
   modelValue: { type: Array, required: true },
   rowGroups: { type: Array, default: () => [] },
-  isEditing: { type: Boolean, default: false }
+  isEditing: { type: Boolean, default: false },
+  // False for cast-on 其他: no green / yellow / red row-count colors.
+  verifyRowCounts: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['update:modelValue', 'update:rowGroups'])

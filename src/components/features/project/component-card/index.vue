@@ -301,7 +301,6 @@ async function handleRemove() {
   box-shadow: 0 0 0 2px rgb(var(--color-icon-add-rgb) / 0.12);
 }
 
-
 .component-card__bottom-actions {
   margin-top: 1rem;
   padding-top: 1rem;
@@ -327,13 +326,6 @@ async function handleRemove() {
 
 .component-remove-bottom:hover {
   background: rgb(var(--color-warning-rgb) / 0.18);
-}
-
-.component-remove-bottom__icon {
-  width: 18px;
-  height: 18px;
-  filter: brightness(0) saturate(100%) invert(14%) sepia(76%) saturate(4916%) hue-rotate(356deg)
-    brightness(92%) contrast(109%);
 }
 
 .component-remove-bottom__text {

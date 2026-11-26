@@ -204,10 +204,6 @@ async function handleSubmit() {
   font-weight: 700;
 }
 
-.field__meta--error {
-  color: #b91c1c;
-}
-
 .contact-opt-in {
   display: flex;
   align-items: center;

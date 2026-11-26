@@ -81,19 +81,4 @@ const emit = defineEmits(['open', 'copy', 'share', 'delete'])
   margin: 0 0 1rem;
   font-size: 1.125rem;
 }
-
-.add-project-link {
-  display: inline-block;
-  background: var(--color-icon-add);
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 500;
-  transition: background 0.2s;
-}
-
-.add-project-link:hover {
-  background: #3aa876;
-}
 </style>
