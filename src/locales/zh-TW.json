@@ -44,7 +44,6 @@
     "timeUnitHour": "時",
     "timeUnitDay": "天",
     "required": "必填",
-    "optional": "選填",
     "discardChangesConfirm": "你有尚未儲存的變更，要放棄嗎？"
   },
   "help": {

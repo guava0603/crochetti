@@ -42,7 +42,6 @@
     "timeUnitHour": "h",
     "timeUnitDay": "d",
     "required": "Required",
-    "optional": "Optional",
     "discardChangesConfirm": "You have unsaved changes. Discard them?"
   },
   "help": {

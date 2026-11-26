@@ -28,7 +28,7 @@
           :disabled="loading"
         />
 
-        <FormSubsection kind="slot" :title="t('user.addRecord.quick.groupsTitle')" optional>
+        <FormSubsection kind="slot" :title="t('user.addRecord.quick.groupsTitle')">
           <div class="quick-groups">
             <div v-if="draft.groups.length" class="quick-groups__list">
               <div v-for="(g, i) in draft.groups" :key="i" class="quick-group-row">
