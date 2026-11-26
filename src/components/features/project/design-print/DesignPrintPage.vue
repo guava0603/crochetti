@@ -340,7 +340,7 @@ onUnmounted(() => {
 .print-loading,
 .print-not-found,
 .print-no-permission {
-  color: #6b7280;
+  color: var(--color-font-note);
   font-weight: 700;
   padding: 1rem;
   text-align: center;
@@ -348,7 +348,7 @@ onUnmounted(() => {
 
 .print-no-permission {
   font-size: 1.05rem;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 </style>

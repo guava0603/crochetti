@@ -182,7 +182,7 @@ const showMenu = computed(() => {
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
-  color: #111827;
+  color: var(--color-font-option);
 }
 
 .selection-combine__option:hover {

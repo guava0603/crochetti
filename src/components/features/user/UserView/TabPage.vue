@@ -273,7 +273,7 @@ const showPrivacyNotice = computed(() => Boolean(props.userIsPrivacy) && !isMyPa
 
 .user-tab-content {
   min-width: 0;
-  padding: 1.5rem 1rem;
+  padding: 1rem;
   display: flex;
   flex: 1;
 }
@@ -286,7 +286,7 @@ const showPrivacyNotice = computed(() => Boolean(props.userIsPrivacy) && !isMyPa
   align-items: center;
   justify-content: center;
   min-height: 240px;
-  color: rgba(17, 24, 39, 0.75);
+  color: var(--color-font-note);
   text-align: center;
   font-weight: 800;
 }
@@ -306,7 +306,7 @@ const showPrivacyNotice = computed(() => Boolean(props.userIsPrivacy) && !isMyPa
   align-items: center;
   justify-content: center;
   min-height: 240px;
-  color: #6b7280;
+  color: var(--color-font-note);
   text-align: center;
 }
 

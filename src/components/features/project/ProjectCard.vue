@@ -233,7 +233,7 @@ const emitOpen = () => {
   background: rgba(17, 24, 39, 0.08);
   padding: 0.15rem 0.5rem;
   border-radius: 0.35rem;
-  color: rgba(17, 24, 39, 0.75);
+  color: var(--color-font-note);
 }
 
 :deep(.more-menu__button) {

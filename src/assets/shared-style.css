@@ -40,14 +40,14 @@
 .component-material-field__label {
   font-size: 0.85rem;
   font-weight: 800;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 /* Yellow highlight behind emphasized inline text (record summary, project materials, etc.). */
 .summary-highlight {
   display: inline;
   padding: 0.05em 0.18em;
-  color: rgba(17, 24, 39, 0.78);
+  color: var(--color-font-dark);
   font-weight: 950;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
@@ -153,7 +153,7 @@ textarea.text-input__control:disabled,
   right: 0.85rem;
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--color-font-invisible);
+  color: var(--color-font-note);
   opacity: 0.85;
   pointer-events: none;
   line-height: 1;
@@ -171,4 +171,13 @@ textarea.text-input__control:disabled,
 .text-count--single-line .text-count__counter {
   top: 50%;
   transform: translateY(-50%);
+}
+
+/* General split line between two blocks (e.g. a search input and the list below it). */
+.split-line {
+  flex: none;
+  height: 0;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
 }

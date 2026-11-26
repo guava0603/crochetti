@@ -104,7 +104,7 @@ function swatchStyle(item) {
   font-size: 0.7rem;
   font-weight: 800;
   line-height: 1.2;
-  color: #374151;
+  color: var(--color-font-dark);
   text-align: center;
   max-width: 4.5rem;
   white-space: nowrap;
@@ -126,7 +126,7 @@ function swatchStyle(item) {
 }
 
 .horizontal-style-picker__option--selected .horizontal-style-picker__label {
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .horizontal-style-picker__option--selected .horizontal-style-picker__swatch {

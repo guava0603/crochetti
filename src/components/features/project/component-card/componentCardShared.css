@@ -12,7 +12,7 @@
 .view-section-title {
   margin: 0 0 0.75rem 0;
   font-size: 1rem;
-  color: #374151;
+  color: var(--color-font-dark);
   font-weight: 600;
 }
 
@@ -23,7 +23,7 @@
 }
 
 .view-list li {
-  color: #374151;
+  color: var(--color-font-dark);
   font-size: 0.875rem;
   line-height: 1.6;
   margin-bottom: 0.25rem;
@@ -50,7 +50,7 @@
 }
 
 .component-metadata-label {
-  color: #6b7280;
+  color: var(--color-font-note);
   font-size: 0.85rem;
   font-weight: 800;
   flex: none;
@@ -73,7 +73,7 @@
 .component-count-text {
   font-size: 0.9rem;
   font-weight: 800;
-  color: #374151;
+  color: var(--color-font-dark);
   white-space: nowrap;
 }
 
@@ -93,13 +93,13 @@
 .related-components-label {
   font-size: 0.9rem;
   font-weight: 800;
-  color: #374151;
+  color: var(--color-font-dark);
   white-space: nowrap;
 }
 
 .related-components-value {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-font-dark);
   overflow-wrap: anywhere;
 }

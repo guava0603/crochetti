@@ -197,7 +197,7 @@ function handleSave() {
   margin: 0 0 0.5rem;
   font-size: 0.95rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .section-list {

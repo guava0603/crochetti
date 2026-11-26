@@ -1,5 +1,5 @@
 <template>
-	<div class="crochet-table-shell">
+	<div v-if="hasStitches" class="crochet-table-shell">
 		<div v-if="showTranslateButton" class="crochet-table__corner-actions" @click.stop>
 			<ButtonTranslate />
 		</div>
@@ -58,7 +58,7 @@ import CrochetRow from './Crochet/CrochetRow.vue'
 import BottomToolbar from '@/components/features/crochet-editor/BottomToolbar/BottomToolbar.vue'
 import SetSelectionPosition from '@/components/features/crochet-editor/BottomToolbar/SetSelectionPosition.vue'
 import ButtonTranslate from '@/components/shared/buttons/svg/ButtonTranslate.vue'
-import { isRowContainerGroupedStart } from '@/utils/crochetTable.js'
+import { hasStitchData, isRowContainerGroupedStart } from '@/utils/crochetTable.js'
 import { openConfirmation } from '@/services/ui/confirmation'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -165,7 +165,6 @@ const activeRowIndex = ref(null)
 const selectionListForPosition = ref([])
 const suppressAutoOpenRowIndex = ref(null)
 const promptingCompleteWholeRow = ref(false)
-const lastSelectionByRowIndex = new Map()
 
 const isClickOnCrochetNode = (event) => {
 	const target = event?.target
@@ -207,11 +206,7 @@ const handleRowContainerClick = async (rowIndex, event) => {
 			}
 			return
 		}
-
-		// If user doesn't complete the whole row, open the selection-position toolbar.
-		activeRowIndex.value = rowIndex
-		selectionListForPosition.value = lastSelectionByRowIndex.get(rowIndex) || []
-		activeToolbarKey.value = TOOLBAR_KEYS.SELECTION_POSITION
+		// Cancel: leave the current position and toolbar as they were.
 	} finally {
 		promptingCompleteWholeRow.value = false
 	}
@@ -221,8 +216,6 @@ const handleRowSelectionChange = async (rowIndex, nextSelectionList) => {
 	const safeList = Array.isArray(nextSelectionList) ? nextSelectionList : []
 	const isSelected = safeList.length > 0
 	const prevSelectedRowIndex = selectedRowIndex.value
-
-	lastSelectionByRowIndex.set(rowIndex, safeList)
 
 	if (!isSelected) {
 		if (selectedRowIndex.value === rowIndex) selectedRowIndex.value = null
@@ -340,6 +333,9 @@ const handleUpdateEndAt = (rowIndex, crochetCount) => {
 defineExpose({
 	applySelection
 })
+
+// No stitch data (no rows, or only empty rows): hide the whole table.
+const hasStitches = computed(() => hasStitchData(props.modelValue))
 
 const visibleRows = computed(() => {
 	const maxVisible = 400

@@ -370,12 +370,12 @@ const confirmSave = async () => {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .empty {
   margin-top: 0.75rem;
-  color: #6b7280;
+  color: var(--color-font-note);
   font-weight: 700;
 }
 
@@ -405,7 +405,7 @@ const confirmSave = async () => {
 
 .label {
   font-weight: 900;
-  color: #6b7280;
+  color: var(--color-font-note);
   font-size: 0.9rem;
 }
 
@@ -418,7 +418,7 @@ const confirmSave = async () => {
 
 .value-main {
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -426,7 +426,7 @@ const confirmSave = async () => {
 }
 
 .note {
-  color: #6b7280;
+  color: var(--color-font-note);
   font-weight: 800;
 }
 
@@ -450,7 +450,7 @@ const confirmSave = async () => {
   border-radius: 10px;
   padding: 0.45rem 0.6rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .bottom-bar {

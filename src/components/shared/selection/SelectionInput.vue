@@ -217,7 +217,7 @@ onUnmounted(() => {
   padding: 0.45rem 0.6rem;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--color-font-note);
   margin-top: 0.25rem;
   border-top: 1px solid #f3f4f6;
 }
@@ -231,7 +231,7 @@ onUnmounted(() => {
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
-  color: #111827;
+  color: var(--color-font-option);
 }
 
 .selection-input__option:hover {

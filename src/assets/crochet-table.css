@@ -44,16 +44,6 @@
   transition: all 0.2s ease;
 }
 
-.crochet-table--edit .row-container.dragging {
-  opacity: 0.5;
-  transform: scale(0.98);
-}
-
-.crochet-table--edit .row-container.drag-over {
-  border: 2px dashed var(--color-icon-add);
-  background: rgb(var(--color-icon-add-rgb) / 0.05);
-}
-
 .crochet-table .row-main {
   display: flex;
   align-items: stretch;
@@ -61,26 +51,6 @@
 }
 
 /* Edit-only controls */
-.crochet-table--edit .drag-handle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  cursor: grab;
-  color: #666;
-  font-size: 14px;
-  user-select: none;
-}
-
-.crochet-table--edit .drag-handle:hover {
-  background: #e0e0e0;
-  color: #333;
-}
-
-.crochet-table--edit .drag-handle:active {
-  cursor: grabbing;
-}
-
 .crochet-table--edit .btn-add-row {
   width: 100%;
   padding: 0.7rem;
@@ -101,7 +71,7 @@
 /* Row repeat reminder */
 .crochet-table .repeat-reminder {
   padding: 0.25rem 0.75rem 0.75rem;
-  color: var(--color-font-invisible);
+  color: var(--color-font-note);
   font-size: 0.85rem;
   border-bottom: 2px solid var(--color-border);
 }
@@ -153,6 +123,16 @@
   cursor: pointer;
 }
 
+/* Record table is tap-to-locate: no native tap flash (iOS/Android paint the whole
+   tappable row) and no text selection on long-press / double-tap. */
+.crochet-table--record,
+.crochet-table--record * {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .crochet-table .row-generate {
   justify-content: center;
   font-variant-numeric: tabular-nums;
@@ -178,7 +158,7 @@
 
 .crochet-table .row-generate.view-mode {
   background: var(--color-surface-sheet) !important;
-  color: #6b7280 !important;
+  color: var(--color-font-note) !important;
   font-weight: 600;
 }
 
@@ -189,11 +169,6 @@
   padding: 0;
   overflow: visible;
   transform: scale(1.02);
-}
-
-.crochet-table .row-number-editor {
-  position: relative;
-  display: inline-block;
 }
 
 .crochet-table .row-card {
@@ -214,12 +189,8 @@
   cursor: pointer;
 }
 
-.crochet-table .stitch-preview {
-  color: #111827;
-}
-
 .crochet-table .separator {
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .crochet-table .clickable {

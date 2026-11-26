@@ -1,9 +1,15 @@
 <template>
   <span
     class="pattern-text"
-    :class="{ selected: showSelected, clickable: isClickable }"
+    :class="{
+      selected: showSelected && !isRecord,
+      'locate-box': isRecord && isLeaf,
+      located: showSelected && isRecord,
+      clickable: isClickable
+    }"
     @click.stop="handleClick"
   >
+    <LocatedArrow v-if="showSelected && isRecord && isLeaf" />
     <component
       v-if="node.type === 'stitch'"
       :is="StitchComponent"
@@ -47,6 +53,7 @@ import CrochetStitch from './CrochetStitch.vue'
 import CrochetBundle from './CrochetBundle.vue'
 import CrochetPattern from './CrochetPattern.vue'
 import CrochetRope from './CrochetRope.vue'
+import LocatedArrow from './LocatedArrow.vue'
 
 const props = defineProps({
   node: {
@@ -78,6 +85,12 @@ const RopeComponent = inject('ropeComponent', CrochetRope)
 
 const isClickable = computed(() => props.tableType !== 'view')
 
+// Record table: the current position of work is shown as "located" (box + floating arrow)
+// instead of the selected highlight.
+const isRecord = computed(() => props.tableType === 'record')
+// Patterns/bundles draw their own located child; only leaves carry the arrow.
+const isLeaf = computed(() => props.node.type === 'stitch' || props.node.type === 'rope')
+
 const showSelected = computed(() => {
   if (props.selection && props.selection.length > 0) {
     return props.level === props.selection.length - 1
@@ -101,9 +114,10 @@ const handleChildSelectionChange = (childSelectionList) => {
 .pattern-text {
   position: relative;
   display: inline-block;
-  color: #111827;
+  color: var(--color-font-dark);
   border-radius: 3px;
-  transition: all 0.2s;
+  /* Not `all`: a border appearing would otherwise fade in from the text color. */
+  transition: background-color 0.2s, border-color 0.2s;
   border-bottom: 2px solid transparent;
   padding: 2px 2px 0;
 }
@@ -115,6 +129,22 @@ const handleChildSelectionChange = (childSelectionList) => {
 .selected {
   background: var(--color-selected-active);
   border-color: var(--color-selected);
+}
+
+/* Record table leaves always carry the (transparent) located border, so tapping only
+   changes its color: same look while pressing and after, and no layout shift.
+   Padding keeps the 1.2×-scaled stitch icon from painting over the border. */
+.locate-box {
+  --located-border: 3px;
+  border: var(--located-border) solid transparent;
+  border-radius: 4px;
+  padding: 2px;
+  transition: none;
+}
+
+/* Located: square with tiny round corners, bordered in a lighter accent color. */
+.locate-box.located {
+  border-color: rgb(var(--color-icon-add-rgb) / 0.55);
 }
 
 </style>

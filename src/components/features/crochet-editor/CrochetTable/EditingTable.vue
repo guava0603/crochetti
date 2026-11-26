@@ -31,6 +31,7 @@
 				:previous-generate="getPreviousGenerate(row.row_index)"
 				:group-reminder="groupReminderByRowIndex[row.row_index]"
 				:is-editing="isEditing(row.row_index)"
+				:is-selected="isRowSelected(visibleRows[idx])"
 				:table-type="type"
 				@edit-row="handleEditRow"
 				@open-edit-row="handleOpenEditCrochet"
@@ -507,11 +508,6 @@ const activeGroupKey = computed(() => {
 	return g === null || g === undefined ? null : g
 })
 
-const activeGroup = computed(() => {
-	if (activeGroupKey.value === null || activeGroupKey.value === undefined) return null
-	return internalRowGroups.value.find(g => g && g.index === activeGroupKey.value) || null
-})
-
 const activeGroupSegment = computed(() => {
 	if (activeGroupKey.value === null || activeGroupKey.value === undefined) return null
 	return groupSegments.value.find(seg => seg.groupIndex === activeGroupKey.value) || null
@@ -541,10 +537,10 @@ const groupReminderByRowIndex = computed(() => {
 	for (const seg of segments) {
 		const endRow = rows[seg.endArrayIndex]
 		if (!endRow) continue
-		map[endRow.row_index] = {
-			n: seg.rowSpan,
-			m: getRepeatCountForGroup(seg.groupIndex)
-		}
+		const m = getRepeatCountForGroup(seg.groupIndex)
+		// A multi-row selection that isn't repeated yet is not a group: no "×1" reminder.
+		if (m <= 1) continue
+		map[endRow.row_index] = { n: seg.rowSpan, m }
 	}
 	return map
 })
@@ -739,6 +735,12 @@ const handleEditRow = async (rowIndex) => {
 		clearDraft()
 	}
 
+	// Any tap ends the current multi-row selection (a repeated group is kept) and turns
+	// 選擇多行 off: the crochet tab edits a single row.
+	dropUnrepeatedActiveGroup()
+	isSelectingMultipleRows.value = false
+	pendingGroupStartRowIndex.value = null
+
 	editingRowIndex.value = rowIndex
 	activeGroupIndex.value = null
 	activeToolbarKey.value = TOOLBAR_KEYS.EDIT
@@ -772,22 +774,28 @@ const handleClickOutside = async (event) => {
 	}
 }
 
+// A multi-row selection is held as a row group while it's being edited. When the selection
+// ends (close, save, cancel, tap another row, turn off 選擇多行) it only stays a group if it
+// actually repeats (repeat_count > 1); otherwise the rows go back to plain rows.
+const dropUnrepeatedActiveGroup = () => {
+	const g = activeGroupIndex.value
+	if (g === null || g === undefined) return
+	if (getRepeatCountForGroup(g) <= 1) {
+		deleteGroupByIndex(g)
+		recalculateAllRowIndices()
+		emitUpdate()
+	}
+	activeGroupIndex.value = null
+}
+
 const handleBlurRow = () => {
 	clearDraft()
-	// Don't persist a group if it doesn't actually repeat.
-	if (activeGroupIndex.value !== null && activeGroupIndex.value !== undefined) {
-		const g = activeGroup.value
-		const repeat = Math.max(1, Number(g?.repeat_count || 1))
-		if (repeat === 1) {
-			deleteGroupByIndex(activeGroupIndex.value)
-			recalculateAllRowIndices()
-			emitUpdate()
-		}
-	}
+	dropUnrepeatedActiveGroup()
 
 	editingRowIndex.value = undefined
 	activeToolbarKey.value = TOOLBAR_KEYS.NONE
 	activeGroupIndex.value = null
+	isSelectingMultipleRows.value = false
 	pendingGroupStartRowIndex.value = null
 	activeEditTab.value = EDIT_TABS.ROW
 }
@@ -801,6 +809,16 @@ const handleOpenEditCrochet = async (rowIndex) => {
 	) {
 		if (!await confirmDiscardCrochetDraft()) return
 		clearDraft()
+	}
+
+	// Any tap ends the current multi-row selection: e.g. rows 1–6 selected, tap row 2 →
+	// only row 2 is selected. A repeated group (repeat_count > 1) is kept, and tapping
+	// inside it opens it.
+	dropUnrepeatedActiveGroup()
+	// 選擇多行 only spans one range: once a range is chosen (no start pending), tapping a
+	// new row starts a plain single-row selection with 選擇多行 off.
+	if (isSelectingMultipleRows.value && pendingGroupStartRowIndex.value === null) {
+		isSelectingMultipleRows.value = false
 	}
 
 	const row = internalRows.value.find(r => r.row_index === rowIndex) || null
@@ -915,18 +933,8 @@ const handleToggleSelectMultipleRows = (next) => {
 		activeEditTab.value = EDIT_TABS.ROW
 		pendingGroupStartRowIndex.value = activeRow.value?.row_index || null
 	} else {
-		// Verification rule: multi-row selection is only meaningful if the selected range is
-		// actually repeated. If a group was created but its repeat_count stays at 1, remove it.
-		const g = activeGroupIndex.value
-		if (g !== null && g !== undefined) {
-			const repeat = getRepeatCountForGroup(g)
-			if (repeat <= 1) {
-				deleteGroupByIndex(g)
-				recalculateAllRowIndices()
-				emitUpdate()
-				activeGroupIndex.value = null
-			}
-		}
+		// Turning 選擇多行 off ends the selection: keep it as a group only if it repeats.
+		dropUnrepeatedActiveGroup()
 		pendingGroupStartRowIndex.value = null
 	}
 }
@@ -1229,6 +1237,15 @@ const canShowAddNew = computed(() => {
 
 const isEditing = (rowIndex) => {
 	return editingRowIndex.value === rowIndex
+}
+
+// Multi-row selection: while a row group is active in the toolbar, every row of the group
+// shows as selected (not only the one that was tapped).
+const isRowSelected = (row) => {
+	if (activeToolbarKey.value === TOOLBAR_KEYS.NONE) return false
+	const g = activeGroupKey.value
+	if (g === null || g === undefined) return false
+	return row?.group_index === g
 }
 
 const getPreviousGenerate = (rowIndex) => {

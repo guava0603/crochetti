@@ -126,12 +126,12 @@ onUnmounted(() => {
   margin: 0 0 0.75rem;
   font-size: 1.15rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .help-modal__body :deep(.help-page__text) {
   margin: 0 0 0.75rem;
-  color: #4b5563;
+  color: var(--color-font-dark);
   line-height: 1.6;
   white-space: pre-line;
 }
@@ -139,7 +139,7 @@ onUnmounted(() => {
 .help-modal__body :deep(.help-page__list) {
   margin: 0;
   padding-left: 1.1rem;
-  color: #374151;
+  color: var(--color-font-dark);
   line-height: 1.6;
 }
 
@@ -149,7 +149,7 @@ onUnmounted(() => {
   bottom: 12px;
   background: transparent;
   border: 1px solid rgb(0 0 0 / 0.12);
-  color: #374151;
+  color: var(--color-font-dark);
   padding: 0.35rem 0.6rem;
   border-radius: 999px;
   font-weight: 800;

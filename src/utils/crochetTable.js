@@ -21,3 +21,12 @@ export function isRowContainerGroupedStart(rows, index) {
 
   return previousRow.group_index !== currentRow.group_index
 }
+
+/**
+ * True when at least one row has stitches. A component with no rows (or only empty rows)
+ * has no stitch data, and the view / record tables are hidden entirely.
+ */
+export function hasStitchData(rows) {
+  if (!Array.isArray(rows)) return false
+  return rows.some((row) => Array.isArray(row?.content?.stitch_node_list) && row.content.stitch_node_list.length > 0)
+}

@@ -53,7 +53,6 @@
     </template>
 
     <template v-else>
-      <p class="picker-hint">{{ t('user.addRecord.selectProjectLabel') }}</p>
       <div class="picker-toolbar">
         <SelectionButtonGroup
           v-model="projectFilter"
@@ -273,7 +272,7 @@ watch(
 <style scoped>
 .modal-message {
   margin: 0 0 0.85rem;
-  color: #6b7280;
+  color: var(--color-font-note);
   font-size: 0.95rem;
   line-height: 1.45;
 }
@@ -291,7 +290,7 @@ watch(
   padding: 0.9rem 1rem;
   font-size: 1rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
   text-align: left;
   cursor: pointer;
 }
@@ -299,11 +298,6 @@ watch(
 .modal-choice:hover {
   border-color: rgb(var(--color-icon-add-rgb) / 0.55);
   background: rgb(var(--color-icon-add-rgb) / 0.12);
-}
-
-.picker-hint {
-  margin: 0 0 0.75rem;
-  color: #6b7280;
 }
 
 .picker-toolbar {
@@ -314,7 +308,7 @@ watch(
 
 .picker-empty {
   margin: 0;
-  color: #6b7280;
+  color: var(--color-font-note);
   font-size: 0.9rem;
 }
 </style>

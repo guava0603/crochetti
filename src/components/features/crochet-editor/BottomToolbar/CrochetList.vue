@@ -562,7 +562,7 @@ const getStitchLabel = (stitch) => {
 }
 
 .crochet-button--self-defined .crochet-symbol {
-  color: var(--color-font-dark);
+  color: var(--color-font-option);
 }
 
 .crochet-button:hover:not(:disabled), .crochet-position-button.active {
@@ -583,7 +583,7 @@ const getStitchLabel = (stitch) => {
 .crochet-symbol {
   font-size: 0.75rem;
   line-height: 1.1;
-  color: #6b7280;
+  color: var(--color-font-option);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

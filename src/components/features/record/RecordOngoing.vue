@@ -14,6 +14,7 @@
           :items="componentList"
           item-width="100%"
           :disable-gesture="false"
+          fit-height-to-active-item
           @active-index-change="handleCarouselActiveIndexChange"
           class="record-component-carousel"
         >
@@ -66,6 +67,15 @@
                   <p class="component-not-recordable__title">{{ $t('record.notRecordableTitle') }}</p>
                   <p class="component-not-recordable__desc">{{ $t('record.notRecordableDesc') }}</p>
                 </div>
+
+                <button
+                  v-if="item?.is_completed !== true"
+                  type="button"
+                  class="btn-secondary component-finish-button"
+                  @click="handleFinishComponentClick(index)"
+                >
+                  {{ $t('record.finishThisComponent') }}
+                </button>
               </div>
             </div>
           </template>
@@ -116,6 +126,7 @@ import {
 } from '@/utils/recordProgressGenerate.js'
 import CrochetRecordingTable from '@/components/features/crochet-editor/CrochetTable/RecordingTable.vue'
 import CarouselWithDot from '@/components/shared/carousel/CarouselWithDot.vue'
+import { scrollElementToCenterY, scrollPageToStartY } from '@/utils/recordScroll'
 import ComponentCardStitch from '@/components/features/project/component-card/Stitch.vue'
 import { DEFAULT_STATUS_ID, originalStatuses } from '@/constants/status.js'
 import { MIN_CUSTOM_STATUS_ID } from '@/constants/recordStatusCatalog'
@@ -281,6 +292,7 @@ watch(
         componentCarouselRef.value?.scrollToIndex?.(clampComponentIndex(next))
         await nextTick()
         applySelectionForSelectedComponent()
+        scrollToComponentPosition(clampComponentIndex(next))
       })()
       return
     }
@@ -300,8 +312,32 @@ watch(
 
 const handleCarouselActiveIndexChange = async (idx) => {
   await nextTick()
-  selectedComponentIndex.value = clampComponentIndex(idx)
+  const cIdx = clampComponentIndex(idx)
+  const switched = cIdx !== selectedComponentIndex.value
+  selectedComponentIndex.value = cIdx
   applySelectionForSelectedComponent()
+  if (switched) scrollToComponentPosition(cIdx)
+}
+
+// After switching component, bring its position of work into view: the located stitch
+// (centered). Only a not-started component has none; then go to the page start.
+// Waits for the carousel's height transition (0.25s) so the page has its final height.
+let positionScrollToken = 0
+const scrollToComponentPosition = async (cIdx) => {
+  const token = ++positionScrollToken
+  await nextTick()
+  await new Promise((resolve) => setTimeout(resolve, 300))
+  if (token !== positionScrollToken) return
+
+  const item = recordViewRef.value?.querySelectorAll('.record-component-carousel .carousel__item')?.[cIdx]
+  if (!item) return
+
+  const located = item.querySelector('.located')
+  if (located) {
+    scrollElementToCenterY(located)
+    return
+  }
+  scrollPageToStartY(item)
 }
 
 // NOTE: generate/progress helpers are shared in `src/utils/*`.
@@ -320,6 +356,11 @@ const isStitchComponent = (component) => {
   return component?.type === 'stitch'
 }
 
+const currentStatusId = ref(0)
+const currentStatusNote = ref('')
+const modalStatusId = ref(currentStatusId.value)
+const modalStatusNote = ref(currentStatusNote.value)
+
 // Shared modal state
 const modalState = ref({
   show: false,
@@ -333,6 +374,10 @@ const modalState = ref({
 
 function openModal(type) {
   if (type === 'update-status') {
+    // Start the dialog on the current status (the "showing" watch below may not exist yet
+    // when this runs during setup).
+    modalStatusId.value = currentStatusId.value
+    modalStatusNote.value = currentStatusNote.value
     // Show a modal to select the current status
     modalState.value = {
       show: true,
@@ -365,16 +410,17 @@ function openModal(type) {
   }
 }
 
+// Footer pencil → ?update-status=<tap id>: open 編輯當前狀態 once the record is loaded,
+// then always drop the query (even if the dialog was already open) so the next tap works.
 watch(
   () => ({
-    hasUpdateStatusQuery: Object.prototype.hasOwnProperty.call(route.query, 'update-status'),
+    updateStatusQuery: route.query['update-status'],
     hasRecord: Boolean(currentRecord.value)
   }),
-  ({ hasUpdateStatusQuery, hasRecord }) => {
-    if (!hasUpdateStatusQuery || !hasRecord) return
-    if (modalState.value?.show) return
+  ({ updateStatusQuery, hasRecord }) => {
+    if (updateStatusQuery === undefined || !hasRecord) return
 
-    openModal('update-status')
+    if (!(modalState.value?.isStatusSelect && modalState.value?.show)) openModal('update-status')
 
     const nextQuery = { ...route.query }
     delete nextQuery['update-status']
@@ -383,10 +429,6 @@ watch(
   { immediate: true }
 )
 
-const currentStatusId = ref(0)
-const currentStatusNote = ref('')
-const modalStatusId = ref(currentStatusId.value)
-const modalStatusNote = ref(currentStatusNote.value)
 
 const syncLatestRecordStoreIfNeeded = () => {
   const dock = latestRecordStore?.latestRecordData
@@ -560,7 +602,9 @@ const applySelectionForSelectedComponent = () => {
     return
   }
 
+  // Finished components saved before they kept an end_at: locate their last stitch.
   const endAt = component?.end_at
+    || (component?.is_completed === true ? getLastEndAtForComponent(component) : null)
   if (!endAt) {
     clearSelection()
     return
@@ -580,7 +624,7 @@ const applySelectionForSelectedComponent = () => {
   const nextCrochetCount = clampCrochetCount(endAt?.crochet_count, baseGenerate)
   if (nextCrochetCount !== Number(endAt?.crochet_count)) {
     endAt.crochet_count = nextCrochetCount
-    currentRecord.value.component_list[cIdx].end_at.crochet_count = nextCrochetCount
+    if (component.end_at) currentRecord.value.component_list[cIdx].end_at.crochet_count = nextCrochetCount
   }
 
   const selectionList = endAtToSelectionList(base_row, endAt, selfDefinedCtx.list.value)
@@ -725,6 +769,15 @@ const finishRecordAndNavigate = async () => {
   })
 }
 
+// 完成此部位: confirm, then mark that component finished (same flow as finishing its
+// last stitch: locate the last stitch, move to the next unfinished component or finish).
+const handleFinishComponentClick = async (cIdx) => {
+  const ok = await openConfirmation({ type: 'finishComponent' })
+  if (!ok) return
+  selectedComponentIndex.value = clampComponentIndex(cIdx)
+  await handleFinishComponent()
+}
+
 const handleFinishComponent = async () => {
   if (!currentUser.value) return
   if (!currentRecord.value) return
@@ -734,7 +787,9 @@ const handleFinishComponent = async () => {
   const list = currentRecord.value?.component_list
   if (!Array.isArray(list) || !list[targetIdx]) return
 
-  currentRecord.value.component_list[targetIdx].end_at = null
+  // A finished component stays located on its last row's last stitch
+  // (only a not-started component has no end_at).
+  currentRecord.value.component_list[targetIdx].end_at = getLastEndAtForComponent(list[targetIdx])
   currentRecord.value.component_list[targetIdx].is_completed = true
 
   if (isRecording.value) {
@@ -931,19 +986,19 @@ const loadRecord = async () => {
     if (!currentUser.value) return
 
     if (!recordId.value) {
-      router.push(-1)
+      router.back()
       return
     }
 
     if (!recordCtx) {
       console.warn('RecordOngoing: record context missing; cannot load record')
-      router.push(-1)
+      router.back()
       return
     }
 
     await recordCtx.loadRecord()
     if (!currentRecord.value) {
-      router.push(-1)
+      router.back()
       return
     }
 
@@ -992,14 +1047,14 @@ watch(isComponentEditing, async (isEditing) => {
 
 .header-with-time h1 {
   margin: 0;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .start-time {
   width: 100%;
   text-align: right;
   font-size: 0.875rem;
-  color: var(--color-text-note);
+  color: var(--color-font-note);
   font-weight: 500;
   padding: 0.4rem 0;
   margin-left: var(--radius-card);
@@ -1027,6 +1082,15 @@ watch(isComponentEditing, async (isEditing) => {
   justify-content: center;
 }
 
+/* 完成此部位: right-aligned, sized to its label, with roomy side padding. */
+.component-finish-button {
+  display: block;
+  width: fit-content;
+  margin: 1rem 0 0 auto;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
 .component-section {
   width: 100%;
   max-width: 1200px;
@@ -1042,7 +1106,7 @@ watch(isComponentEditing, async (isEditing) => {
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 1rem;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .component-meta {
@@ -1063,12 +1127,12 @@ watch(isComponentEditing, async (isEditing) => {
 .component-meta__label {
   font-size: 0.875rem;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .component-meta__value {
   font-size: 0.95rem;
-  color: #111827;
+  color: var(--color-font-dark);
   white-space: pre-wrap;
 }
 
@@ -1077,13 +1141,13 @@ watch(isComponentEditing, async (isEditing) => {
   border-radius: 10px;
   border: 1px dashed #d1d5db;
   background: #f9fafb;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .component-not-recordable__title {
   margin: 0 0 0.25rem;
   font-weight: 700;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .component-not-recordable__desc {
@@ -1103,29 +1167,6 @@ watch(isComponentEditing, async (isEditing) => {
   border-radius: 2em;
   box-shadow: 0 2px 8px rgb(var(--color-icon-add-rgb) / 0.12);
   z-index: 10;
-}
-
-/* Bottom-left dock: record options panel + crochetting toggle button */
-.home-latest-record-dock {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.625rem;
-}
-
-.home-latest-record-panel {
-  position: absolute;
-  left: 0;
-  bottom: calc(4rem + 0.625rem);
-  width: 100%;
-  z-index: 1;
-}
-
-.home-latest-record-panel.is-hidden {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
 }
 
 </style>

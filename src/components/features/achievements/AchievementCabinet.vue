@@ -192,23 +192,20 @@ function displayDescription(a) {
   return resolveAchievementDescription(a, { t, te }, '')
 }
 
-const sorted = computed(() => {
-  const list = displayItems.value.slice()
+// Granted time, newest first; not-yet-earned ones after, by tier then id.
+function compareByEarnedTime(aa, bb) {
+  const ams = earnedMs(aa)
+  const bms = earnedMs(bb)
+  if (ams !== bms) return bms - ams
 
-  list.sort((aa, bb) => {
-    const ams = earnedMs(aa)
-    const bms = earnedMs(bb)
-    if (ams !== bms) return bms - ams
+  const ae = aa?.isEarned ? 1 : 0
+  const be = bb?.isEarned ? 1 : 0
+  if (ae !== be) return be - ae
 
-    const ae = aa?.isEarned ? 1 : 0
-    const be = bb?.isEarned ? 1 : 0
-    if (ae !== be) return be - ae
+  return compareByTierThenId(aa, bb)
+}
 
-    return compareByTierThenId(aa, bb)
-  })
-
-  return list
-})
+const sorted = computed(() => displayItems.value.slice().sort(compareByEarnedTime))
 
 const visible = computed(() => {
   const n = Math.max(0, Number(props.maxVisible) || 0)
@@ -237,7 +234,7 @@ const grouped = computed(() => {
   }
 
   for (const list of byCategory.values()) {
-    list.sort(compareByTierThenId)
+    list.sort(compareByEarnedTime)
   }
 
   const preferred = ['special', 'projects', 'time', 'misc']
@@ -394,19 +391,19 @@ onUnmounted(() => {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .cabinet__subtitle {
   font-size: 0.85rem;
   font-weight: 800;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .cabinet__state {
   font-size: 0.92rem;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .cabinet__state--error {

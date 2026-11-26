@@ -178,7 +178,7 @@ const uiLocaleItems = computed(() => [
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   background: #fff;
-  color: #111827;
+  color: var(--color-font-dark);
   font-size: 0.9rem;
   font-weight: 700;
   padding: 0.55rem 0.85rem;

@@ -4,29 +4,35 @@
     <span class="kp-active-box">
       <template v-if="node.type === 'pattern'">
         <template v-for="(child, i) in children" :key="i">
+          <KeypadCaret v-if="caret === i" />
           <KeypadPreviewNode
             :node="child"
             :path="[...path, i]"
             :active-path="activePath"
+            :caret="caret"
             @pick="(p) => $emit('pick', p)"
             @update-count="(n) => $emit('update-count', n)"
           />
           <span v-if="i < children.length - 1" class="kp-sep">, </span>
         </template>
+        <KeypadCaret v-if="caret >= children.length" />
         <span v-if="!children.length" class="kp-placeholder">…</span>
       </template>
       <template v-else>
         <span class="kp-paren">(</span>
         <template v-for="(child, i) in children" :key="i">
+          <KeypadCaret v-if="caret === i" />
           <KeypadPreviewNode
             :node="child"
             :path="[...path, i]"
             :active-path="activePath"
+            :caret="caret"
             @pick="(p) => $emit('pick', p)"
             @update-count="(n) => $emit('update-count', n)"
           />
           <span v-if="i < children.length - 1" class="kp-sep">, </span>
         </template>
+        <KeypadCaret v-if="caret >= children.length" />
         <span v-if="!children.length" class="kp-placeholder">…</span>
         <span class="kp-paren">)</span>
       </template>
@@ -53,6 +59,7 @@
         :node="child"
         :path="[...path, i]"
         :active-path="activePath"
+        :caret="caret"
         @pick="(p) => $emit('pick', p)"
         @update-count="(n) => $emit('update-count', n)"
       />
@@ -102,6 +109,7 @@
 import { computed, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputNumber from '@/components/shared/inputs/InputNumber.vue'
+import KeypadCaret from './KeypadCaret.vue'
 import CrochetStitch from '@/components/features/crochet-editor/CrochetTable/Crochet/CrochetStitch.vue'
 import CrochetBundle from '@/components/features/crochet-editor/CrochetTable/Crochet/CrochetBundle.vue'
 import CrochetRope from '@/components/features/crochet-editor/CrochetTable/Crochet/CrochetRope.vue'
@@ -113,7 +121,9 @@ defineOptions({ name: 'KeypadPreviewNode' })
 const props = defineProps({
   node: { type: Object, required: true },
   path: { type: Array, required: true },
-  activePath: { type: Array, default: () => [] }
+  activePath: { type: Array, default: () => [] },
+  // Insertion point inside the active container; drawn only where this node is active.
+  caret: { type: Number, default: 0 }
 })
 
 const emit = defineEmits(['pick', 'update-count'])
@@ -171,12 +181,12 @@ const pickSelf = () => emit('pick', props.path)
 }
 
 .kp-bracket {
-  color: #6b7280;
+  color: var(--color-font-note);
   font-weight: 600;
 }
 
 .kp-sep {
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 /* Active pattern/bundle: everything stays inline on the text baseline so the
@@ -200,11 +210,11 @@ const pickSelf = () => emit('pick', props.path)
 }
 
 .kp-placeholder {
-  color: #9ca3af;
+  color: var(--color-font-note);
 }
 
 .kp-paren {
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .kp-count {
@@ -214,7 +224,7 @@ const pickSelf = () => emit('pick', props.path)
 
 .kp-count__symbol {
   font-weight: 900;
-  color: #6b7280;
+  color: var(--color-font-note);
   margin-right: 0.2rem;
 }
 

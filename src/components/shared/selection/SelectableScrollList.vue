@@ -6,16 +6,11 @@
     role="listbox"
     :aria-label="ariaLabel || undefined"
   >
-    <!-- Opt-in search (`searchable`): a round icon button at the top-right that expands
-         into a full-width input when tapped. The row has no height while collapsed. -->
-    <div
-      v-if="searchable"
-      class="selectable-scroll-list__search-row"
-      :class="{ 'is-expanded': isSearchExpanded }"
-    >
+    <!-- Opt-in search (`searchable`): a small search icon pinned at the top-left of the list,
+         with the input right after it (placeholder shows once tapped). -->
+    <div v-if="searchable" class="selectable-scroll-list__search-row">
       <div
         class="selectable-scroll-list__search"
-        :class="{ 'is-expanded': isSearchExpanded }"
         role="search"
         @click="focusSearch"
       >
@@ -34,29 +29,17 @@
           :aria-label="resolvedSearchPlaceholder"
           :disabled="disabled"
           @focus="openSearch"
-          @keydown.esc.prevent="clearSearch(true)"
+          @keydown.esc.prevent="clearSearch"
         />
-        <button
-          v-if="searchQuery"
-          type="button"
-          class="selectable-scroll-list__search-clear"
-          :aria-label="t('common.clearSearch')"
-          @mousedown.prevent
-          @click.stop="clearSearch(false)"
-        >
-          ×
-        </button>
       </div>
+      <hr class="split-line" />
     </div>
 
     <p v-if="searchable && searchQuery && !visibleOptions.length" class="selectable-scroll-list__empty">
       {{ t('common.noSearchResults') }}
     </p>
 
-    <div
-      class="selectable-scroll-list__items"
-      :class="{ 'has-search-button': searchable && !isSearchExpanded }"
-    >
+    <div class="selectable-scroll-list__items">
       <button
         v-for="opt in visibleOptions"
         :key="opt.id"
@@ -99,7 +82,7 @@ const props = defineProps({
   },
   maxHeight: {
     type: String,
-    default: '25vh'
+    default: '40vh'
   },
   /** Show the collapsible search bar above the list. Off by default so other screens are unchanged. */
   searchable: {
@@ -173,15 +156,12 @@ function focusSearch() {
   searchInputRef.value?.focus()
 }
 
-async function clearSearch(close) {
+// Esc: empty the search and close it.
+async function clearSearch() {
   searchQuery.value = ''
   await nextTick()
-  if (close) {
-    searchInputRef.value?.blur()
-    closeSearch()
-  } else {
-    searchInputRef.value?.focus()
-  }
+  searchInputRef.value?.blur()
+  closeSearch()
 }
 
 const containerStyle = computed(() => ({
@@ -225,7 +205,7 @@ function select(id) {
   padding: 0.6rem 0.8rem;
   font-size: 1rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-option);
   text-align: left;
   cursor: pointer;
   font-family: inherit;
@@ -252,64 +232,38 @@ function select(id) {
 }
 
 /* ---- Search (only rendered when `searchable`) ---- */
-/* Sticky row with zero height while collapsed: the round button floats over the
-   top-right corner of the list instead of taking a row of its own. */
+/* Sticky row at the top of the list; items scroll underneath it. */
 .selectable-scroll-list__search-row {
   position: sticky;
   top: 0;
   z-index: 1;
   display: flex;
-  justify-content: flex-end;
-  height: 0;
-  overflow: visible;
-}
-
-.selectable-scroll-list__search-row.is-expanded {
-  height: auto;
-  margin-bottom: 0.4rem;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
   background: #fff;
-  box-shadow: 0 0 0 0.5rem #fff; /* covers items scrolling underneath */
+  box-shadow: 0 -0.5rem 0 #fff; /* also covers the list's top padding */
 }
 
+/* One look whether searching or not: a small left-aligned icon with the input right after
+   it, no background. The whole row is tappable; the placeholder shows once it is opened. */
 .selectable-scroll-list__search {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  flex: none;
-  width: 2rem;
-  height: 2rem;
-  margin-top: 0.3rem;
-  border-radius: 999px;
-  background: #f3f4f6;
-  color: #6b7280;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
-  transition: width 0.18s ease, height 0.18s ease, background 0.18s ease;
-}
-
-.selectable-scroll-list__search.is-expanded {
-  flex: 1;
   justify-content: flex-start;
-  width: auto;
-  height: 2.25rem;
-  margin-top: 0;
-  padding: 0 0.6rem;
-  background: #fff;
-  cursor: text;
-  box-shadow: inset 0 0 0 1px rgb(var(--color-icon-add-rgb) / 0.55);
+  gap: 0.35rem;
+  height: 1.5rem;
+  /* Line the icon up with the option labels (option padding + 2px border). */
+  padding: 0 calc(0.4rem + 2px);
+  color: var(--color-font-note);
+  cursor: pointer;
 }
 
 .selectable-scroll-list__search-icon {
   flex: none;
-  width: 1rem;
-  height: 1rem;
-}
-
-/* Leave room on the first option so the collapsed button never covers it. */
-.selectable-scroll-list__items.has-search-button .selectable-scroll-list__option:first-child {
-  width: calc(100% - 2.5rem);
+  width: 0.9rem;
+  height: 0.9rem;
 }
 
 /* Input text stays 16px even while collapsed so iOS Safari does not zoom on focus. */
@@ -323,39 +277,18 @@ function select(id) {
   background: transparent;
   font: inherit;
   font-size: 16px;
-  color: #111827;
+  color: var(--color-font-dark);
   -webkit-appearance: none;
   appearance: none;
-}
-
-.selectable-scroll-list__search:not(.is-expanded) .selectable-scroll-list__search-input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
 }
 
 .selectable-scroll-list__search-input::-webkit-search-cancel-button {
   display: none;
 }
 
-.selectable-scroll-list__search-clear {
-  flex: none;
-  width: 1.4rem;
-  height: 1.4rem;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: #e5e7eb;
-  color: #4b5563;
-  font-size: 0.95rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
 .selectable-scroll-list__empty {
   margin: 0.5rem 0.25rem;
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: var(--color-font-note);
 }
 </style>

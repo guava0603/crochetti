@@ -277,7 +277,7 @@ onBeforeUnmount(() => {
   border: 1px dashed var(--color-border-warm);
   border-radius: 10px;
   background: var(--color-surface-page);
-  color: #111827;
+  color: var(--color-font-dark);
   cursor: pointer;
   font-weight: 600;
 }
@@ -295,7 +295,7 @@ onBeforeUnmount(() => {
 .image-uploader__hint {
   margin-top: 8px;
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .image-preview-uploader-conteiner {

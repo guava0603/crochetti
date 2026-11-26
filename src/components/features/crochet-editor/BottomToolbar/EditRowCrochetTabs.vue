@@ -380,7 +380,7 @@ const handleConfirm = async () => {
 
 .action-btn--secondary {
   background: #f3f4f6;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .action-btn--secondary:hover {

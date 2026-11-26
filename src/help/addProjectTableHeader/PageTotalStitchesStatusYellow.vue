@@ -34,7 +34,7 @@ const imgYellow = computed(() => {
 
 .status-page__label {
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
   line-height: 1.35;
   margin-bottom: 0.4rem;
 }

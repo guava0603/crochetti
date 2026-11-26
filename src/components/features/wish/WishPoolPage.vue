@@ -177,7 +177,7 @@ async function handleSubmit() {
 
 .wish-pool-view__hint {
   margin: 0 0 1rem;
-  color: var(--color-font-invisible);
+  color: var(--color-font-note);
   font-weight: 700;
 }
 
@@ -200,7 +200,7 @@ async function handleSubmit() {
 
 .field__meta {
   font-size: 0.9rem;
-  color: var(--color-font-invisible);
+  color: var(--color-font-note);
   font-weight: 700;
 }
 

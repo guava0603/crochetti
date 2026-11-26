@@ -244,7 +244,7 @@ const handleSaveNote = () => {
   display: block;
   font-size: 0.8rem;
   font-weight: 700;
-  color: #374151;
+  color: var(--color-font-dark);
   margin-bottom: 0.35rem;
 }
 
@@ -263,7 +263,7 @@ const handleSaveNote = () => {
 .status-note-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .status-note-controls {

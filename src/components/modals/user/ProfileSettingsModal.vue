@@ -482,7 +482,7 @@ function handleSave() {
 .avatar-row__edit {
   border: 1px solid rgba(17, 24, 39, 0.1);
   background: rgba(255, 255, 255, 0.85);
-  color: rgba(17, 24, 39, 0.85);
+  color: var(--color-font-dark);
   border-radius: 12px;
   width: 2rem;
   height: 2rem;
@@ -512,14 +512,14 @@ function handleSave() {
 .connected-accounts__title {
   font-size: 0.95rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
   margin-bottom: 0.45rem;
 }
 
 .connected-accounts__hint {
   font-size: 0.85rem;
   font-weight: 700;
-  color: rgba(17, 24, 39, 0.7);
+  color: var(--color-font-note);
   margin-bottom: 0.6rem;
 }
 
@@ -540,13 +540,13 @@ function handleSave() {
 
 .connected-accounts__provider {
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .connected-accounts__meta {
   font-size: 0.82rem;
   font-weight: 700;
-  color: rgba(17, 24, 39, 0.65);
+  color: var(--color-font-note);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -554,7 +554,7 @@ function handleSave() {
 .connected-accounts__none {
   font-size: 0.85rem;
   font-weight: 700;
-  color: rgba(17, 24, 39, 0.7);
+  color: var(--color-font-note);
   margin-bottom: 0.7rem;
 }
 

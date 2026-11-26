@@ -338,7 +338,7 @@ onUnmounted(() => {
 .more-menu__section-label {
   font-size: 0.85rem;
   font-weight: 800;
-  color: rgba(17, 24, 39, 0.70);
+  color: var(--color-font-note);
   margin: 0 0 0.4rem;
 }
 
@@ -357,7 +357,7 @@ onUnmounted(() => {
   padding: 0.9rem 0.75rem;
   border: 1px solid rgba(17, 24, 39, 0.10);
   background: rgba(255, 255, 255, 0.55);
-  color: #111827;
+  color: var(--color-font-dark);
   border-radius: 14px;
   font-size: 1rem;
   font-weight: 900;

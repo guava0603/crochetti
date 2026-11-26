@@ -13,7 +13,6 @@
     "confirm": "確認",
     "search": "搜尋",
     "noSearchResults": "找不到符合的項目",
-    "clearSearch": "清除搜尋",
     "ok": "確定",
     "remove": "移除",
     "notice": "提示",
@@ -44,7 +43,6 @@
     "timeUnitHour": "時",
     "timeUnitDay": "天",
     "required": "必填",
-    "optional": "選填",
     "discardChangesConfirm": "你有尚未儲存的變更，要放棄嗎？"
   },
   "help": {
@@ -91,7 +89,7 @@
       },
       "pageAddBundle": {
         "title": "[新增針法]",
-        "body": "點擊「針目」區的按鈕，針法會加到輸入框的最後面\n想要更多針？重複點擊同一個按鈕\n輸入框會顯示整行的內容\n儲存後，針法自動計數成好讀版"
+        "body": "點擊「針目」區的按鈕，針法會加到輸入框裡閃爍的插入點\n用輸入框旁的 ◀ ▶ 移動插入點，或直接點某一針，插入點就會移到它後面\n插入點只在目前選取的區塊裡移動\n想要更多針？重複點擊同一個按鈕\n輸入框會顯示整行的內容\n儲存後，針法自動計數成好讀版"
       },
       "pageRepeatPattern": {
         "title": "[重複花樣]",
@@ -100,7 +98,7 @@
       "pageDeleteBundle": {
         "componentNameRequired": "部件名稱為必填（第 {n} 個部件）",
         "title": "[刪除針法]",
-        "body": "點開想要修改的這行\n按輸入框右邊的刪除鍵，會刪掉目前區塊的最後一個\n想刪花樣裡的針？先點輸入框裡的那個花樣，再按刪除鍵\n區塊空了再按一次，會移除整個區塊並回到上一層\n別忘了儲存！"
+        "body": "點開想要修改的這行\n按輸入框右邊的刪除鍵，會刪掉插入點前面的那一個\n想刪花樣裡的針？先點輸入框裡的那個花樣，再按刪除鍵\n區塊空了再按一次，會移除整個區塊並回到上一層\n別忘了儲存！"
       },
       "pageIncrease": {
         "title": "[加針（在同一針目裡）]",
@@ -494,7 +492,7 @@
     },
     "restartRecord": {
       "title": "重啟這筆紀錄？",
-      "message": "這將把紀錄標記為未完成，並把所有部件重設為未完成。\n要繼續嗎？",
+      "message": "這將把紀錄標記為未完成，並把所有部件的進度歸零（0%）。\n要繼續嗎？",
       "confirmText": "重啟"
     },
     "startRecordingOnCompletedComponent": {
@@ -661,9 +659,13 @@
     },
     "editCrochet": {
       "count": "數量",
-      "deleteLast": "刪除最後一針",
+      "deleteBefore": "刪除插入點前一個",
       "repeatPattern": "重複花樣",
       "sameStitch": "在同一針目裡",
+      "caret": {
+        "left": "插入點左移",
+        "right": "插入點右移"
+      },
       "sections": {
         "stitch": "針目"
       }
@@ -805,6 +807,7 @@
     "recordDetails": "詳細資料",
     "restartRecord": "重啟此紀錄",
     "finishComponent": "完成部件",
+    "finishThisComponent": "完成此部位",
     "completed": "已完成",
     "notCompleted": "未完成",
     "noRecords": "沒有紀錄。",

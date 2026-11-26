@@ -202,14 +202,14 @@ const spacingEnabled = computed({
   margin: 0;
   font-size: 0.95rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .settings-group-subtitle {
   margin: 0 0 0.65rem;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .image-toggle-list {
@@ -274,7 +274,7 @@ const spacingEnabled = computed({
 .aspect-preview__label {
   font-size: 0.85rem;
   font-weight: 900;
-  color: #6b7280;
+  color: var(--color-font-note);
   font-variant-numeric: tabular-nums;
 }
 
@@ -315,7 +315,7 @@ const spacingEnabled = computed({
 .aspect-controls__rotate-icon {
   font-size: 1.25rem;
   line-height: 1;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .order-options {
@@ -335,7 +335,7 @@ const spacingEnabled = computed({
   justify-content: center;
   font-weight: 800;
   font-size: 0.85rem;
-  color: #374151;
+  color: var(--color-font-dark);
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s, transform 0.05s;
 }

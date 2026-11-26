@@ -200,12 +200,12 @@ onUnmounted(() => {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .time-slots-empty {
   margin-top: 0.75rem;
-  color: #6b7280;
+  color: var(--color-font-note);
   font-weight: 600;
 }
 
@@ -232,7 +232,7 @@ onUnmounted(() => {
   align-items: baseline;
   gap: 0.5rem;
   min-width: 0;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .group-hour {
@@ -246,7 +246,7 @@ onUnmounted(() => {
 
 .group-count {
   font-weight: 800;
-  color: #6b7280;
+  color: var(--color-font-note);
   background: #f3f4f6;
   border-radius: 999px;
   padding: 0.25rem 0.6rem;
@@ -285,11 +285,11 @@ onUnmounted(() => {
   appearance: none;
   border: none;
   font-weight: 800;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .slot-status {
-  color: #111827;
+  color: var(--color-font-dark);
   font-weight: 600;
   cursor: pointer;
   text-align: left;

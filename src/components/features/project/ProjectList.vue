@@ -74,7 +74,7 @@ const emit = defineEmits(['open', 'copy', 'share', 'delete'])
 .no-projects {
   text-align: center;
   padding: 3rem 2rem;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .no-projects p {

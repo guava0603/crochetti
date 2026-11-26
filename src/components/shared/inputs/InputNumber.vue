@@ -191,7 +191,7 @@ function increase() {
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   background: #f8fafc;
-  color: #111827;
+  color: var(--color-font-dark);
   font-size: 0.95rem;
   font-weight: 800;
   line-height: 1;
@@ -254,7 +254,7 @@ function increase() {
   border: 1px solid #e2e8f0;
   border-radius: 999px;
   background: #f8fafc;
-  color: #111827;
+  color: var(--color-font-dark);
   font-size: 1.35rem;
   font-weight: 800;
   line-height: 1;
@@ -299,7 +299,7 @@ function increase() {
 
 .input-number-modal__btn--secondary {
   background: #f3f4f6;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .input-number-modal__btn--primary {

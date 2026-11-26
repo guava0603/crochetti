@@ -53,7 +53,7 @@ const menuItems = computed(() => {
   padding: 0.65rem 0.85rem;
   text-align: left;
   font-weight: 800;
-  color: #111827;
+  color: var(--color-font-dark);
   cursor: pointer;
 }
 

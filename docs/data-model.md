@@ -135,7 +135,7 @@ Private to owner (`firestore.rules`).
 | Field | Purpose | Storage |
 |-------|---------|---------|
 | `project_id`, `project_name`, `project_image` | Link + display | Firestore |
-| `component_list[]` | Per-instance progress (`end_at`, `is_completed`, `count`, `_instance`) | Firestore |
+| `component_list[]` | Per-instance progress (`end_at`, `is_completed`, `count`, `_instance`). `end_at` is `null` only when the component is not started (also after restarting the record, which resets every component to 0%); finishing a row sets it to that row's last stitch, finishing the component to the last row's last stitch | Firestore |
 | `time_slots[]` | `start`, `end`, `status_id`, `status_note`, `end_at_list` | Firestore |
 | `self_defined_status[]` | Custom status ids **linked on this record** (subset of user catalog) | Firestore |
 | `self_defined_status_notes[]` | Legacy per-record notes (migrated to profile on load) | Firestore |

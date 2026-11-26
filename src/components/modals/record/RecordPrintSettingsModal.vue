@@ -265,7 +265,7 @@ function handleSave() {
   border-radius: 10px;
   padding: 0.65rem 0.75rem;
   background: rgba(17, 24, 39, 0.04);
-  color: #111827;
+  color: var(--color-font-dark);
   font-size: 0.95rem;
   font-weight: 800;
   text-align: left;

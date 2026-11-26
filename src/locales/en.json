@@ -12,7 +12,6 @@
     "confirm": "Confirm",
     "search": "Search",
     "noSearchResults": "No matches",
-    "clearSearch": "Clear search",
     "ok": "OK",
     "remove": "Remove",
     "notice": "Notice",
@@ -42,7 +41,6 @@
     "timeUnitHour": "h",
     "timeUnitDay": "d",
     "required": "Required",
-    "optional": "Optional",
     "discardChangesConfirm": "You have unsaved changes. Discard them?"
   },
   "help": {
@@ -89,7 +87,7 @@
       },
       "pageAddBundle": {
         "title": "[Add stitches]",
-        "body": "Tap a button in the Stitches section to add it to the end of the input.\nNeed more stitches? Tap again.\nThe input shows the whole row.\nAfter saving, stitches are auto-formatted into a readable counted form."
+        "body": "Tap a button in the Stitches section to add it at the blinking insertion point.\nMove the insertion point with ◀ ▶ next to the input, or tap a stitch to put it right after that stitch.\nThe insertion point only moves inside the currently selected box.\nNeed more stitches? Tap again.\nThe input shows the whole row.\nAfter saving, stitches are auto-formatted into a readable counted form."
       },
       "pageRepeatPattern": {
         "title": "[Repeat pattern]",
@@ -97,7 +95,7 @@
       },
       "pageDeleteBundle": {
         "title": "[Delete stitches]",
-        "body": "Open the row you want to edit.\nThe delete button right of the input removes the last item of the current box.\nTo delete inside a pattern, tap that pattern in the input first, then delete.\nPressing delete on an empty box removes the box and goes up one level.\nDon’t forget to save!"
+        "body": "Open the row you want to edit.\nThe delete button right of the input removes the item before the insertion point.\nTo delete inside a pattern, tap that pattern in the input first, then delete.\nPressing delete on an empty box removes the box and goes up one level.\nDon’t forget to save!"
       },
       "pageIncrease": {
         "title": "[Increase (into the same stitch)]",
@@ -494,7 +492,7 @@
     },
     "restartRecord": {
       "title": "Restart this record?",
-      "message": "This will mark the record as not completed and reset all components to unfinished. Continue?",
+      "message": "This will mark the record as not completed and reset every component's progress to 0%. Continue?",
       "confirmText": "Restart"
     },
     "startRecordingOnCompletedComponent": {
@@ -662,9 +660,13 @@
     },
     "editCrochet": {
       "count": "Count",
-      "deleteLast": "Delete last stitch",
+      "deleteBefore": "Delete the item before the insertion point",
       "repeatPattern": "Repeat pattern",
       "sameStitch": "Into the same stitch",
+      "caret": {
+        "left": "Move insertion point left",
+        "right": "Move insertion point right"
+      },
       "sections": {
         "stitch": "Stitches"
       }
@@ -806,6 +808,7 @@
     "recordDetails": "Details",
     "restartRecord": "Restart record",
     "finishComponent": "Complete component",
+    "finishThisComponent": "Finish this part",
     "completed": "Completed",
     "notCompleted": "Not completed",
     "noRecords": "No records.",
