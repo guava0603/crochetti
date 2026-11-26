@@ -251,7 +251,7 @@ const handleAppleLogin = async () => {
 
 .login-card__desc {
   margin: 0.5rem 0 0;
-  color: var(--color-font-invisible);
+  color: var(--color-font-note);
   font-weight: 700;
 }
 
@@ -276,7 +276,7 @@ const handleAppleLogin = async () => {
 
 .google-signin-button {
   background: #fff;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .apple-signin-button {

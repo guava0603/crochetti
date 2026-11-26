@@ -187,11 +187,11 @@ const handleLongPatternShellClick = () => {
 }
 
 .separator {
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .pattern-count {
-  color: #6b7280;
+  color: var(--color-font-note);
   font-weight: 600;
 }
 

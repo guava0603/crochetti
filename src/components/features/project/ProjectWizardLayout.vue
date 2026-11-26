@@ -196,7 +196,7 @@ onBeforeUnmount(() => {
   height: 40px;
   border-radius: 50%;
   background: var(--color-surface-accent);
-  color: var(--color-font-invisible);
+  color: var(--color-font-note);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -216,7 +216,7 @@ onBeforeUnmount(() => {
 
 .step-label {
   font-size: 0.875rem;
-  color: var(--color-font-invisible);
+  color: var(--color-font-note);
   font-weight: 500;
 }
 
@@ -234,7 +234,7 @@ onBeforeUnmount(() => {
 /* Common form styles for child components */
 :deep(h2) {
   margin-bottom: 2rem;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 :deep(.step-form) {
@@ -298,7 +298,7 @@ onBeforeUnmount(() => {
 
 :deep(.required-badge) {
   background: var(--color-surface-accent);
-  color: var(--color-font-invisible);
+  color: var(--color-font-note);
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.15rem 0.6rem;

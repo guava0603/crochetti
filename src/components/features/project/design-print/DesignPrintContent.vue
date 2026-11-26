@@ -280,7 +280,7 @@ defineExpose({
   font-size: 1.5rem;
   font-weight: 900;
   line-height: 1.3;
-  color: #111827;
+  color: var(--color-font-dark);
   text-align: center;
   word-break: break-word;
 }

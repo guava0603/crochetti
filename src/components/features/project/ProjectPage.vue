@@ -742,7 +742,7 @@ const handleStartCta = async () => {
   text-align: center;
   font-size: 1.1rem;
   font-weight: 800;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .page-content {
@@ -823,7 +823,7 @@ const handleStartCta = async () => {
 
 .project-record-tracking__title {
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .project-record-tracking__lists {
@@ -842,7 +842,7 @@ const handleStartCta = async () => {
 
 .project-record-tracking__label {
   font-weight: 800;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .project-record-tracking__items {
@@ -851,14 +851,14 @@ const handleStartCta = async () => {
 }
 
 .project-record-tracking__item {
-  color: #6b7280;
+  color: var(--color-font-note);
   font-size: 0.9rem;
   overflow-wrap: anywhere;
 }
 
 .project-record-tracking__empty {
   margin-top: 0.4rem;
-  color: #9ca3af;
+  color: var(--color-font-note);
   font-size: 0.9rem;
 }
 

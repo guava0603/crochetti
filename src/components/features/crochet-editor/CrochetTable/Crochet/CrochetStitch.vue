@@ -120,7 +120,7 @@ const displayText = computed(() => {
 .stitch-text {
   position: relative;
   display: inline-block;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .stitch-count {

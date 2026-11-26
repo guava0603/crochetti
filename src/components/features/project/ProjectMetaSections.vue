@@ -146,7 +146,7 @@ const hasVisibleContent = computed(
 
 .project-materials__title {
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
   margin-bottom: 0.5rem;
 }
 
@@ -161,7 +161,7 @@ const hasVisibleContent = computed(
 .project-materials__label {
   font-size: 0.85rem;
   font-weight: 900;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .project-materials__value {
@@ -180,18 +180,18 @@ const hasVisibleContent = computed(
 
 .project-stitch-intro__title {
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
   margin-bottom: 0.5rem;
 }
 
 .project-stitch-intro__name {
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .project-stitch-intro__description {
   font-weight: 700;
-  color: #374151;
+  color: var(--color-font-dark);
   line-height: 1.55;
   white-space: pre-wrap;
 }
@@ -244,7 +244,7 @@ const hasVisibleContent = computed(
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.6;
-  color: #111827;
+  color: var(--color-font-dark);
   font-weight: 800;
 }
 

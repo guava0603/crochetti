@@ -323,7 +323,7 @@ watch(
 .bar-chart__row-title {
   font-weight: 800;
   font-size: 0.9rem;
-  color: rgba(17, 24, 39, 0.82);
+  color: var(--color-font-dark);
   justify-self: start;
   min-width: 0;
   white-space: normal;
@@ -353,7 +353,7 @@ watch(
 
 .bar-chart__row-value {
   font-weight: 900;
-  color: var(--color-font-invisible);
+  color: var(--color-font-note);
   font-size: 0.7rem;
   justify-self: end;
   min-width: 0;

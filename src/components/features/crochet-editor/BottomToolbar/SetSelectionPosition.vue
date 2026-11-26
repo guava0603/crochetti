@@ -181,12 +181,12 @@ const handleCancel = () => {
 .title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .empty {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .levels {
@@ -205,13 +205,13 @@ const handleCancel = () => {
 
 .level-label {
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--color-font-dark);
   font-weight: 600;
 }
 
 .level-size {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .level-input {
@@ -254,7 +254,7 @@ const handleCancel = () => {
 
 .cancel-button {
   background: #f3f4f6;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .cancel-button:hover {

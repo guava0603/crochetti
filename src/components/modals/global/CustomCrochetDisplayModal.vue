@@ -210,7 +210,7 @@ async function handleSave() {
 <style scoped>
 .custom-display-modal__hint {
   margin: 0 0 0.85rem;
-  color: #6b7280;
+  color: var(--color-font-note);
   font-size: 0.875rem;
   line-height: 1.45;
 }
@@ -237,7 +237,7 @@ async function handleSave() {
 .custom-display-modal__label {
   font-size: 0.875rem;
   font-weight: 700;
-  color: #374151;
+  color: var(--color-font-dark);
   line-height: 1.3;
 }
 
@@ -247,7 +247,7 @@ async function handleSave() {
   border-radius: 8px;
   padding: 0.55rem 0.65rem;
   font-size: 0.9rem;
-  color: #111827;
+  color: var(--color-font-dark);
   background: #fff;
 }
 
@@ -279,7 +279,7 @@ async function handleSave() {
   border: 1px dashed #d1d5db;
   border-radius: 10px;
   background: #f9fafb;
-  color: #374151;
+  color: var(--color-font-dark);
   font-size: 0.9rem;
   font-weight: 700;
   padding: 0.65rem 0.75rem;

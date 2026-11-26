@@ -681,7 +681,7 @@ const isSingleComponentMaterialField = computed(() => {
 <style scoped>
 .subsection-title {
   font-size: 1rem;
-  color: #374151;
+  color: var(--color-font-dark);
   font-weight: 600;
 }
 
@@ -747,7 +747,7 @@ const isSingleComponentMaterialField = computed(() => {
   padding-top: 0.25rem;
   font-size: 0.9rem;
   font-weight: 800;
-  color: #374151;
+  color: var(--color-font-dark);
   white-space: nowrap;
 }
 
@@ -780,7 +780,7 @@ const isSingleComponentMaterialField = computed(() => {
   padding: 0.25rem 0.5rem;
   border-radius: 999px;
   background: rgba(17, 24, 39, 0.06);
-  color: #111827;
+  color: var(--color-font-dark);
   font-size: 0.85rem;
   font-weight: 800;
   max-width: 100%;

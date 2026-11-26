@@ -132,7 +132,7 @@ function handleSave() {
   padding: 0.8rem 0.95rem;
   font-size: 0.95rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
   text-align: left;
   cursor: pointer;
 }

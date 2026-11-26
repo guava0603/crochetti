@@ -181,12 +181,12 @@ const pickSelf = () => emit('pick', props.path)
 }
 
 .kp-bracket {
-  color: #6b7280;
+  color: var(--color-font-note);
   font-weight: 600;
 }
 
 .kp-sep {
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 /* Active pattern/bundle: everything stays inline on the text baseline so the
@@ -210,11 +210,11 @@ const pickSelf = () => emit('pick', props.path)
 }
 
 .kp-placeholder {
-  color: #9ca3af;
+  color: var(--color-font-note);
 }
 
 .kp-paren {
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .kp-count {
@@ -224,7 +224,7 @@ const pickSelf = () => emit('pick', props.path)
 
 .kp-count__symbol {
   font-weight: 900;
-  color: #6b7280;
+  color: var(--color-font-note);
   margin-right: 0.2rem;
 }
 

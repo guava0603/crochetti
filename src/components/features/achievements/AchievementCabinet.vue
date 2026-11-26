@@ -391,19 +391,19 @@ onUnmounted(() => {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .cabinet__subtitle {
   font-size: 0.85rem;
   font-weight: 800;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .cabinet__state {
   font-size: 0.92rem;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .cabinet__state--error {

@@ -434,7 +434,9 @@ const startLatestRecord = async () => {
 const actions = {
   startRecording: () => startLatestRecord(),
   pauseRecording: () => pauseLatestRecord(),
-  openStatusModal: () => openLatestRecordWithQuery({ 'update-status': '1' }),
+  // Unique value per tap: pushing the exact same URL is a no-op, so a leftover
+  // ?update-status would otherwise swallow the next tap.
+  openStatusModal: () => openLatestRecordWithQuery({ 'update-status': String(Date.now()) }),
   finishComponent: () => openLatestRecord()
 }
 </script>
@@ -754,7 +756,7 @@ const actions = {
 }
 
 .status-currently {
-  color: gray;
+  color: var(--color-font-note);
   white-space: nowrap;
   flex: 0 0 auto;
 }

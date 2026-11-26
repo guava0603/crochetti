@@ -76,7 +76,7 @@ const displayName = computed(() => {
 }
 
 .user-block__name {
-  color: #111827;
+  color: var(--color-font-dark);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;

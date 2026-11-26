@@ -23,7 +23,7 @@ defineEmits(['go-parent'])
   border-radius: 0.375rem;
   border: 1px solid #d1d5db;
   background: #ffffff;
-  color: #374151;
+  color: var(--color-font-dark);
   cursor: pointer;
 }
 

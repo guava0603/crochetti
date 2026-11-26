@@ -206,7 +206,7 @@ async function handleRemove() {
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 900;
-  color: #374151;
+  color: var(--color-font-dark);
   background: rgba(17, 24, 39, 0.06);
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
@@ -262,7 +262,7 @@ async function handleRemove() {
 }
 
 .component-name-display {
-  color: #111827;
+  color: var(--color-font-dark);
   font-size: 1.05rem;
 }
 

@@ -306,7 +306,7 @@ watch(
 .carousel-card-name {
   font-size: 0.85rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--color-font-dark);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -119,10 +119,10 @@ function onClick(id) {
   Matches the SystemSettingsModal palette.
 */
 .selection-button-group {
-  --text-main: var(--color-font-dark);
+  --text-main: var(--color-font-option);
   --border-color: var(--color-border);
   --active-bg: rgba(17, 24, 39, 0.06);
-  --accent-color: #1f2937;
+  --accent-color: var(--color-font-dark);
 
   display: inline-flex;
   flex-direction: row;
@@ -189,5 +189,10 @@ function onClick(id) {
   white-space: nowrap;
   font-weight: inherit;
   color: var(--text-main);
+}
+
+/* Unselected choices are prepared options; the picked one reads as normal text. */
+.selection-button-group__btn.is-selected .selection-button-group__label {
+  color: var(--accent-color);
 }
 </style>

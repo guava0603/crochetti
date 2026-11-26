@@ -124,7 +124,7 @@ const visibleRecords = computed(() => {
 
 .records-content {
   display: grid;
-  gap: 1rem;
+  gap: .6rem;
 }
 
 .records-filters {
@@ -135,7 +135,7 @@ const visibleRecords = computed(() => {
 .records-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: .4rem;
   margin-bottom: 2rem;
 }
 
@@ -153,7 +153,7 @@ const visibleRecords = computed(() => {
 .records-hint {
   text-align: center;
   padding: 3rem 2rem;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .records-hint--compact {

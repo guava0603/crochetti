@@ -343,7 +343,7 @@ const resolvedMultiSelectAriaLabel = computed(() => {
 
 .subsection-title {
   font-size: 1rem;
-  color: #374151;
+  color: var(--color-font-dark);
   font-weight: 600;
 }
 </style>

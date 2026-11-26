@@ -143,7 +143,7 @@ function handleSave() {
 
 .new-images__hint {
   margin-top: 0.5rem;
-  color: #6b7280;
+  color: var(--color-font-note);
   font-size: 0.9rem;
   font-weight: 600;
 }

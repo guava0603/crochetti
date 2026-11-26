@@ -331,7 +331,7 @@ onBeforeUnmount(() => footer.clearActions())
   border: 0.0625rem dashed rgba(17, 24, 39, 0.28);
   background: rgba(17, 24, 39, 0.02);
   font-weight: 800;
-  color: rgba(17, 24, 39, 0.88);
+  color: var(--color-font-dark);
   cursor: pointer;
 }
 
@@ -356,7 +356,7 @@ onBeforeUnmount(() => footer.clearActions())
 
 .hint {
   margin-top: 0.75rem;
-  color: #6b7280;
+  color: var(--color-font-note);
   font-size: 0.9rem;
 }
 </style>

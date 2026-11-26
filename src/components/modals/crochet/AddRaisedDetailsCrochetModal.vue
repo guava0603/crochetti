@@ -110,7 +110,7 @@ function handleSave() {
   display: block;
   font-weight: 800;
   margin-bottom: 0.5rem;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .base-grid {
@@ -135,13 +135,13 @@ function handleSave() {
 
 .sym {
   font-weight: 1000;
-  color: #111827;
+  color: var(--color-font-dark);
   line-height: 1;
 }
 
 .txt {
   margin-top: 0.15rem;
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 </style>

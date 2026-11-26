@@ -376,7 +376,7 @@ defineExpose({
   margin: 0;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .keypad-section--stitch :deep(.crochet-list) {
@@ -406,7 +406,7 @@ defineExpose({
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   font-weight: 700;
-  color: #374151;
+  color: var(--color-font-option);
   cursor: pointer;
 }
 

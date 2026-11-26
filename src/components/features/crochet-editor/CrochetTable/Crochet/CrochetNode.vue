@@ -114,7 +114,7 @@ const handleChildSelectionChange = (childSelectionList) => {
 .pattern-text {
   position: relative;
   display: inline-block;
-  color: #111827;
+  color: var(--color-font-dark);
   border-radius: 3px;
   /* Not `all`: a border appearing would otherwise fade in from the text color. */
   transition: background-color 0.2s, border-color 0.2s;

@@ -345,7 +345,7 @@ onMounted(() => {
 <style scoped>
 .modal-message {
   margin: 0 0 0.85rem;
-  color: #6b7280;
+  color: var(--color-font-note);
   font-size: 0.95rem;
   line-height: 1.45;
 }
@@ -363,7 +363,7 @@ onMounted(() => {
   padding: 0.9rem 1rem;
   font-size: 1rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
   text-align: left;
   cursor: pointer;
 }
@@ -375,7 +375,7 @@ onMounted(() => {
 
 .copy-hint {
   margin: 0 0 0.75rem 0;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .copy-picker {

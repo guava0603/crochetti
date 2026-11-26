@@ -115,7 +115,7 @@ function handleSave() {
   display: block;
   font-weight: 800;
   margin-bottom: 0.5rem;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .stats {
@@ -132,6 +132,6 @@ function handleSave() {
 
 .stat span {
   font-weight: 800;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 </style>

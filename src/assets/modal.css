@@ -43,7 +43,7 @@
   margin: 0;
   font-size: 1.05rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .modal-close-button {
@@ -52,7 +52,7 @@
   font-size: 1.75rem;
   line-height: 1;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--color-font-note);
   padding: 0;
   width: 32px;
   height: 32px;
@@ -87,7 +87,7 @@
 .modal-hint {
   margin: 0 0 1rem;
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--color-font-note);
   line-height: 1.4;
 }
 
@@ -114,7 +114,7 @@
 
 .modal-label {
   font-weight: 700;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .modal-section-row {
@@ -126,7 +126,7 @@
 
 .modal-section-row__label {
   font-weight: 700;
-  color: #374151;
+  color: var(--color-font-dark);
   font-size: 0.95rem;
 }
 
@@ -206,7 +206,7 @@
 
 .modal-prompt__title {
   margin: 0 0 0.75rem;
-  color: #111827;
+  color: var(--color-font-dark);
   font-size: var(--modal-prompt-title-size, 1.25rem);
   font-weight: 900;
 }
@@ -218,7 +218,7 @@
 
 .modal-prompt__message {
   margin: 0 0 1rem;
-  color: #6b7280;
+  color: var(--color-font-note);
   line-height: 1.5;
   white-space: pre-line;
 }
@@ -277,7 +277,7 @@
 .modal-form-group label {
   display: block;
   margin-bottom: 0.35rem;
-  color: #374151;
+  color: var(--color-font-dark);
   font-weight: 700;
 }
 
@@ -293,7 +293,7 @@
 
 .modal-form-hint {
   margin: 0.25rem 0 0.75rem;
-  color: #6b7280;
+  color: var(--color-font-note);
   font-size: 0.9rem;
 }
 
@@ -314,7 +314,7 @@
   cursor: pointer;
   transition: background 0.2s, transform 0.05s;
   background: #fff;
-  color: #374151;
+  color: var(--color-font-dark);
   border: 1px solid #d1d5db;
 }
 

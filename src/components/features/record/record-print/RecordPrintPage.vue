@@ -435,7 +435,7 @@ onUnmounted(() => {
 }
 
 .print-loading {
-  color: #6b7280;
+  color: var(--color-font-note);
   font-weight: 700;
   padding: 1rem 0;
   text-align: center;

@@ -225,7 +225,7 @@ function removeValue(v) {
   padding: 0.25rem 0.5rem;
   border-radius: 999px;
   background: rgba(17, 24, 39, 0.06);
-  color: #111827;
+  color: var(--color-font-dark);
   font-size: 0.85rem;
   font-weight: 800;
 }
@@ -237,7 +237,7 @@ function removeValue(v) {
   font-size: 1rem;
   line-height: 1;
   padding: 0;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .multiple-selection__chip-remove:disabled {
@@ -281,7 +281,7 @@ function removeValue(v) {
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
-  color: #111827;
+  color: var(--color-font-option);
   display: flex;
   align-items: center;
   justify-content: space-between;

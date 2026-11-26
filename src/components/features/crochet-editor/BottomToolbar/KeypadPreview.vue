@@ -38,15 +38,15 @@ const caretHere = computed(() => props.activePath.length === 0)
 <style scoped>
 .keypad-preview {
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--color-font-dark);
   line-height: 1.9;
 }
 
 .keypad-preview__sep {
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .keypad-preview__empty {
-  color: #9ca3af;
+  color: var(--color-font-note);
 }
 </style>

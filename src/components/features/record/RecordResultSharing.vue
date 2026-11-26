@@ -252,7 +252,7 @@ defineExpose({
   font-size: 1.5rem;
   font-weight: 900;
   line-height: 1.3;
-  color: #111827;
+  color: var(--color-font-dark);
   letter-spacing: 0.01em;
   text-align: left;
 }
@@ -261,7 +261,7 @@ defineExpose({
   margin: 0;
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--color-font-invisible);
+  color: var(--color-font-note);
   opacity: 0.5;
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -285,7 +285,7 @@ defineExpose({
 .extra-note-card__body {
   margin: 0;
   white-space: pre-line;
-  color: #111827;
+  color: var(--color-font-dark);
   font-weight: 600;
   line-height: 1.55;
   font-size: 0.95rem;

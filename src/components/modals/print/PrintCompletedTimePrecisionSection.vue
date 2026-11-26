@@ -95,7 +95,7 @@ const previewTimeText = computed(() => {
   margin: 0 0 0.65rem;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .completed-time-precision__preview {
@@ -106,7 +106,7 @@ const previewTimeText = computed(() => {
   border: 1px solid rgba(17, 24, 39, 0.1);
   font-size: 0.85rem;
   font-weight: 800;
-  color: #374151;
+  color: var(--color-font-dark);
   text-align: center;
   line-height: 1.45;
   font-variant-numeric: tabular-nums;
@@ -134,7 +134,7 @@ const previewTimeText = computed(() => {
   text-align: center;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #9ca3af;
+  color: var(--color-font-note);
 }
 
 .completed-time-precision__tick--active {

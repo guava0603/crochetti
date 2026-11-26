@@ -265,13 +265,13 @@ defineExpose({
 .group-summary {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .row-index {
   font-size: 0.9rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .edit-row-main {
@@ -309,7 +309,7 @@ defineExpose({
 .count-section label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-font-dark);
   white-space: nowrap;
 }
 
@@ -321,7 +321,7 @@ defineExpose({
   border: none;
   cursor: pointer;
   background: var(--color-surface-sheet);
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .toggle-button {

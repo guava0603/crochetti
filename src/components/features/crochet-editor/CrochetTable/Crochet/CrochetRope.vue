@@ -47,7 +47,7 @@ const repeatSuffix = computed(() => {
 
 <style scoped>
 .rope-count {
-  color: #6b7280;
+  color: var(--color-font-note);
   font-weight: 600;
 }
 </style>

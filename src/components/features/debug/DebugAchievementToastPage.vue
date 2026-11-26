@@ -213,7 +213,7 @@ function toggleLongText() {
 .field__label {
   font-size: 0.85rem;
   font-weight: 800;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .field__control {
@@ -222,7 +222,7 @@ function toggleLongText() {
   border: 1px solid rgba(0, 0, 0, 0.12);
   padding: 0 0.75rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-font-dark);
   background: #fff;
 }
 
@@ -246,14 +246,14 @@ function toggleLongText() {
 .btn--ghost {
   border-color: rgba(0, 0, 0, 0.12);
   background: transparent;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .hint {
   margin: 0;
   font-size: 0.9rem;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .stage {
@@ -266,7 +266,7 @@ function toggleLongText() {
 .stage__text {
   margin: 0 0 0.75rem;
   font-weight: 800;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .stage__block {
@@ -276,6 +276,6 @@ function toggleLongText() {
   padding: 1rem;
   margin: 0.6rem 0;
   font-weight: 800;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 </style>

@@ -45,7 +45,7 @@ const { t } = useI18n({ useScope: 'global' })
   padding: 0.35rem 0.6rem;
   font-weight: 800;
   cursor: pointer;
-  color: #374151;
+  color: var(--color-font-dark);
   flex: none;
 }
 

@@ -75,12 +75,12 @@ function handleSave() {
   display: block;
   font-weight: 800;
   margin-bottom: 0.5rem;
-  color: #374151;
+  color: var(--color-font-dark);
 }
 
 .hint {
   margin-top: 0.5rem;
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 </style>

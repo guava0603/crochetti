@@ -1,5 +1,5 @@
 <template>
-	<div class="crochet-table-shell">
+	<div v-if="hasStitches" class="crochet-table-shell">
 		<div v-if="showTranslateButton" class="crochet-table__corner-actions" @click.stop>
 			<ButtonTranslate />
 		</div>
@@ -38,7 +38,7 @@ import { computed, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 import CrochetRow from './Crochet/CrochetRow.vue'
 import ButtonTranslate from '@/components/shared/buttons/svg/ButtonTranslate.vue'
-import { isRowContainerGroupedStart } from '@/utils/crochetTable.js'
+import { hasStitchData, isRowContainerGroupedStart } from '@/utils/crochetTable.js'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -105,6 +105,9 @@ if (props.showZhRepeatOverride !== null && props.showZhRepeatOverride !== undefi
 if (props.stitchLookup) provide('stitchLookup', props.stitchLookup)
 
 const type = 'view'
+
+// No stitch data (no rows, or only empty rows): hide the whole table.
+const hasStitches = computed(() => hasStitchData(props.modelValue))
 
 const visibleRows = computed(() => {
 	return Array.isArray(props.modelValue) ? props.modelValue : []

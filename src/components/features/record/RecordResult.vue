@@ -666,7 +666,7 @@ onUnmounted(() => {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .result-header {
@@ -769,7 +769,7 @@ onUnmounted(() => {
   line-height: 1.2;
   margin: 0;
   padding: 0.5rem 0.0;
-  color: var(--color-font-invisible);
+  color: var(--color-font-note);
   font-weight: 800;
   font-size: 0.85rem;
   letter-spacing: 0.01em;
@@ -777,7 +777,7 @@ onUnmounted(() => {
 }
 
 .summary-line > span {
-  color: var(--color-font-invisible);
+  color: var(--color-font-note);
   font-weight: 800;
   font-size: 0.85rem;
   letter-spacing: 0.01em;
@@ -786,7 +786,7 @@ onUnmounted(() => {
 
 .result-empty {
   margin-top: 0.75rem;
-  color: #6b7280;
+  color: var(--color-font-note);
   font-weight: 700;
 }
 
@@ -837,7 +837,7 @@ onUnmounted(() => {
 
 .top-badge__title {
   font-weight: 950;
-  color: #111827;
+  color: var(--color-font-dark);
   font-size: 1.85rem;
   line-height: 1.05;
   white-space: nowrap;
@@ -850,7 +850,7 @@ onUnmounted(() => {
   margin-top: 0.35rem;
   font-weight: 800;
   font-size: 0.95rem;
-  color: rgba(17, 24, 39, 0.55);
+  color: var(--color-font-note);
   font-variant-numeric: tabular-nums;
 }
 
@@ -869,14 +869,14 @@ onUnmounted(() => {
 .metric-value {
   font-weight: 900;
   font-size: 1.15rem;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .metric-label {
   margin-bottom: 0.3rem;
   font-weight: 800;
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--color-font-note);
   text-align: center;
 }
 
@@ -893,7 +893,7 @@ onUnmounted(() => {
 
 .rest-title {
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
   margin-top: 2rem;
 }
 
@@ -949,7 +949,7 @@ onUnmounted(() => {
 
 .rest-card-title {
   font-weight: 900;
-  color: #111827;
+  color: var(--color-font-dark);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -958,7 +958,7 @@ onUnmounted(() => {
 
 .rest-card-sub {
   font-weight: 700;
-  color: var(--color-font-invisible);
+  color: var(--color-font-note);
   display: flex;
   gap: 0.35rem;
 }
@@ -972,11 +972,11 @@ onUnmounted(() => {
 }
 
 .dot {
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .more-hint {
-  color: #6b7280;
+  color: var(--color-font-note);
   font-weight: 800;
 }
 

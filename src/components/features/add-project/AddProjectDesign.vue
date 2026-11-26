@@ -711,7 +711,7 @@ defineExpose({
 .section-header__right-label {
 	font-size: 0.9rem;
 	font-weight: 800;
-	color: #374151;
+	color: var(--color-font-dark);
 	white-space: nowrap;
 }
 

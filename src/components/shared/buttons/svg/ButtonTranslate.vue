@@ -229,7 +229,7 @@ onUnmounted(() => {
   font-family: inherit;
   font-size: 0.7rem;
   line-height: 1;
-  color: var(--color-font-dark, #111827);
+  color: var(--color-font-option);
   cursor: pointer;
   white-space: nowrap;
   border-radius: 0;
@@ -249,7 +249,7 @@ onUnmounted(() => {
 
 .translate-toggle__option.is-selected {
   background-color: rgba(17, 24, 39, 0.06);
-  color: #1f2937;
+  color: var(--color-font-dark);
   font-weight: 600;
   box-shadow:
     inset 1px 1px 4px rgba(0, 0, 0, 0.08),

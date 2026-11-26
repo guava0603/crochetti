@@ -83,16 +83,16 @@ const handleChildSelectionChange = (nIndex, nextSelectionList) => {
 <style scoped>
 .bundle {
   display: inline-block;
-  color: #111827;
+  color: var(--color-font-dark);
 }
 
 .bundle-paren {
-  color: #6b7280;
+  color: var(--color-font-note);
   font-weight: 600;
 }
 
 .bundle-sep {
-  color: #6b7280;
+  color: var(--color-font-note);
 }
 
 .bundle-item {
