@@ -11,7 +11,7 @@ The keypad owns a draft of the **whole row** plus a cursor `containerPath` (indi
 `src/utils/keypadEdit.js`; EditCrochet emits `{ list, replaceWholeRow: true }` on every change.
 
 ## Sections
-- **Stitch** — always shown. Appends to the current container.
+- **Stitch** — always shown. Inserts at the caret (insertion point) in the current container.
 - **Pattern** (`重複花樣`) — appends an empty pattern ×1 and moves into it.
   Shown at the root, or inside a pattern **that already has children** (rule 1). Hidden in a bundle.
 - **Same stitch** (`在同一針目裡`) — appends an empty bundle (consume 1) and moves into it.
@@ -24,7 +24,8 @@ The keypad owns a draft of the **whole row** plus a cursor `containerPath` (indi
 
 ## Navigation
 - While a pattern/bundle is selected, the bottom bar's 取消/儲存 become a single **確認** (`confirmSelection`): it goes to the parent level; leaving an empty container removes it. At the root the normal 取消/儲存 show. There is no last-page button.
-- Delete-last: pops the last child; on an empty container removes it and goes to the parent.
+- Caret: index 0…childCount inside the current container (`KeypadCaret`, moved with the `KeypadCaretButton` ◀ (left of the input display) / ▶ (right of it, before delete) or by tapping a direct child). It never leaves the current container; inserts go at the caret, entering a container puts it at 0 (new) or the end (tapped), 確認 puts it right after the container left.
+- Delete (backspace): removes the node before the caret; at the start of an empty container removes it and goes to the parent.
 - Save prunes empty patterns/bundles (`pruneEmptyContainers`).
 
 The root is never a pattern. There is no "change stitch" / "add to bundle" selection mode.

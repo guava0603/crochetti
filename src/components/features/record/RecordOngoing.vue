@@ -14,6 +14,7 @@
           :items="componentList"
           item-width="100%"
           :disable-gesture="false"
+          fit-height-to-active-item
           @active-index-change="handleCarouselActiveIndexChange"
           class="record-component-carousel"
         >
@@ -116,6 +117,7 @@ import {
 } from '@/utils/recordProgressGenerate.js'
 import CrochetRecordingTable from '@/components/features/crochet-editor/CrochetTable/RecordingTable.vue'
 import CarouselWithDot from '@/components/shared/carousel/CarouselWithDot.vue'
+import { scrollElementToCenterY, scrollPageToStartY } from '@/utils/recordScroll'
 import ComponentCardStitch from '@/components/features/project/component-card/Stitch.vue'
 import { DEFAULT_STATUS_ID, originalStatuses } from '@/constants/status.js'
 import { MIN_CUSTOM_STATUS_ID } from '@/constants/recordStatusCatalog'
@@ -281,6 +283,7 @@ watch(
         componentCarouselRef.value?.scrollToIndex?.(clampComponentIndex(next))
         await nextTick()
         applySelectionForSelectedComponent()
+        scrollToComponentPosition(clampComponentIndex(next))
       })()
       return
     }
@@ -300,8 +303,32 @@ watch(
 
 const handleCarouselActiveIndexChange = async (idx) => {
   await nextTick()
-  selectedComponentIndex.value = clampComponentIndex(idx)
+  const cIdx = clampComponentIndex(idx)
+  const switched = cIdx !== selectedComponentIndex.value
+  selectedComponentIndex.value = cIdx
   applySelectionForSelectedComponent()
+  if (switched) scrollToComponentPosition(cIdx)
+}
+
+// After switching component, bring its position of work into view: the located stitch
+// (centered). Only a not-started component has none; then go to the page start.
+// Waits for the carousel's height transition (0.25s) so the page has its final height.
+let positionScrollToken = 0
+const scrollToComponentPosition = async (cIdx) => {
+  const token = ++positionScrollToken
+  await nextTick()
+  await new Promise((resolve) => setTimeout(resolve, 300))
+  if (token !== positionScrollToken) return
+
+  const item = recordViewRef.value?.querySelectorAll('.record-component-carousel .carousel__item')?.[cIdx]
+  if (!item) return
+
+  const located = item.querySelector('.located')
+  if (located) {
+    scrollElementToCenterY(located)
+    return
+  }
+  scrollPageToStartY(item)
 }
 
 // NOTE: generate/progress helpers are shared in `src/utils/*`.
@@ -560,7 +587,9 @@ const applySelectionForSelectedComponent = () => {
     return
   }
 
+  // Finished components saved before they kept an end_at: locate their last stitch.
   const endAt = component?.end_at
+    || (component?.is_completed === true ? getLastEndAtForComponent(component) : null)
   if (!endAt) {
     clearSelection()
     return
@@ -580,7 +609,7 @@ const applySelectionForSelectedComponent = () => {
   const nextCrochetCount = clampCrochetCount(endAt?.crochet_count, baseGenerate)
   if (nextCrochetCount !== Number(endAt?.crochet_count)) {
     endAt.crochet_count = nextCrochetCount
-    currentRecord.value.component_list[cIdx].end_at.crochet_count = nextCrochetCount
+    if (component.end_at) currentRecord.value.component_list[cIdx].end_at.crochet_count = nextCrochetCount
   }
 
   const selectionList = endAtToSelectionList(base_row, endAt, selfDefinedCtx.list.value)
@@ -734,7 +763,9 @@ const handleFinishComponent = async () => {
   const list = currentRecord.value?.component_list
   if (!Array.isArray(list) || !list[targetIdx]) return
 
-  currentRecord.value.component_list[targetIdx].end_at = null
+  // A finished component stays located on its last row's last stitch
+  // (only a not-started component has no end_at).
+  currentRecord.value.component_list[targetIdx].end_at = getLastEndAtForComponent(list[targetIdx])
   currentRecord.value.component_list[targetIdx].is_completed = true
 
   if (isRecording.value) {
@@ -1103,29 +1134,6 @@ watch(isComponentEditing, async (isEditing) => {
   border-radius: 2em;
   box-shadow: 0 2px 8px rgb(var(--color-icon-add-rgb) / 0.12);
   z-index: 10;
-}
-
-/* Bottom-left dock: record options panel + crochetting toggle button */
-.home-latest-record-dock {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.625rem;
-}
-
-.home-latest-record-panel {
-  position: absolute;
-  left: 0;
-  bottom: calc(4rem + 0.625rem);
-  width: 100%;
-  z-index: 1;
-}
-
-.home-latest-record-panel.is-hidden {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
 }
 
 </style>

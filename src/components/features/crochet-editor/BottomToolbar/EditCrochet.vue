@@ -3,23 +3,26 @@
     <div class="edit-crochet__body">
       <!-- Input display: whole row, current pattern/bundle highlighted -->
       <div class="input-row">
+        <KeypadCaretButton direction="left" :disabled="caret <= 0" @move="moveCaret" />
         <div class="input-display">
           <KeypadPreview
             :row-list="draftRow"
             :active-path="containerPath"
+            :caret="caret"
             @pick="handlePreviewPick"
             @update-count="handleUpdateCount"
           />
         </div>
+        <KeypadCaretButton direction="right" :disabled="caret >= currentChildCount" @move="moveCaret" />
         <ThinIconButton
           class="input-row__delete"
           src="137__previous"
           size="m"
           background="transparent"
-          :disabled="!canDeleteLast"
-          :aria-label="t('toolbar.editCrochet.deleteLast')"
-          :title="t('toolbar.editCrochet.deleteLast')"
-          @click="handleDeleteLast"
+          :disabled="!canDeleteBefore"
+          :aria-label="t('toolbar.editCrochet.deleteBefore')"
+          :title="t('toolbar.editCrochet.deleteBefore')"
+          @click="handleDeleteBefore"
         />
       </div>
 
@@ -76,23 +79,26 @@ import { ref, computed, watch, nextTick, inject, unref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AddCrochet from '@/components/features/crochet-editor/BottomToolbar/AddCrochet.vue'
 import KeypadPreview from '@/components/features/crochet-editor/BottomToolbar/KeypadPreview.vue'
+import KeypadCaretButton from '@/components/features/crochet-editor/BottomToolbar/KeypadCaretButton.vue'
 import ThinIconButton from '@/components/shared/buttons/ThinIconButton.vue'
 import { BasicStitch, createSimpleStitch } from '@/constants/crochetData.js'
 import { openConfirmation } from '@/services/ui/confirmation'
 import {
-  appendNode,
-  canRemoveLast,
+  canRemoveBefore,
   canStartBundle,
   canStartPattern,
+  clampCaret,
   findLeafContainerPath,
+  getContainerChildren,
   getContainerKind,
   insertEmptyBundle,
   insertEmptyPattern,
+  insertNode,
   isValidContainerPath,
   leaveContainer,
   moveToContainer,
   pruneEmptyContainers,
-  removeLast,
+  removeBefore,
   setContainerCount
 } from '@/utils/keypadEdit'
 
@@ -140,6 +146,8 @@ const clone = (v) => JSON.parse(JSON.stringify(v ?? []))
 
 const draftRow = ref(clone(props.rowCopy))
 const containerPath = ref([])
+// Insertion point: index inside the current container (0…its child count).
+const caret = ref(draftRow.value.length)
 const touched = ref(false)
 
 const isDirty = computed(() => touched.value)
@@ -148,6 +156,7 @@ watch(isDirty, (next) => emit('dirty-change', next), { immediate: true })
 const resetFromRow = () => {
   draftRow.value = clone(props.rowCopy)
   containerPath.value = []
+  caret.value = draftRow.value.length
   touched.value = false
 }
 
@@ -167,9 +176,14 @@ const containerKind = computed(() => getContainerKind(draftRow.value, containerP
 const isInBundle = computed(() => containerKind.value === 'bundle')
 const showPatternSection = computed(() => canStartPattern(draftRow.value, containerPath.value))
 const showBundleSection = computed(() => canStartBundle(draftRow.value, containerPath.value))
-const canDeleteLast = computed(() => canRemoveLast(draftRow.value, containerPath.value))
+const canDeleteBefore = computed(() => canRemoveBefore(draftRow.value, containerPath.value, caret.value))
+const currentChildCount = computed(() => getContainerChildren(draftRow.value, containerPath.value).length)
 
-const commit = ({ root, containerPath: nextPath } = {}) => {
+/**
+ * Apply a helper result: new row, new container and/or new caret. The caret is always
+ * clamped to the (new) current container, so it can never leave the selected domain.
+ */
+const commit = ({ root, containerPath: nextPath, caret: nextCaret } = {}) => {
   if (Array.isArray(root)) {
     draftRow.value = root
     touched.value = true
@@ -178,6 +192,12 @@ const commit = ({ root, containerPath: nextPath } = {}) => {
   if (Array.isArray(nextPath)) {
     containerPath.value = isValidContainerPath(draftRow.value, nextPath) ? nextPath : []
   }
+  caret.value = clampCaret(draftRow.value, containerPath.value, nextCaret ?? caret.value)
+}
+
+/** ◀ / ▶: move the insertion point by one inside the current container. */
+const moveCaret = (delta) => {
+  caret.value = clampCaret(draftRow.value, containerPath.value, caret.value + delta)
 }
 
 const handleAddCrochet = (payload) => {
@@ -191,28 +211,28 @@ const handleAddCrochet = (payload) => {
   } catch {
     return
   }
-  commit({ root: appendNode(draftRow.value, containerPath.value, node, stitchLookup.value) })
+  commit(insertNode(draftRow.value, containerPath.value, caret.value, node, stitchLookup.value))
 }
 
 const handleAddRope = (rope) => {
   if (isInBundle.value) return
   if (!rope || rope.type !== 'rope') return
-  commit({ root: appendNode(draftRow.value, containerPath.value, rope, stitchLookup.value) })
+  commit(insertNode(draftRow.value, containerPath.value, caret.value, rope, stitchLookup.value))
 }
 
 const handleStartPattern = () => {
   if (!showPatternSection.value) return
-  commit(insertEmptyPattern(draftRow.value, containerPath.value, stitchLookup.value))
+  commit(insertEmptyPattern(draftRow.value, containerPath.value, stitchLookup.value, caret.value))
 }
 
 const handleStartBundle = () => {
   if (!showBundleSection.value) return
-  commit(insertEmptyBundle(draftRow.value, containerPath.value, stitchLookup.value))
+  commit(insertEmptyBundle(draftRow.value, containerPath.value, stitchLookup.value, caret.value))
 }
 
 const commitIfChanged = (result) => {
   const changed = JSON.stringify(result.root) !== JSON.stringify(draftRow.value)
-  commit({ root: changed ? result.root : undefined, containerPath: result.containerPath })
+  commit({ root: changed ? result.root : undefined, containerPath: result.containerPath, caret: result.caret })
 }
 
 // 確認 in the bottom bar (EditRowCrochetTabs) confirms the selected pattern/bundle and
@@ -225,14 +245,26 @@ const confirmSelection = () => {
 const isInContainer = computed(() => containerPath.value.length > 0)
 watch(isInContainer, (next) => emit('selection-change', next), { immediate: true })
 
-const handleDeleteLast = () => {
-  if (!canDeleteLast.value) return
-  commit(removeLast(draftRow.value, containerPath.value, stitchLookup.value))
+// Delete (backspace): remove the node before the insertion point.
+const handleDeleteBefore = () => {
+  if (!canDeleteBefore.value) return
+  commit(removeBefore(draftRow.value, containerPath.value, caret.value, stitchLookup.value))
 }
 
-// Clicking a node selects the deepest pattern or bundle containing it; outside both nothing happens.
+// Tapping a node:
+// - a stitch/rope directly in the current domain moves the insertion point right after it;
+// - otherwise, the deepest pattern or bundle containing it is selected (caret at its end);
+// - outside both nothing happens.
 const handlePreviewPick = (nodePath) => {
-  const target = findLeafContainerPath(draftRow.value, nodePath)
+  const path = Array.isArray(nodePath) ? nodePath : []
+  const here = containerPath.value
+  const isDirectChild = path.length === here.length + 1 && here.every((v, i) => v === path[i])
+  const target = findLeafContainerPath(draftRow.value, path)
+  const tappedContainer = target && target.length === path.length
+  if (isDirectChild && !tappedContainer) {
+    caret.value = clampCaret(draftRow.value, here, path[path.length - 1] + 1)
+    return
+  }
   if (!target) return
   commitIfChanged(moveToContainer(draftRow.value, containerPath.value, target, stitchLookup.value))
 }
@@ -308,7 +340,12 @@ defineExpose({
   flex: none;
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
+  gap: 0.25rem;
+}
+
+/* ◀ [input display] ▶ ⌫ — same space on both sides of the display. */
+.input-display {
+  margin: 0 0.25rem;
 }
 
 .input-row__delete {

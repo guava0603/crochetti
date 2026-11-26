@@ -52,7 +52,7 @@ import { useAppBanner } from '@/composables/appBanner'
 
 import { expandComponentListByCount, normalizeRecordForComponentCountsInPlace } from '@/utils/componentInstances'
 import AddRecordFeedbackModal from '@/components/modals/record/AddRecordFeedbackModal.vue'
-import { getLastEndAtForComponent, getRecordProgressPercent } from '@/utils/recordProgressGenerate'
+import { getRecordProgressPercent } from '@/utils/recordProgressGenerate'
 import { toMs } from '@/utils/toMs'
 
 import { openConfirmation } from '@/services/ui/confirmation'
@@ -493,9 +493,10 @@ async function handleRestartRecord() {
   const list = Array.isArray(recordData.value.component_list) ? recordData.value.component_list : []
   const nextList = list.map((c) => {
     if (!c || typeof c !== 'object') return c
+    // Restart = start over: every component back to not started (0%, nothing located).
     return {
       ...c,
-      end_at: getLastEndAtForComponent(c),
+      end_at: null,
       is_completed: false
     }
   })

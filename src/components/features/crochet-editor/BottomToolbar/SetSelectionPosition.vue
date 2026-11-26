@@ -18,6 +18,7 @@
             :max="Math.max(1, size)"
             @update:modelValue="(value) => handleCountChange(idx, value)"
           />
+          <span class="level-size level-total">/{{ Math.max(1, size) }}</span>
           <div class="level-label"> {{ t('toolbar.setSelectionPosition.groupSuffix') }}</div>
         </div>
       </div>
@@ -213,14 +214,6 @@ const handleCancel = () => {
   color: #6b7280;
 }
 
-.level-select {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  color: #111827;
-}
-
 .level-input {
   margin: 0 0.3rem;
 }
@@ -277,9 +270,16 @@ const handleCancel = () => {
   background: #369970;
 }
 
+/* 第 [n] /5 組: every piece sits on the same text baseline, so the smaller total
+   stays on the row's bottom line. */
 .level-input-label-wrapper {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: baseline;
+}
+
+.level-total {
+  margin-right: 0.15rem;
+  font-variant-numeric: tabular-nums;
 }
 </style>

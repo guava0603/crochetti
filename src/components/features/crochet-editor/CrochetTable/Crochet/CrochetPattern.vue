@@ -37,9 +37,15 @@
         <span v-if="(node.count || 1) > 1" class="compact-count">{{ node.count }}</span>
         <span
           class="compact-inner"
-          :class="{ selected: compactInnerSelected, clickable: tableType !== 'view' }"
+          :class="{
+            selected: compactInnerSelected && tableType !== 'record',
+            'locate-box': tableType === 'record',
+            located: compactInnerSelected && tableType === 'record',
+            clickable: tableType !== 'view'
+          }"
           @click.stop="handleCompactInnerDrill"
         >
+          <LocatedArrow v-if="compactInnerSelected && tableType === 'record'" />
           <component
             :is="StitchComponent"
             :stitch-id="node.pattern[0].stitch_id"
@@ -76,6 +82,7 @@ import { useCrochetLang } from '@/composables/useCrochetLang'
 import CrochetStitch from './CrochetStitch.vue'
 import CrochetBundle from './CrochetBundle.vue'
 import CrochetNode from './CrochetNode.vue'
+import LocatedArrow from './LocatedArrow.vue'
 
 const props = defineProps({
   node: {
@@ -215,6 +222,18 @@ const handleLongPatternShellClick = () => {
 .compact-inner.selected {
   background: var(--color-selected-active);
   border-color: var(--color-selected);
+}
+
+.compact-inner.locate-box {
+  --located-border: 3px;
+  position: relative;
+  border: var(--located-border) solid transparent;
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.compact-inner.locate-box.located {
+  border-color: rgb(var(--color-icon-add-rgb) / 0.55);
 }
 
 </style>

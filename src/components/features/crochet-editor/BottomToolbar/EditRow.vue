@@ -28,7 +28,7 @@
           />
         </div>
       </div>
-      <div>
+      <div class="edit-row-body">
         <div v-if="isGroupMode" class="group-summary">
           <span>{{ t('common.repeatRowGroupPrefix', { n: props.groupRowSpan, m: '' }) }}</span>
           <InputNumber
@@ -54,7 +54,6 @@
           <label>{{ t('common.rowUnit') }}</label>
         </div>
         <div class="edit-row-utility">
-
           <button
             type="button"
             class="secondary-button"
@@ -241,28 +240,32 @@ defineExpose({
   gap: 2em;
 }
 
+/* Repeat count, then the utility groups: one even rhythm (0.75rem) between every block,
+   and the same 0.75rem between each divider and its buttons. */
+.edit-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .edit-row-utility {
   display: flex;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
   flex-wrap: wrap;
-  padding-top: 1.2rem;
-  margin-top: 1.5rem;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
   border-top: 1px solid #e5e7eb;
 }
 
+/* Labels stay on one line, centered. */
+.edit-row-utility > .secondary-button {
+  white-space: nowrap;
+  text-align: center;
+}
+
 .group-summary {
-  margin-top: 0.25rem;
   font-size: 0.8rem;
   font-weight: 700;
   color: #374151;
-}
-
-.count-locked {
-  margin-top: 0.25rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #6b7280;
 }
 
 .row-index {
@@ -310,14 +313,15 @@ defineExpose({
   white-space: nowrap;
 }
 
-.secondary-button,
-.primary-button {
+.secondary-button {
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
   font-size: 0.875rem;
   font-weight: 600;
   border: none;
   cursor: pointer;
+  background: var(--color-surface-sheet);
+  color: #374151;
 }
 
 .toggle-button {
@@ -331,10 +335,6 @@ defineExpose({
   color: var(--color-selected);
 }
 
-.toggle-button:hover {
-  background: var(--color-selected-active);
-}
-
 .toggle-button.selected {
   border-color: var(--color-selected);
 }
@@ -342,11 +342,6 @@ defineExpose({
 .toggle-button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-}
-
-.secondary-button {
-  background: var(--color-surface-sheet);
-  color: #374151;
 }
 
 .secondary-button:hover {

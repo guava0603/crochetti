@@ -65,6 +65,12 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  // Shown as selected without being the row being edited (e.g. the other rows of a
+  // multi-row selection / row group).
+  isSelected: {
+    type: Boolean,
+    default: false
+  },
   tableType: {
     type: String,
     required: true,
@@ -94,8 +100,8 @@ const handleDisplaySelectionChange = (nextSelectionList) => {
 
 const rowRootClasses = computed(() => {
   return {
-    'row-editor': props.isEditing,
-    'row-card': !props.isEditing,
+    'row-editor': props.isEditing || props.isSelected,
+    'row-card': !props.isEditing && !props.isSelected,
     clickable: !props.isEditing && props.tableType === 'edit'
   }
 })

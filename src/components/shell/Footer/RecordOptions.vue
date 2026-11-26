@@ -495,12 +495,19 @@ const actions = {
   max-width: none;
   border-radius: 40% 40% 0 0;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  /* Same bottom gap as the side ThinIconButtons (size l, 2.5rem, centered in the
+     4rem dock square): (4rem - 2.5rem) / 2 above the safe area. On iOS
+     (viewport-fit=cover) the safe area is the home-indicator strip; 0 elsewhere. */
+  padding-bottom: calc(
+    var(--bottom-footer-padding-bottom) + (var(--bottom-footer-dock-side-width) - 2.5rem) / 2
+  );
 }
 
 .top-overlay-box.is-completed-record {
   display: grid;
   place-items: center;
-  padding: 0;
+  /* Center the logo above the home-indicator strip, like the side buttons. */
+  padding: 0 0 var(--bottom-footer-padding-bottom);
 }
 
 .top-overlay-box.is-clickable {

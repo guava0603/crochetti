@@ -1,19 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import { calculateConsumeGenerateCore } from './crochetStatsCore.js'
 import {
-  appendNode,
-  canRemoveLast,
+  canRemoveBefore,
+  clampCaret,
   canStartBundle,
   canStartPattern,
   findLeafContainerPath,
-  getContainerCount,
   getContainerKind,
   insertEmptyBundle,
   insertEmptyPattern,
   leaveContainer,
   moveToContainer,
   pruneEmptyContainers,
-  removeLast,
+  removeBefore,
+  insertNode,
   setContainerCount
 } from './keypadEdit.js'
 
@@ -24,17 +24,20 @@ const lookup = {
 const x = { type: 'stitch', stitch_id: 1 }
 const v = { type: 'stitch', stitch_id: 2 }
 
+// Insert at the end of a container (caret past the last child).
+const appendNode = (root, containerPath, node) => insertNode(root, containerPath, undefined, node, lookup).root
+
 describe('keypadEdit', () => {
   it('appends stitches at root and into a new pattern', () => {
-    let root = appendNode([], [], x, lookup)
+    let root = appendNode([], [], x)
     expect(root).toEqual([x])
 
     const started = insertEmptyPattern(root, [], lookup)
     expect(started.containerPath).toEqual([1])
     expect(getContainerKind(started.root, [1])).toBe('pattern')
 
-    root = appendNode(started.root, started.containerPath, v, lookup)
-    root = appendNode(root, started.containerPath, x, lookup)
+    root = appendNode(started.root, started.containerPath, v)
+    root = appendNode(root, started.containerPath, x)
     expect(root[1].pattern).toEqual([v, x])
     // Patterns store no stats; totals come from their children.
     expect(root[1]).not.toHaveProperty('generate')
@@ -43,7 +46,7 @@ describe('keypadEdit', () => {
 
   it('does not mutate its input', () => {
     const root = [x]
-    appendNode(root, [], v, lookup)
+    appendNode(root, [], v)
     insertEmptyPattern(root, [], lookup)
     expect(root).toEqual([x])
   })
@@ -52,7 +55,7 @@ describe('keypadEdit', () => {
     expect(canStartPattern([], [])).toBe(true)
     const { root, containerPath } = insertEmptyPattern([], [], lookup)
     expect(canStartPattern(root, containerPath)).toBe(false)
-    const filled = appendNode(root, containerPath, x, lookup)
+    const filled = appendNode(root, containerPath, x)
     expect(canStartPattern(filled, containerPath)).toBe(true)
   })
 
@@ -61,47 +64,76 @@ describe('keypadEdit', () => {
     expect(getContainerKind(root, containerPath)).toBe('bundle')
     expect(canStartPattern(root, containerPath)).toBe(false)
     expect(canStartBundle(root, containerPath)).toBe(false)
-    const next = appendNode(appendNode(root, containerPath, x, lookup), containerPath, x, lookup)
+    const next = appendNode(appendNode(root, containerPath, x), containerPath, x)
     expect(next[1]).toMatchObject({ type: 'bundle', consume: 1, generate: 2, bundle: [x, x] })
   })
 
   it('×n applies to the current pattern or bundle, never the root', () => {
     const { root, containerPath } = insertEmptyPattern([], [], lookup)
-    const filled = appendNode(root, containerPath, x, lookup)
-    expect(getContainerCount(filled, containerPath)).toBe(1)
+    const filled = appendNode(root, containerPath, x)
+    expect(filled[0]).toMatchObject({ type: 'pattern', count: 1 })
     const counted = setContainerCount(filled, containerPath, 6, lookup)
     expect(counted[0]).toMatchObject({ count: 6 })
     expect(calculateConsumeGenerateCore(counted, 1, lookup)).toEqual({ consume: 6, generate: 6 })
-    expect(getContainerCount(counted, [])).toBeNull()
     expect(setContainerCount(counted, [], 3, lookup)).toEqual(counted)
 
     const inBundle = insertEmptyBundle([], [], lookup)
-    const bundled = appendNode(inBundle.root, inBundle.containerPath, x, lookup)
-    expect(getContainerCount(bundled, inBundle.containerPath)).toBe(1)
+    const bundled = appendNode(inBundle.root, inBundle.containerPath, x)
+    expect(bundled[0]).toMatchObject({ type: 'bundle', count: 1 })
     const bundleCounted = setContainerCount(bundled, inBundle.containerPath, 4, lookup)
     expect(bundleCounted[0]).toMatchObject({ type: 'bundle', count: 4 })
     expect(calculateConsumeGenerateCore(bundleCounted, 1, lookup).generate).toBe(4)
   })
 
-  it('last-page leaves the container and drops it when empty', () => {
+  it('確認 leaves the container (dropping it when empty) with the caret after it', () => {
     const { root, containerPath } = insertEmptyPattern([x], [], lookup)
-    expect(leaveContainer(root, containerPath, lookup)).toEqual({ root: [x], containerPath: [] })
+    // Empty: removed, caret stays where the container was.
+    expect(leaveContainer(root, containerPath, lookup)).toEqual({ root: [x], containerPath: [], caret: 1 })
 
-    const filled = appendNode(root, containerPath, v, lookup)
+    const filled = appendNode(root, containerPath, v)
     const left = leaveContainer(filled, containerPath, lookup)
     expect(left.containerPath).toEqual([])
     expect(left.root).toHaveLength(2)
+    expect(left.caret).toBe(2) // right after the pattern at index 1
   })
 
-  it('delete-last pops a child, then removes the empty container', () => {
+  it('inserts at the caret and moves the caret past the new node', () => {
+    const t = { type: 'stitch', stitch_id: 3 }
+    let r = insertNode([x, v], [], 1, t, lookup)
+    expect(r.root).toEqual([x, t, v])
+    expect(r.caret).toBe(2)
+    r = insertNode(r.root, [], 0, v, lookup)
+    expect(r.root).toEqual([v, x, t, v])
+    expect(r.caret).toBe(1)
+    // Out-of-range carets are clamped to the container.
+    expect(insertNode([x], [], 99, v, lookup)).toEqual({ root: [x, v], caret: 2 })
+    expect(clampCaret([x, v], [], -3)).toBe(0)
+    expect(clampCaret([x, v], [], undefined)).toBe(2)
+  })
+
+  it('starts a pattern at the caret, inside the current container', () => {
+    const { root, containerPath, caret } = insertEmptyPattern([x, v], [], lookup, 1)
+    expect(root[1]).toMatchObject({ type: 'pattern', pattern: [] })
+    expect(root[2]).toEqual(v)
+    expect(containerPath).toEqual([1])
+    expect(caret).toBe(0)
+  })
+
+  it('delete removes the node before the caret, then the empty container', () => {
+    let r = removeBefore([x, v], [], 1, lookup)
+    expect(r).toEqual({ root: [v], containerPath: [], caret: 0 })
+    expect(canRemoveBefore(r.root, [], 0)).toBe(false) // nothing before the caret
+    expect(removeBefore(r.root, [], 0, lookup).root).toEqual([v])
+
     const { root, containerPath } = insertEmptyPattern([x], [], lookup)
-    const filled = appendNode(root, containerPath, v, lookup)
-    const once = removeLast(filled, containerPath, lookup)
+    const filled = appendNode(root, containerPath, v)
+    const once = removeBefore(filled, containerPath, 1, lookup)
     expect(once.containerPath).toEqual([1])
     expect(once.root[1].pattern).toEqual([])
-    const twice = removeLast(once.root, once.containerPath, lookup)
-    expect(twice).toEqual({ root: [x], containerPath: [] })
-    expect(canRemoveLast([], [])).toBe(false)
+    expect(once.caret).toBe(0)
+    expect(canRemoveBefore(once.root, once.containerPath, 0)).toBe(true) // empty container
+    expect(removeBefore(once.root, once.containerPath, 0, lookup)).toEqual({ root: [x], containerPath: [], caret: 1 })
+    expect(canRemoveBefore([], [], 0)).toBe(false)
   })
 
   it('preview click selects the deepest pattern or bundle, or nothing', () => {
@@ -128,6 +160,7 @@ describe('keypadEdit', () => {
     expect(moved.root).toHaveLength(2)
     expect(moved.containerPath).toEqual([1])
     expect(moved.root[1].count).toBe(4)
+    expect(moved.caret).toBe(1) // a newly selected container opens with the caret at its end
   })
 
   it('prunes empty containers before saving', () => {
