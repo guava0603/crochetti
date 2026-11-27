@@ -240,13 +240,6 @@ defineExpose({
   box-sizing: border-box;
 }
 
-.sharing-meta {
-  margin: 0 0 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
 .sharing-meta__title {
   margin: 0 0 1rem;
   font-size: 1.5rem;

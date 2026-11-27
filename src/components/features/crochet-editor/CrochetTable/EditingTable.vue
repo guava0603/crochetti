@@ -32,6 +32,7 @@
 				:group-reminder="groupReminderByRowIndex[row.row_index]"
 				:is-editing="isEditing(row.row_index)"
 				:is-selected="isRowSelected(visibleRows[idx])"
+				:verify-row-counts="verifyRowCounts"
 				:table-type="type"
 				@edit-row="handleEditRow"
 				@open-edit-row="handleOpenEditCrochet"
@@ -101,6 +102,11 @@ import { openConfirmation } from '@/services/ui/confirmation'
 const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps({
+	// Color each row's 針數 by comparing with the previous row (off for cast-on 其他).
+	verifyRowCounts: {
+		type: Boolean,
+		default: true
+	},
 	modelValue: {
 		type: Array,
 		required: true

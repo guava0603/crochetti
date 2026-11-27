@@ -676,89 +676,6 @@ onUnmounted(() => {
   gap: 0.75rem;
 }
 
-.result-share-btn {
-  flex: 0 0 auto;
-  border-radius: 999px;
-  border: 1px solid rgba(17, 24, 39, 0.14);
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0px 1px 6px -4px rgba(0,0,0,0.45);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
-}
-
-.result-share-btn:hover {
-  background: rgba(255, 255, 255, 1);
-  border-color: rgba(17, 24, 39, 0.22);
-}
-
-.result-share-btn:active {
-  transform: translateY(1px);
-}
-
-.result-share-btn__icon-mask {
-  width: 20px;
-  height: 20px;
-  background-color: var(--color-icon-base);
-  opacity: 0.9;
-  -webkit-mask: var(--result-share-icon-url) center / contain no-repeat;
-  mask: var(--result-share-icon-url) center / contain no-repeat;
-}
-
-.result-share-btn__icon-img {
-  width: 20px;
-  height: 20px;
-  display: none;
-}
-
-@supports not ((-webkit-mask: url("")) or (mask: url(""))) {
-  .result-share-btn__icon-mask {
-    display: none;
-  }
-
-  .result-share-btn__icon-img {
-    display: block;
-    opacity: 0.85;
-  }
-}
-
-.record-result-view.is-capturing .result-share-btn--floating {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.result-share-btn:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-
-.result-actions {
-  margin-top: 0.75rem;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.btn-more-details {
-  border: 1px solid rgb(var(--color-icon-add-rgb) / 0.35);
-  background: rgb(var(--color-icon-add-rgb) / 0.12);
-  color: #0f5132;
-  border-radius: 10px;
-  padding: 0.6rem 1rem;
-  font-size: 0.95rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.05s, opacity 0.15s;
-}
-
-.btn-more-details:hover {
-  background: rgb(var(--color-icon-add-rgb) / 0.18);
-}
-
-.btn-more-details:active {
-  transform: translateY(1px);
-}
-
 .result-summary {
   margin: 0 0 1.5rem 0;
   display: grid;
@@ -866,20 +783,6 @@ onUnmounted(() => {
   padding: 1.5rem 0.5rem;
 }
 
-.metric-value {
-  font-weight: 900;
-  font-size: 1.15rem;
-  color: var(--color-font-dark);
-}
-
-.metric-label {
-  margin-bottom: 0.3rem;
-  font-weight: 800;
-  font-size: 1rem;
-  color: var(--color-font-note);
-  text-align: center;
-}
-
 .metric-note-chart-wrap {
   display: flex;
   justify-content: stretch;
@@ -973,11 +876,6 @@ onUnmounted(() => {
 
 .dot {
   color: var(--color-font-note);
-}
-
-.more-hint {
-  color: var(--color-font-note);
-  font-weight: 800;
 }
 
 .record-result-view--static :deep(.bar-chart__fill),

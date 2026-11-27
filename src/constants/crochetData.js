@@ -242,8 +242,15 @@ export const CastOn = [
   {
     index: 3,
     nameKey: 'crochet.castOn.oval'
+  },
+  {
+    // 其他: free-form shape; rows are not checked against the previous row's count.
+    index: 4,
+    nameKey: 'crochet.castOn.other'
   }
 ]
+
+export const CAST_ON_OTHER_INDEX = 4
 
 // Localized display helpers (keep data pure; callers provide `t` from vue-i18n)
 export const getStitchDisplayName = (stitch, t) => {

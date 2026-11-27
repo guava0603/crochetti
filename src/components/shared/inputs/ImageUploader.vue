@@ -269,47 +269,10 @@ onBeforeUnmount(() => {
   border-width: 0;
 }
 
-.image-uploader__button {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px dashed var(--color-border-warm);
-  border-radius: 10px;
-  background: var(--color-surface-page);
-  color: var(--color-font-dark);
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.image-uploader__button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.image-uploader__icon {
-  width: 22px;
-  height: 22px;
-}
-
-.image-uploader__hint {
-  margin-top: 8px;
-  font-size: 0.85rem;
-  color: var(--color-font-note);
-}
-
 .image-preview-uploader-conteiner {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-}
-
-.image-preview-uploader-conteiner--contents {
-  display: contents;
-}
-
-.image-uploader--parent-grid {
-  display: contents;
 }
 
 .image-preview-item {

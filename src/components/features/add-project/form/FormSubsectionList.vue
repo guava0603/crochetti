@@ -697,7 +697,6 @@ const isSingleComponentMaterialField = computed(() => {
   gap: 0.75rem;
 }
 
-
 .yarn-meta {
   display: flex;
   flex-direction: column;
@@ -764,28 +763,5 @@ const isSingleComponentMaterialField = computed(() => {
   .component-material-row {
     grid-template-columns: 1fr;
   }
-}
-
-.component-material-selected {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 0.45rem;
-}
-
-.component-material-selected__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 999px;
-  background: rgba(17, 24, 39, 0.06);
-  color: var(--color-font-dark);
-  font-size: 0.85rem;
-  font-weight: 800;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 </style>

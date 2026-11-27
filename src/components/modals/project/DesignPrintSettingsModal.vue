@@ -193,13 +193,6 @@ function handleSave() {
   background: rgba(17, 24, 39, 0.02);
 }
 
-.settings-group-title {
-  margin: 0 0 0.5rem;
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: var(--color-font-dark);
-}
-
 .section-list {
   list-style: none;
   margin: 0;

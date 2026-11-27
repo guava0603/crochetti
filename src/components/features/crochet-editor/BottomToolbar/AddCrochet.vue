@@ -11,6 +11,7 @@
         :show-custom-button="resolvedShowCustomButton"
         :disable-rope="disableRope"
         @stitch-click="handleCrochetClick"
+        @stitch-long-press="handleCrochetLongPress"
         @bundle-click="openRopeBundleWizard"
         @raised-click="openRaisedWizard"
         @custom-click="openCustomWizard"
@@ -89,7 +90,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['add-crochet', 'add-rope'])
+const emit = defineEmits(['add-crochet', 'add-crochet-count', 'add-rope'])
 
 
 const { list: selfDefinedStitches, addStitch: addSelfDefinedStitch } = useSelfDefinedStitchesContext()
@@ -122,6 +123,13 @@ const handleCrochetClick = (payload) => {
 
   const position = typeof payload === 'object' ? String(payload?.position ?? '') : ''
   emit('add-crochet', { stitchId, position })
+}
+
+// Long press: the parent asks how many and adds the stitch with that count.
+const handleCrochetLongPress = (payload) => {
+  const stitchId = payload?.stitchId ?? payload?.stitch_id
+  if (stitchId === null || stitchId === undefined) return
+  emit('add-crochet-count', { stitchId, position: String(payload?.position ?? '') })
 }
 
 const showCustomModal = ref(false)

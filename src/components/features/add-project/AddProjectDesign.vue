@@ -91,6 +91,7 @@ import {
   normalizeComponentType
 } from '@/utils/componentTypes'
 import { ensureComponentNotesArray } from '@/utils/componentCardNotes'
+import { shouldVerifyRowCounts } from '@/utils/componentCastOn'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -479,6 +480,8 @@ function findUnexpectedGenerateRows(componentList) {
     const component = list[cIndex]
     const isPart = isComponentType(component?.type)
     if (!isPart) continue
+    // Cast-on 其他: rows are not checked against the previous row.
+    if (!shouldVerifyRowCounts(component)) continue
 
     const rowList = Array.isArray(component?.content?.row_list)
       ? component.content.row_list
@@ -667,8 +670,6 @@ defineExpose({
   margin: 0 auto;
 }
 
-
-
 .form-section {
   /* margin-bottom: 2rem;
   padding-bottom: 2rem; */
@@ -706,13 +707,6 @@ defineExpose({
 
 .section-header__right :deep(.selection-button-group__btn.is-selected:nth-child(2)) {
   background-color: var(--color-warning); /* red */
-}
-
-.section-header__right-label {
-	font-size: 0.9rem;
-	font-weight: 800;
-	color: var(--color-font-dark);
-	white-space: nowrap;
 }
 
 .add-component-actions {

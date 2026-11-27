@@ -8,6 +8,7 @@
         class="crochet-button"
         :class="{ 'is-selected': selectedStitchId === getStitchId(crochet) }"
         :disabled="disabled || isStitchDisabledByPositionSelection(getStitchId(crochet)) || isStitchDisabledByAdjustMode(getStitchId(crochet))"
+        v-on="longPressHandlers(getStitchId(crochet))"
         @click="handleStitchClick(getStitchId(crochet))"
       >
         <img
@@ -26,6 +27,7 @@
         class="crochet-button crochet-button--self-defined crochet-button--user-defined"
         :class="{ 'is-selected': selectedStitchId === getStitchId(sd) }"
         :disabled="disabled || isStitchDisabledByPositionSelection(getStitchId(sd)) || isStitchDisabledByAdjustMode(getStitchId(sd))"
+        v-on="longPressHandlers(getStitchId(sd))"
         @click="handleStitchClick(getStitchId(sd))"
       >
         <div class="crochet-symbol">{{ getStitchLabel(sd) }}</div>
@@ -38,6 +40,7 @@
         class="crochet-button"
         :class="{ 'is-selected': selectedStitchId === getStitchId(crochet) }"
         :disabled="disabled || isStitchDisabledByPositionSelection(getStitchId(crochet)) || isStitchDisabledByAdjustMode(getStitchId(crochet))"
+        v-on="longPressHandlers(getStitchId(crochet))"
         @click="handleStitchClick(getStitchId(crochet))"
       >
         <img
@@ -56,6 +59,7 @@
         class="crochet-button crochet-button--self-defined"
         :class="{ 'is-selected': selectedStitchId === getStitchId(sd) }"
         :disabled="disabled || isStitchDisabledByPositionSelection(getStitchId(sd)) || isStitchDisabledByAdjustMode(getStitchId(sd))"
+        v-on="longPressHandlers(getStitchId(sd))"
         @click="handleStitchClick(getStitchId(sd))"
       >
         <div class="crochet-symbol">{{ getStitchLabel(sd) }}</div>
@@ -154,7 +158,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   BasicStitchGeneral,
@@ -210,7 +214,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['stitch-click', 'bundle-click', 'raised-click', 'custom-click', 'rope-preset-click', 'position-change'])
+const emit = defineEmits(['stitch-click', 'stitch-long-press', 'bundle-click', 'raised-click', 'custom-click', 'rope-preset-click', 'position-change'])
 
 const supportsPosition = computed(() => String(props.craftKey || 'crochet') === 'crochet')
 
@@ -355,50 +359,76 @@ const togglePosition = (pos) => {
   emit('position-change', updated)
 }
 
-const handleStitchClick = (stitchId) => {
-  if (stitchId === null || stitchId === undefined) return
+// The stitch a button adds right now (applies adjust mode / position), or null.
+const resolveStitchPayload = (stitchId) => {
+  if (stitchId === null || stitchId === undefined) return null
 
   // Non-crochet craft: no position/adjust logic.
   if (!supportsPosition.value) {
     selectedStitchId.value = stitchId
-    emit('stitch-click', { stitch_id: stitchId, position: '' })
-    return
+    return { stitch_id: stitchId, position: '' }
   }
 
-  // Adjust mode: only allow X/T/F/E. Clicking them emits increase/decrease variants.
+  // Adjust mode: only allow X/T/F/E. They resolve to their increase/decrease variants.
   if (adjustMode.value !== 'none') {
-    if (!ADJUST_ALLOWED_BASE_STITCH_IDS.has(stitchId)) return
+    if (!ADJUST_ALLOWED_BASE_STITCH_IDS.has(stitchId)) return null
     const variantId = getVariantStitchId(stitchId, adjustMode.value)
-    if (variantId === null || variantId === undefined) return
+    if (variantId === null || variantId === undefined) return null
     selectedStitchId.value = variantId
-
-    const effectivePosition = POSITION_SUPPORTED_STITCH_IDS.has(variantId)
-      ? selectedPosition.value
-      : ''
-
-    emit('stitch-click', {
+    return {
       stitch_id: variantId,
-      position: effectivePosition
-    })
-    return
+      position: POSITION_SUPPORTED_STITCH_IDS.has(variantId) ? selectedPosition.value : ''
+    }
   }
 
   selectedStitchId.value = stitchId
-
-  // Selecting a stitch must NOT change the current position selection.
-  // Position only changes via the position toggle buttons.
-  const effectivePosition = POSITION_SUPPORTED_STITCH_IDS.has(stitchId)
-    ? selectedPosition.value
-    : ''
-
-  // Emit the new stitch payload shape.
-  // Note: toggles do NOT auto-emit to avoid accidentally adding stitches.
-  // Users can toggle first, then click the stitch again to add with position.
-  const payload = {
+  // Selecting a stitch must NOT change the current position selection; position only
+  // changes via the position toggle buttons (which never add a stitch by themselves).
+  return {
     stitch_id: stitchId,
-    position: effectivePosition
+    position: POSITION_SUPPORTED_STITCH_IDS.has(stitchId) ? selectedPosition.value : ''
   }
-  emit('stitch-click', payload)
+}
+
+// Long press (0.5s) on a stitch button: ask for a count instead of adding one stitch.
+const LONG_PRESS_MS = 500
+let longPressTimer = 0
+let longPressFired = false
+
+const cancelLongPress = () => {
+  if (longPressTimer) clearTimeout(longPressTimer)
+  longPressTimer = 0
+}
+
+const longPressHandlers = (stitchId) => ({
+  pointerdown: (e) => {
+    if (e?.button !== undefined && e.button !== 0) return
+    cancelLongPress()
+    longPressFired = false
+    longPressTimer = setTimeout(() => {
+      longPressTimer = 0
+      longPressFired = true
+      const payload = resolveStitchPayload(stitchId)
+      if (payload) emit('stitch-long-press', payload)
+    }, LONG_PRESS_MS)
+  },
+  pointerup: cancelLongPress,
+  pointerleave: cancelLongPress,
+  pointercancel: cancelLongPress,
+  // iOS / Android would otherwise open the text callout / context menu on long press.
+  contextmenu: (e) => e.preventDefault()
+})
+
+onBeforeUnmount(cancelLongPress)
+
+const handleStitchClick = (stitchId) => {
+  // The click that ends a long press must not also add a single stitch.
+  if (longPressFired) {
+    longPressFired = false
+    return
+  }
+  const payload = resolveStitchPayload(stitchId)
+  if (payload) emit('stitch-click', payload)
 }
 
 const getStitchId = (stitch) => {
@@ -467,16 +497,6 @@ const getStitchLabel = (stitch) => {
   align-self: stretch;
 }
 
-.crochet-adjust-button {
-  width: 100%;
-  height: 70px;
-  min-width: 54px;
-  padding: 0;
-  background: white;
-  border: 1px solid #e5e7eb;
-  cursor: pointer;
-}
-
 .crochet-adjust-button--top {
   border-bottom: none;
   border-top-left-radius: 10px;
@@ -486,11 +506,6 @@ const getStitchLabel = (stitch) => {
 .crochet-adjust-button--bottom {
   border-bottom-left-radius: 10px;
   border-bottom-right-radius: 10px;
-}
-
-.crochet-adjust-button.active {
-  background: #dbeafe;
-  border-color: #93c5fd;
 }
 
 .crochet-list {
@@ -537,6 +552,10 @@ const getStitchLabel = (stitch) => {
   min-width: calc((100% - 1.5rem) / 4);
   width: fit-content;
   padding: 0.5rem;
+  /* Long press asks for a count: no text selection / callout while holding. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* Side panel buttons behave like a vertical button-group */
@@ -568,10 +587,6 @@ const getStitchLabel = (stitch) => {
 .crochet-button:hover:not(:disabled), .crochet-position-button.active {
   background: var(--color-icon-add);
   border-color: transparent;
-  color: white;
-}
-
-.crochet-button:hover:not(:disabled) .crochet-stats {
   color: white;
 }
 

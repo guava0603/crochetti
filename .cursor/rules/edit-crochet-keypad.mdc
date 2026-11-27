@@ -24,6 +24,7 @@ The keypad owns a draft of the **whole row** plus a cursor `containerPath` (indi
 
 ## Navigation
 - While a pattern/bundle is selected, the bottom bar's 取消/儲存 become a single **確認** (`confirmSelection`): it goes to the parent level; leaving an empty container removes it. At the root the normal 取消/儲存 show. There is no last-page button.
+- Long press (0.5s) on a stitch button opens the shared number dialog (`InputNumber` with `hide-trigger`, 1–999); 儲存 inserts that stitch with `count: n` at the caret, 取消 adds nothing.
 - Caret: index 0…childCount inside the current container (`KeypadCaret`, moved with the `KeypadCaretButton` ◀ (left of the input display) / ▶ (right of it, before delete) or by tapping a direct child). It never leaves the current container; inserts go at the caret, entering a container puts it at 0 (new) or the end (tapped), 確認 puts it right after the container left.
 - Delete (backspace): removes the node before the caret; at the start of an empty container removes it and goes to the parent.
 - Save prunes empty patterns/bundles (`pruneEmptyContainers`).

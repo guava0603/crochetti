@@ -15,6 +15,7 @@
     v-model="rowListModel"
     v-model:row-groups="rowGroupsModel"
     :is-editing="isEditing"
+    :verify-row-counts="shouldVerifyRowCounts(component)"
   />
 
   <ComponentCardNotesSection
@@ -34,6 +35,7 @@
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ComponentCardComponentCrochet from './ComponentCrochet.vue'
+import { shouldVerifyRowCounts } from '@/utils/componentCastOn'
 import ComponentCardNotesSection from './ComponentCardNotesSection.vue'
 import ComponentCardMaterialsSection from './ComponentCardMaterialsSection.vue'
 import ComponentCardCountSection from './ComponentCardCountSection.vue'

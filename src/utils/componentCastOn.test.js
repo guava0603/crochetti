@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/constants/crochetData', () => ({
+  CAST_ON_OTHER_INDEX: 4,
   getCastOnByIndex: (index) => {
     if (index === 0) return { index: 0, nameKey: 'crochet.castOn.magicRing' }
     if (index === 2) return { index: 2, nameKey: 'crochet.castOn.flat' }
@@ -9,7 +10,7 @@ vi.mock('@/constants/crochetData', () => ({
   getCastOnDisplayName: (castOn, t) => (castOn?.nameKey ? t(castOn.nameKey) : '')
 }))
 
-import { getComponentCastOnLabel } from '@/utils/componentCastOn'
+import { getComponentCastOnLabel, shouldVerifyRowCounts } from '@/utils/componentCastOn'
 
 describe('getComponentCastOnLabel', () => {
   const t = (key) => {
@@ -39,5 +40,15 @@ describe('getComponentCastOnLabel', () => {
       type: 'component-crochet',
       content: {}
     }, t)).toBe('')
+  })
+})
+
+describe('shouldVerifyRowCounts', () => {
+  it('is off only for cast-on 其他', () => {
+    expect(shouldVerifyRowCounts({ content: { type: 4 } })).toBe(false)
+    expect(shouldVerifyRowCounts({ content: { type: '4' } })).toBe(false)
+    expect(shouldVerifyRowCounts({ content: { type: 0 } })).toBe(true)
+    expect(shouldVerifyRowCounts({ content: {} })).toBe(true)
+    expect(shouldVerifyRowCounts(null)).toBe(true)
   })
 })

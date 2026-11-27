@@ -244,14 +244,6 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-.group-count {
-  font-weight: 800;
-  color: var(--color-font-note);
-  background: #f3f4f6;
-  border-radius: 999px;
-  padding: 0.25rem 0.6rem;
-}
-
 .slot-list {
   display: flex;
   flex-direction: column;

@@ -153,15 +153,6 @@ const emitOpen = () => {
   box-shadow: 0 0 0 3px rgb(var(--color-icon-add-rgb) / 0.22), 0 10px 22px -14px rgba(0, 0, 0, 0.45);
 }
 
-.project-card__leaf {
-  position: absolute;
-  bottom: 0.65rem;
-  right: 0.9rem;
-  font-size: 1.5rem;
-  opacity: 0.3;
-  pointer-events: none;
-}
-
 .project-card__date-box {
   font-size: 0.7rem;
   letter-spacing: 2px;

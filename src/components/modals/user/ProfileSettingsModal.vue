@@ -465,10 +465,6 @@ function handleSave() {
 </script>
 
 <style scoped>
-.profile-avatar-uploader {
-  width: 100%;
-}
-
 .avatar-row {
   display: flex;
   align-items: center;
